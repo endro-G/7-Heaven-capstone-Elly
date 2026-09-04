@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>B2B &amp; Bulk — Request a Quote | The Elly Store</title>
+<meta name="description" content="B2B quote flow — structure preview.">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Ovo&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body data-page="b2b">
+<main id="content">
+
+  <div class="wrap"><nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">Home</a><span class="sep">/</span><span aria-current="page">B2B &amp; bulk quotes</span></nav></div>
+
+  <section class="page-hero hero-p-blue">
+    <div class="wrap page-hero__in">
+      <span class="kicker">Growth pillar 2 · B2B channels</span>
+      <h1>Bulk, family, event &amp; corporate orders</h1>
+      <p>Build your order online and watch tiered pricing update live — then request a shareable quote. Same catalog as the store, including customization for whole-group personalisation.</p>
+      <div class="hero-tags">
+        <span class="badge badge--blue">Self-serve RFQ</span>
+        <span class="badge badge--blue">Live tiered pricing</span>
+        <span class="badge badge--blue">Customization-ready</span>
+        <span class="badge badge--ink">Demo — no live orders</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="block block--tight">
+    <div class="wrap">
+      <!-- stepper -->
+      <div class="steps" role="tablist" aria-label="Quote steps">
+        <div class="step-i is-on" data-step-i="1" onclick="EL && EL.goStep && EL.goStep(1)"><span class="no">1</span>Order type</div>
+        <div class="step-i" data-step-i="2" onclick="EL && EL.goStep && EL.goStep(2)"><span class="no">2</span>Items &amp; quantity</div>
+        <div class="step-i" data-step-i="3" onclick="EL && EL.goStep && EL.goStep(3)"><span class="no">3</span>Quote summary</div>
+      </div>
+
+      <!-- step 1 -->
+      <div class="step-pane js-b2b-step is-on" data-step="1">
+        <span class="kicker" style="margin-bottom:16px">What kind of order is this?</span>
+        <div class="otype-grid">
+          <button type="button" class="otype is-on" data-name="Bulk / wholesale">
+            <span class="emoji">📦</span><b>Bulk / wholesale</b><span>Retailers &amp; resellers — minimum 10 units</span>
+          </button>
+          <button type="button" class="otype" data-name="Family (multi-child)">
+            <span class="emoji">👨‍👩‍👧‍👦</span><b>Family</b><span>Sibling &amp; multi-child matching sets</span>
+          </button>
+          <button type="button" class="otype" data-name="Event">
+            <span class="emoji">🎈</span><b>Event</b><span>Birthday favours, parties &amp; occasions</span>
+          </button>
+          <button type="button" class="otype" data-name="Corporate">
+            <span class="emoji">💼</span><b>Corporate</b><span>Corporate gifting &amp; client presents</span>
+          </button>
+        </div>
+        <p class="small muted" style="margin-top:14px">Order type: <b class="js-otype-label" style="color:var(--blue-deep)">Bulk / wholesale</b> — the flow stays the same; the quote note below adapts per type (structure reserved).</p>
+        <div style="margin-top:22px">
+          <button type="button" class="btn btn--coral js-b2b-next" data-goto="2">Choose items — next</button>
+        </div>
+      </div>
+
+      <!-- step 2 -->
+      <div class="step-pane js-b2b-step" data-step="2">
+        <div style="display:grid;gap:26px;grid-template-columns:1.25fr .85fr;align-items:start" class="b2b-grid">
+          <div>
+            <span class="kicker" style="margin-bottom:12px">Pick items from the catalog</span>
+            <p class="small muted" style="margin-bottom:16px">Sample rows drive the pricing demo — real catalog items plug into these rows (PRD §10).</p>
+
+            <div class="js-b2b-line" data-name="Disney | elly sample tee" data-unit="34" style="border-bottom:1px solid var(--line);padding:14px 0;display:grid;grid-template-columns:52px 1fr auto auto;gap:14px;align-items:center">
+              <div style="width:52px;height:52px;border-radius:var(--radius);background:linear-gradient(150deg,#e3ecfb,#c2d6f2);border:1px dashed var(--line)"></div>
+              <div style="font-size:13.5px"><b>Sample · Disney tee</b><br><span class="muted small">Placeholder item · S$34.00 each</span></div>
+              <div class="qty-row" data-min="0" data-max="500" style="height:38px">
+                <button type="button" data-step="-5" aria-label="Decrease">−</button>
+                <output>0</output>
+                <button type="button" data-step="5" aria-label="Increase">+</button>
+              </div>
+              <b class="js-line-total" style="font-size:14px;min-width:74px;text-align:right">S$0.00</b>
+            </div>
+            <div class="js-b2b-line" data-name="Elly Label sample romper" data-unit="29" style="border-bottom:1px solid var(--line);padding:14px 0;display:grid;grid-template-columns:52px 1fr auto auto;gap:14px;align-items:center">
+              <div style="width:52px;height:52px;border-radius:var(--radius);background:linear-gradient(150deg,#f6efe3,#e9dcc6);border:1px dashed var(--line)"></div>
+              <div style="font-size:13.5px"><b>Sample · Elly romper</b><br><span class="muted small">Placeholder item · S$29.00 each</span></div>
+              <div class="qty-row" data-min="0" data-max="500" style="height:38px">
+                <button type="button" data-step="-5" aria-label="Decrease">−</button>
+                <output>0</output>
+                <button type="button" data-step="5" aria-label="Increase">+</button>
+              </div>
+              <b class="js-line-total" style="font-size:14px;min-width:74px;text-align:right">S$0.00</b>
+            </div>
+            <div class="js-b2b-line" data-name="Personalised sample robe" data-unit="59" style="border-bottom:1px solid var(--line);padding:14px 0;display:grid;grid-template-columns:52px 1fr auto auto;gap:14px;align-items:center">
+              <div style="width:52px;height:52px;border-radius:var(--radius);background:linear-gradient(150deg,#efeafb,#dcd2f5);border:1px dashed var(--line)"></div>
+              <div style="font-size:13.5px"><b>Sample · personalised robe</b><br><span class="muted small">Customization item · S$59.00 each</span></div>
+              <div class="qty-row" data-min="0" data-max="500" style="height:38px">
+                <button type="button" data-step="-5" aria-label="Decrease">−</button>
+                <output>0</output>
+                <button type="button" data-step="5" aria-label="Increase">+</button>
+              </div>
+              <b class="js-line-total" style="font-size:14px;min-width:74px;text-align:right">S$0.00</b>
+            </div>
+
+            <p class="small muted" style="margin-top:14px">Need names for the whole group? Family / event / corporate orders pair naturally with <a href="customization.html" style="text-decoration:underline">Customization</a> — embroidery is added to these rows in the next step (PRD §10 cross-sell).</p>
+          </div>
+
+          <div>
+            <span class="kicker" style="margin-bottom:12px">Live tiered pricing</span>
+            <table class="tier-table" style="background:var(--paper);border:1px solid var(--line);border-radius:var(--radius)">
+              <thead><tr><th>Units</th><th>Discount</th></tr></thead>
+              <tbody>
+                <tr data-tier="10"><td>10 – 49</td><td>10% off</td></tr>
+                <tr data-tier="50"><td>50 – 99</td><td>15% off</td></tr>
+                <tr data-tier="100"><td>100 – 299</td><td>20% off</td></tr>
+                <tr data-tier="300"><td>300+</td><td>Custom quote <span class="muted" style="font-size:11.5px">— sales follow up</span></td></tr>
+              </tbody>
+            </table>
+            <p class="small" id="b2bTierNote" style="margin-top:10px;color:var(--ink-soft)">Add quantities to preview live tiered pricing.</p>
+            <p class="small muted" style="margin-top:6px">Illustrative tiers for the prototype — replace with real pricing before production (PRD §10).</p>
+          </div>
+        </div>
+        <div style="margin-top:22px;display:flex;gap:12px;flex-wrap:wrap">
+          <button type="button" class="btn btn--ghost js-b2b-next" data-goto="1">Back</button>
+          <button type="button" class="btn btn--coral js-b2b-next" data-goto="3">Review quote summary</button>
+        </div>
+      </div>
+
+      <!-- step 3 -->
+      <div class="step-pane js-b2b-step" data-step="3">
+        <div class="wrap" style="padding-inline:0;max-width:760px">
+          <div class="quote-sum">
+            <span class="kicker" style="margin-bottom:10px">Quote summary · <span class="js-otype-label">Bulk / wholesale</span></span>
+            <h2 style="font-size:26px;margin-bottom:18px">Your quote preview</h2>
+            <div id="b2bLines"></div>
+            <div class="r"><span>Total units</span><b id="b2bQty">0</b></div>
+            <div class="r"><span>Subtotal (list price)</span><b id="b2bSub">S$0.00</b></div>
+            <div class="r"><span>Tier discount</span><b class="disc" id="b2bSave">S$0.00</b></div>
+            <div class="r total"><span>Estimated total</span><span class="price" id="b2bTotal">S$0.00</span></div>
+            <p class="small muted" style="margin-top:4px">Avg. unit: <span id="b2bUnit">—</span> · tiers reset below 10 units.</p>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:20px">
+              <button type="button" class="btn btn--dark js-request-quote" onclick="EL && EL.toast && EL.toast('Quote request received — <b>demo only</b>. No live order was placed.')">Request quote · demo</button>
+              <button type="button" class="btn btn--ghost" onclick="EL && EL.toast && EL.toast('Quote downloaded as PDF — <b>demo</b> (shareable quote UI planned)')">Download quote (demo)</button>
+            </div>
+            <p class="small muted" style="margin-top:14px">This is a quote-request flow — no payment here. Our team replies with a formal quote within 2 working days. Out of scope for prototype: live invoicing / ERP (PRD §9).</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+<script src="assets/components.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Checkout — 3 Fulfilment Options | The Elly Store</title>
+<meta name="description" content="Checkout structure — ship to SG/hotel, ship home, or buy in-store.">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Ovo&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body data-page="checkout">
+<main id="content">
+
+  <div class="wrap"><nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">Home</a><span class="sep">/</span><a href="cart.html">Your bag</a><span class="sep">/</span><span aria-current="page">Checkout</span></nav></div>
+
+  <section class="block" style="padding-top:10px">
+    <div class="wrap">
+      <div class="occ-head">
+        <div>
+          <span class="kicker kicker--coral">Checkout · structure</span>
+          <h1 class="sec" style="font-size:clamp(28px,3.4vw,40px)">Checkout</h1>
+          <p class="small muted" style="margin-top:8px">Tourist-ready fulfilment (PRD §5.3): all three delivery options offered side-by-side with no extra steps to find them. No live payments in this prototype.</p>
+        </div>
+        <a class="back-link" href="cart.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h15M13 6l6 6-6 6"/></svg> Back to bag</a>
+      </div>
+
+      <div class="cart-layout">
+        <div>
+          <!-- 01 contact -->
+          <div class="checkout-sec">
+            <h3><span class="step-no">1</span> Contact</h3>
+            <p class="sub">Order updates go here — no account needed to start.</p>
+            <div class="form-grid">
+              <div class="field full"><label for="co-email">Email <b>*</b></label><input id="co-email" type="email" placeholder="you@example.com" value=""></div>
+            </div>
+            <p class="small muted" style="margin-top:12px">Returning? Sign in to pre-fill &amp; use your points (Smile). Guest checkout stays friction-free — <a href="account.html" style="text-decoration:underline">preview member view</a>.</p>
+          </div>
+
+          <!-- 02 fulfilment options -->
+          <div class="checkout-sec">
+            <h3><span class="step-no">2</span> Delivery — choose how you receive it</h3>
+            <p class="sub">Visitors see all three options up front; the default adapts to your location signal (demo).</p>
+
+            <div class="fopts" role="radiogroup" aria-label="Fulfilment option">
+              <div>
+                <label class="fopt is-on">
+                  <input type="radio" name="fulfil" value="ship" checked>
+                  <span style="flex:1">
+                    <b>Ship to Singapore address / hotel</b>
+                    <span>Arrive before you fly home — hotel reception delivery supported.</span>
+                  </span>
+                  <span class="ship-tag"><span class="badge">S$6 · free over S$100</span></span>
+                </label>
+                <div class="collapse">
+                  <div class="form-grid" style="margin-top:16px">
+                    <div class="field"><label for="f-name">Full name <b>*</b></label><input id="f-name" type="text" placeholder="Jane Tan"></div>
+                    <div class="field"><label for="f-phone">Phone (SG) <b>*</b></label><input id="f-phone" type="tel" placeholder="+65 9xxx xxxx"></div>
+                    <div class="field full"><label for="f-addr">Street address <b>*</b></label><input id="f-addr" type="text" placeholder="Block, street, unit (hotel name + room works)"></div>
+                    <div class="field"><label for="f-postal">Postal code <b>*</b></label><input id="f-postal" type="text" placeholder="123456"></div>
+                    <div class="field"><label for="f-sg">Is this a hotel?</label>
+                      <select id="f-sg"><option>No — residential address</option><option>Yes — hotel / serviced apartment</option></select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label class="fopt">
+                  <input type="radio" name="fulfil" value="home">
+                  <span style="flex:1">
+                    <b>Ship to my home country</b>
+                    <span>We hold your order and ship after your trip — perfect for tourists.</span>
+                  </span>
+                  <span class="ship-tag"><span class="badge">Rates at checkout</span></span>
+                </label>
+                <div class="collapse">
+                  <div class="form-grid" style="margin-top:16px">
+                    <div class="field"><label for="f-country">Country <b>*</b></label>
+                      <select id="f-country"><option>Australia</option><option>China</option><option>Indonesia</option><option>Japan</option><option>Malaysia</option><option>United Kingdom</option><option>United States</option><option>Other (20+ countries)</option></select>
+                    </div>
+                    <div class="field"><label for="f-haddr">Street address <b>*</b></label><input id="f-haddr" type="text" placeholder="Home address"></div>
+                    <div class="field"><label for="f-city">City <b>*</b></label><input id="f-city" type="text"></div>
+                    <div class="field"><label for="f-zip">Postal / ZIP <b>*</b></label><input id="f-zip" type="text"></div>
+                    <div class="field full"><label for="f-trip">When do you leave Singapore? (we time the shipment)</label><input id="f-trip" type="date"></div>
+                  </div>
+                  <p class="small" style="margin-top:12px;color:var(--blue-deep)">Duty &amp; taxes may apply on arrival — shown at final rates before payment.</p>
+                </div>
+              </div>
+
+              <div>
+                <label class="fopt">
+                  <input type="radio" name="fulfil" value="store">
+                  <span style="flex:1">
+                    <b>Buy in-store / pop-up</b>
+                    <span>No shipping — reserve now, collect and pay in person.</span>
+                  </span>
+                  <span class="ship-tag"><span class="badge">Free · immediate</span></span>
+                </label>
+                <div class="collapse">
+                  <div class="form-grid" style="margin-top:16px">
+                    <div class="field full"><label for="f-store">Store / pop-up location</label>
+                      <select id="f-store"><option>Flagship — Singapore (store details)</option><option>Pop-up — (location list with dates)</option></select>
+                    </div>
+                    <div class="field full"><label for="f-pickup-date">Preferred collection date</label><input id="f-pickup-date" type="date"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <p class="small" style="margin-top:14px;background:var(--cream-2);padding:10px 14px;border-radius:var(--radius);color:var(--ink-soft)"><b style="color:var(--blue-deep)">Tourist recognition demo:</b> <span class="js-fulfil-summary">Ship to Singapore address / hotel</span> — <span class="fulfil-note" style="display:none"></span><span class="ship-est">S$6 · free over S$100</span></p>
+          </div>
+
+          <!-- 03 payment -->
+          <div class="checkout-sec">
+            <h3><span class="step-no">3</span> Payment</h3>
+            <p class="sub">Demo only — no live payment processing in the prototype.</p>
+            <div class="pay-ghost">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M7 15h4"/></svg>
+              Card fields, PayNow, GrabPay &amp; more land here. Loyalty points (100 pts = S$5) are redeemable here except on Pre-Orders.
+            </div>
+          </div>
+        </div>
+
+        <aside class="summary-card">
+          <h3>Your bag</h3>
+          <div class="js-cart-line" data-price="68" style="border-bottom:1px solid var(--line-soft);padding:10px 0;display:flex;gap:12px;align-items:center">
+            <div style="width:46px;height:46px;border-radius:var(--radius);background:linear-gradient(150deg,#e3ecfb,#c2d6f2);flex:none;border:1px dashed var(--line)"></div>
+            <div style="flex:1;font-size:12.5px"><b>Sample · Disney item</b><br><span class="muted">12M · qty <span class="ck-qty">1</span></span></div>
+            <span style="font-weight:700;font-size:13px">S$68.00</span>
+          </div>
+          <div style="border-bottom:1px solid var(--line-soft);padding:10px 0;display:flex;gap:12px;align-items:center;margin-bottom:12px">
+            <div style="width:46px;height:46px;border-radius:var(--radius);background:linear-gradient(150deg,#f6efe3,#e9dcc6);flex:none;border:1px dashed var(--line)"></div>
+            <div style="flex:1;font-size:12.5px"><b>Sample · Elly item</b><br><span class="muted">3M · personalised · qty 1</span></div>
+            <span style="font-weight:700;font-size:13px">S$39.00</span>
+          </div>
+          <div class="s-row"><span>Subtotal</span><b>S$107.00</b></div>
+          <div class="s-row"><span>Shipping</span><b class="ship-est">S$0.00</b></div>
+          <div class="s-row s-row--total"><span>Total</span><span class="price">S$107.00</span></div>
+          <button type="button" class="btn btn--coral btn--block" style="margin-top:18px" onclick="EL.toast('Order placed \u2014 <b>demo only</b>. No live order or payment was created.', true)">Place order · demo</button>
+          <p class="small muted center" style="margin-top:12px;font-size:11.5px">Post-purchase: Klaviyo flow &amp; Judge.me review invite reserved (PRD §5.4).</p>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+</main>
+<script src="assets/components.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>

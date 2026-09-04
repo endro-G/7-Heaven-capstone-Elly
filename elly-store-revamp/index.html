@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Elly Store — Kids, Disney &amp; Family Wear · Singapore</title>
+<meta name="description" content="The Elly Store — Singapore's Disney design-house label. Kids' clothing 0–14, shoes, gifts and personalisation. UI structure preview — no products loaded yet.">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Ovo&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body data-page="index">
+<main id="content">
+
+  <!-- ============ Rotating hero banner + recommender tiles (PRD §5.1/§8.1) ============ -->
+  <section class="hero" id="heroDynamic" aria-label="Welcome to The Elly Store">
+    <div class="wrap hero__top">
+      <div class="hero__controls">
+        <span class="hero-count" id="heroCount" aria-hidden="true">1 / 4</span>
+        <div class="hero-dots" id="heroDots" role="group" aria-label="Banner slides"></div>
+        <button type="button" class="hero-arrow js-hero-prev" aria-label="Previous banner">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+        </button>
+        <button type="button" class="hero-arrow js-hero-next" aria-label="Next banner">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="wrap hero__slides" id="heroSlides" aria-live="polite"></div>
+    <ul class="wrap hero__ticks">
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.4 4.9 5.4.8-3.9 3.8.9 5.4-4.8-2.6-4.8 2.6.9-5.4L4.2 8.7l5.4-.8z"/></svg> Loved by Singapore families</li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z"/><circle cx="7.2" cy="17.8" r="1.9"/><circle cx="17.4" cy="17.8" r="1.9"/></svg> Free SG shipping over $100</li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 5-3.2 8.4-7 10-3.8-1.6-7-5-7-10V6z"/><path d="M9 12l2 2 4-4.5"/></svg> 30-day easy exchange</li>
+    </ul>
+  </section>
+
+  <!-- ============ Recommender tiles (below banner, re-rank per visitor segment) ============ -->
+  <section class="block block--tight">
+    <div class="wrap">
+      <div class="occ-head">
+        <div>
+          <span class="kicker" id="recTilesKicker">Shop by occasion</span>
+          <h2 class="sec" id="recTilesTitle">What are you shopping for?</h2>
+          <p class="muted small" style="margin-top:10px;max-width:62ch" id="recTilesSub">Occasion-first discovery — the tiles below re-rank by visitor segment (demo).</p>
+        </div>
+        <a class="link-arrow" href="gifting-hub.html">Browse the Gifting Hub</a>
+      </div>
+      <div class="occ-rail" id="occRail">
+        <a class="occ-card" id="occ-newborn" href="gifting-hub.html?occasion=Newborn%20%26%20Baby%20Shower">
+          <span class="tint" style="background:var(--tint-gift)"><span class="emoji">🍼</span></span>
+          <strong>Newborn &amp; Baby Shower</strong>
+          <small>Full month · keepsake sets</small>
+        </a>
+        <a class="occ-card" id="occ-sibling" href="elly-label.html?occasion=Big%20Brother%20%2F%20Little%20Sister">
+          <span class="tint" style="background:var(--tint-elly)"><span class="emoji">🧸</span></span>
+          <strong>Big Brother / Little Sister</strong>
+          <small>Matching sibling sets</small>
+        </a>
+        <a class="occ-card" id="occ-theme-park" href="disney-elly.html?occasion=Theme%20Park%20Vacation">
+          <span class="tint" style="background:var(--tint-disney)"><span class="emoji">🏰</span></span>
+          <strong>Theme Park Vacation</strong>
+          <small>Park-ready twinning looks</small>
+        </a>
+        <a class="occ-card" id="occ-photoshoot" href="disney-elly.html?occasion=Family%20Photoshoot">
+          <span class="tint" style="background:var(--tint-custom)"><span class="emoji">📸</span></span>
+          <strong>Family Photoshoot</strong>
+          <small>Outfits that photograph well</small>
+        </a>
+        <a class="occ-card" id="occ-sleepover" href="elly-label.html?occasion=Pajama%20Party%20%2F%20Sleepover">
+          <span class="tint" style="background:var(--tint-shoe)"><span class="emoji">🌙</span></span>
+          <strong>Pajama Party / Sleepover</strong>
+          <small>PJs &amp; nightwear for all</small>
+        </a>
+        <a class="occ-card" id="occ-gift" href="gifting-hub.html?occasion=Holiday%20Gift%20Boxes">
+          <span class="tint" style="background:var(--cream)"><span class="emoji">🎁</span></span>
+          <strong>Holiday Gift Boxes</strong>
+          <small>Curated, wrapped &amp; ready</small>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Demo controls: visitor simulation (prototype-only, PRD §8) -->
+  <div class="demo-bar" aria-label="Prototype demo controls">
+    <div class="wrap demo-bar__in">
+      <span class="db-label"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a7 7 0 0 1 7 7c0 5-7 13-7 13S5 14 5 9a7 7 0 0 1 7-7zm0 9.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z"/></svg> Demo&nbsp;controls&nbsp;<b>(prototype)</b></span>
+      <span class="seg seg--coral" role="group" aria-label="Visitor location">
+        <button type="button" data-seg="elly-geo" data-val="tourist">Tourist 🏝️</button>
+        <button type="button" data-seg="elly-geo" data-val="local" class="is-on">Local 🇸🇬</button>
+      </span>
+      <span class="seg" role="group" aria-label="Visitor history">
+        <button type="button" data-seg="elly-guest" data-val="first" class="is-on">First-time</button>
+        <button type="button" data-seg="elly-guest" data-val="returning">Returning member</button>
+      </span>
+      <button type="button" class="link-arrow" data-selfdeclare style="border-bottom:0;color:var(--blue-deep);font-size:11.5px">I&rsquo;m visiting Singapore 🏝️ <span style="font-size:10px;opacity:.7">(geo override)</span></button>
+      <span class="demo-hint" style="margin-left:auto">Hero, recommender tiles &amp; search suggestions react.</span>
+    </div>
+    <div class="wrap demo-status-wrap"><p class="demo-status"></p></div>
+  </div>
+
+  <!-- ============ Recommended for you (returning member only, PRD §5.2) ============ -->
+  <section class="block block--tight" id="recRail" style="display:none;border-block:1px solid var(--line-soft)">
+    <div class="wrap">
+      <div class="occ-head">
+        <div>
+          <span class="kicker">Recognise · recommender (demo)</span>
+          <h2 class="sec">Because you shopped with us</h2>
+          <p class="muted small" style="margin-top:8px;max-width:64ch">Ranked from purchase + browse history first, events second. Product slots fill in the next step.</p>
+        </div>
+        <a class="link-arrow" href="account.html">View unified history</a>
+      </div>
+      <div class="product-grid" data-ghost-grid="4" data-kind="disney"></div>
+    </div>
+  </section>
+
+  <!-- ============ Pre-order spotlight ============ -->
+  <section class="band band--blue">
+    <div class="wrap band__in">
+      <div class="band__copy">
+        <span class="kicker" style="color:#fff">Disney Pre-Order · new designs</span>
+        <h2>Be first to own a brand-new design</h2>
+        <p>Approved Disney designs produced in Singapore. Full payment upfront, guaranteed fulfilment, up to 8-week lead time. Each design is produced independently — demand or minimum order, whichever is higher.</p>
+        <p class="concept-tag concept-tag--solid" style="margin-bottom:18px">Demo artwork only — not Disney-approved final designs</p>
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <a class="btn btn--ghost-light" href="pre-order.html">Preview the Pre-Order PDP</a>
+          <a class="btn btn--ghost-light" href="admin.html" style="opacity:.9">See demand vs MOQ demo</a>
+        </div>
+      </div>
+      <div class="band__art">
+        <div class="po-row">
+          <a class="po-card" href="pre-order.html" aria-label="Heritage shophouse concept design">
+            <img src="assets/hero/hero-preorder-heritage.png" alt="Pre-order concept design — heritage shophouse (illustrative)" loading="lazy">
+            <span class="concept-tag po-card__tag">Concept</span>
+            <span class="po-card__cap"><b>Heritage</b><i>Shophouse</i></span>
+          </a>
+          <a class="po-card" href="pre-order.html" aria-label="Gardens by the Bay concept design">
+            <img src="assets/hero/hero-preorder-garden.png" alt="Pre-order concept design — Gardens by the Bay (illustrative)" loading="lazy">
+            <span class="concept-tag po-card__tag">Concept</span>
+            <span class="po-card__cap"><b>Gardens by the Bay</b><i>Supertrees</i></span>
+          </a>
+          <a class="po-card" href="pre-order.html" aria-label="Marina Bay night skyline concept design">
+            <img src="assets/hero/hero-preorder-skyline.png" alt="Pre-order concept design — Marina Bay night skyline (illustrative)" loading="lazy">
+            <span class="concept-tag po-card__tag">Concept</span>
+            <span class="po-card__cap"><b>Skyline</b><i>Marina Bay · night</i></span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ Feature bands ============ -->
+  <section class="block block--tight">
+    <div class="wrap">
+      <div class="feat-grid">
+        <article class="feat-card">
+          <div class="ph-art ph-art--img" style="--fc-bg:var(--tint-gift)">
+            <img src="assets/hero/hero-deluxe-boxes.jpg" alt="Deluxe gift boxes — milestones &amp; moments edit" loading="lazy">
+          </div>
+          <div class="feat-card__body">
+            <span class="kicker" style="margin-bottom:4px">Milestones &amp; moments by elly</span>
+            <h3>Every first deserves to be remembered</h3>
+            <p>Baby gift sets, keepsake boxes and personalised birthday edits — curated by occasion with guided gifting by budget.</p>
+            <div class="feat-card__foot"><a class="link-arrow" href="gifting-hub.html">Shop the milestones</a></div>
+          </div>
+        </article>
+        <article class="feat-card">
+          <div class="ph-art ph-art--img" style="--fc-bg:var(--tint-disney)">
+            <img src="assets/hero/hero-seasonal.jpg" alt="New Disney arrival — red Mickey bomber jacket" loading="lazy">
+          </div>
+          <div class="feat-card__body">
+            <span class="kicker kicker--coral" style="margin-bottom:4px">Up next</span>
+            <h3>What&rsquo;s new &amp; upcoming</h3>
+            <p>New designs land here — seasonal Disney drops, restocks and soon, live Pre-Order windows with full-payment booking.</p>
+            <div class="feat-card__foot"><a class="link-arrow" href="pre-order.html">See the Pre-Order flow</a></div>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ Customization + FurKids teasers ============ -->
+  <section class="block block--tight" style="padding-top:0">
+    <div class="wrap" style="display:grid;gap:22px">
+      <div class="band band--cream" style="border-radius:14px">
+        <div class="wrap band__in" style="padding-inline:0">
+          <div class="band__copy">
+            <span class="kicker">Customization pillar</span>
+            <h2>Make it truly theirs</h2>
+            <p>One pillar for Customization &amp; Personalization. Embroidered or iron-on — name, initials, thread colour and placement, offered right at checkout on eligible items.</p>
+            <a class="link-arrow" href="customization.html">Explore customization</a>
+          </div>
+          <div class="band__art">
+            <div class="ph-art ph-art--img"><img src="assets/hero/hero-embroidery.png" alt="Embroidered varsity tee — personalisation preview" loading="lazy"></div>
+          </div>
+        </div>
+      </div>
+      <div class="band" style="background:var(--tint-furkids);border-radius:14px">
+        <div class="wrap band__in" style="padding-inline:0">
+          <div class="band__copy">
+            <span class="concept-tag" style="margin-bottom:12px">Concept · pending Disney licence approval</span>
+            <h2 style="color:var(--ink)">Elly FurKids — comfort for furry family</h2>
+            <p style="color:var(--ink-soft)">Blankets that double as mats, bows and pet apparel for S/M/L pets. Shown end-to-end as a concept line so nothing is mistaken for confirmed product.</p>
+            <a class="link-arrow" href="furkids.html">Explore FurKids</a>
+          </div>
+          <div class="band__art">
+            <div class="ph-art ph-art--img"><img src="assets/hero/hero-furkids.jpg" alt="FurKids concept — pet comfort range (placeholder imagery)" loading="lazy"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ Featured rail (structure) ============ -->
+  <section class="block block--tight" style="background:var(--cream-2);border-top:1px solid var(--line-soft)">
+    <div class="wrap">
+      <div class="occ-head">
+        <div>
+          <span class="kicker kicker--coral">Product rails</span>
+          <h2 class="sec">Featured — structure preview</h2>
+          <p class="small muted" style="margin-top:8px">Cards below show exactly where products will sit and how hover/tap states behave. Data populates in the next build step.</p>
+        </div>
+        <a class="link-arrow" href="elly-label.html">View a full listing page</a>
+      </div>
+      <div class="product-grid" data-ghost-grid="8" data-kind="elly"></div>
+    </div>
+  </section>
+
+  <!-- ============ Value props ============ -->
+  <section class="block block--tight">
+    <div class="wrap">
+      <div class="props">
+        <div class="prop">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 3l7 3v5c0 5-3.4 8.4-7 10-3.6-1.6-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>
+          <div><b>30-day easy exchange</b><span>Changed your mind? Exchange within 30 days for store credit.</span></div>
+        </div>
+        <div class="prop">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M3 7h11v8H3zM14 10h4l3 3v2h-7z"/><circle cx="7" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/></svg>
+          <div><b>Free shipping in Singapore</b><span>On orders over $100 · ships to 20+ countries, rates at checkout.</span></div>
+        </div>
+        <div class="prop">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12.5h5"/></svg>
+          <div><b>Here to help</b><span>Mon–Fri 9am–5pm SGT. Call or WhatsApp (65) 9628 1037.</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+<script src="assets/components.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>

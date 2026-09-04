@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Disney Pre-Order — New Designs | The Elly Store</title>
+<meta name="description" content="Disney Pre-Order programme — structure preview with concept designs only.">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Ovo&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+<style>
+  details.acc { border: 1px solid var(--line); border-radius: var(--radius); margin-top: 12px; background: var(--paper); }
+  details.acc summary { list-style: none; cursor: pointer; padding: 16px 18px; font-weight: 700; font-size: 14px; letter-spacing: .03em; display: flex; justify-content: space-between; align-items: center; }
+  details.acc summary::-webkit-details-marker { display: none; }
+  details.acc summary::after { content: '+'; font-size: 18px; color: var(--coral); }
+  details.acc[open] summary::after { content: '–'; }
+  details.acc .acc-body { padding: 0 18px 16px; font-size: 14px; color: var(--ink-soft); }
+  .design-select { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px; }
+  .design-opt { border: 1.5px solid var(--line); border-radius: var(--radius); padding: 8px; cursor: pointer; text-align: center; background: var(--paper); transition: all .15s; }
+  .design-opt:hover { border-color: var(--ink-light); }
+  .design-opt.is-on { border-color: var(--coral); box-shadow: 0 0 0 3px var(--coral-wash); }
+  .design-opt .th { aspect-ratio: 3/4; border-radius: 2px; margin-bottom: 8px; background: linear-gradient(150deg, var(--d-a,#e3ecfb), var(--d-b,#c2d6f2)); display: grid; place-items: center; color: rgba(0,0,0,.35); font-size: 22px; border: 1px dashed rgba(0,0,0,.15); }
+  .design-opt b { display: block; font-size: 12.5px; margin-bottom: 2px; }
+  .design-opt span { font-size: 10.5px; color: var(--ink-light); display: block; }
+</style>
+</head>
+<body data-page="disney-elly">
+<main id="content">
+
+  <div class="wrap">
+    <nav class="crumbs" aria-label="Breadcrumb">
+      <a href="index.html">Home</a><span class="sep">/</span>
+      <a href="disney-elly.html">Disney | elly</a><span class="sep">/</span>
+      <span aria-current="page">Disney Pre-Order</span>
+    </nav>
+  </div>
+
+  <!-- disclosure: prototype artwork -->
+  <section class="band" style="background:var(--concept-bg);padding-block:14px;border-bottom:1px solid var(--concept-line)">
+    <div class="wrap" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <span class="concept-tag concept-tag--solid">Demo artwork only</span>
+      <span class="small" style="color:var(--concept-ink)">The three designs shown are illustrative concepts for this prototype — not Disney-approved final designs. Every pre-order screen carries this disclosure.</span>
+    </div>
+  </section>
+
+  <section class="block" style="padding-top:34px">
+    <div class="wrap pdp">
+
+      <!-- design gallery -->
+      <div>
+        <div class="pdp__main" id="preArt" style="--m-a:#e3ecfb;--m-b:#c2d6f2;aspect-ratio:3/3.6">
+          <div class="pdp__tags">
+            <span class="badge badge--coral">Pre-order · full payment upfront</span>
+            <span class="badge badge--ink">Concept design</span>
+          </div>
+          <div class="big-ico">
+            <span style="font-size:52px;line-height:1" id="preEmoji">🏘️</span>
+            <span style="margin-top:10px">Design artwork slot (1024×1365 portrait)</span>
+          </div>
+        </div>
+        <p class="small muted" style="margin-top:10px">Concept design — for prototype illustration only. Final artwork appears here after Disney approval.</p>
+        <span class="opt-label">Choose your design · concept set</span>
+        <div class="design-select" id="designSelect">
+          <button type="button" class="design-opt is-on" data-dname="Heritage Shophouse" data-demoji="🏘️" data-da="#f6e7d2" data-db="#e6cba0">
+            <span class="th">🏘️</span><b>Heritage shophouse</b><span>Singapore concept</span>
+          </button>
+          <button type="button" class="design-opt" data-dname="Gardens by the Bay" data-demoji="🌳" data-da="#dcefe2" data-db="#aed9c4">
+            <span class="th">🌳</span><b>Gardens by the Bay</b><span>Singapore concept</span>
+          </button>
+          <button type="button" class="design-opt" data-dname="Marina Bay Night Skyline" data-demoji="🌃" data-da="#d9d6f5" data-db="#a9a3e6">
+            <span class="th">🌃</span><b>Marina Bay skyline</b><span>Singapore concept</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- pre-order info -->
+      <div class="pdp__info">
+        <span class="concept-tag" style="margin-bottom:12px">Concept design — not Disney-approved final art</span>
+        <span class="kicker kicker--coral" style="margin-bottom:8px">Disney Pre-Order · new designs</span>
+        <h1 id="preTitle">Heritage Shophouse — Disney pre-order design</h1>
+        <p class="pdp__desc" style="border-top:0;padding-top:0;margin-top:8px">A brand-new Singapore-inspired Disney design, produced locally and shipped to you. Pre-order opens for a limited window; full payment secures your piece.</p>
+
+        <div class="preorder-timeline" style="margin-top:18px">
+          <div class="pt-step"><span class="no">01</span><b>Design approval</b><span>Disney approves the final production artwork</span></div>
+          <div class="pt-step"><span class="no">02</span><b>Full payment</b><span>Pay in full today — no deposits, no partials</span></div>
+          <div class="pt-step"><span class="no">03</span><b>Production</b><span>Made at an approved factory, up to 8 weeks</span></div>
+          <div class="pt-step"><span class="no">04</span><b>Ship / collect</b><span>Delivered to you or picked up in store</span></div>
+        </div>
+
+        <div class="preorder-note">
+          <b>Every pre-order is guaranteed.</b> Each design is produced independently — demand or minimum order, whichever is higher — so your design is never cancelled for lack of numbers. (Production detail shown to customers without the MOQ figure.)
+        </div>
+
+        <span class="opt-label">Price</span>
+        <div class="pdp__price" style="margin-top:0">
+          <span class="price">S$<span class="sk" style="display:inline-block;width:44px;vertical-align:middle"></span></span>
+          <span class="badge badge--cream">Full payment upfront</span>
+        </div>
+
+        <span class="opt-label">Sizes <b id="sizeSel">—</b></span>
+        <div class="size-row" data-size-row>
+          <button type="button" class="size-chip" data-size="3M">3M</button>
+          <button type="button" class="size-chip" data-size="6M">6M</button>
+          <button type="button" class="size-chip" data-size="12M">12M</button>
+          <button type="button" class="size-chip" data-size="18M">18M</button>
+          <button type="button" class="size-chip" data-size="24M">24M</button>
+          <button type="button" class="size-chip" data-size="2–4Y">2–4Y</button>
+        </div>
+
+        <span class="opt-label">Quantity</span>
+        <div class="qty-row" data-min="1" data-max="10">
+          <button type="button" data-step="-1" aria-label="Decrease">−</button>
+          <output>1</output>
+          <button type="button" data-step="1" aria-label="Increase">+</button>
+        </div>
+
+        <div class="pdp__buy">
+          <button type="button" class="btn btn--coral js-buy">Pre-order now · pay in full</button>
+          <a class="btn btn--ghost" href="admin.html">See the demand vs MOQ demo</a>
+        </div>
+        <p class="small muted" style="margin-top:10px">Loyalty points cannot be redeemed against pre-orders (full-payment model). You will not be charged twice — nothing is charged until checkout confirmation.</p>
+
+        <details class="acc"><summary>When will I receive it?</summary><div class="acc-body">Production takes up to 8 weeks after the order window closes. We email progress updates at design approval and shipping.</div></details>
+        <details class="acc"><summary>Why full payment upfront?</summary><div class="acc-body">Every pre-order is guaranteed production — full payment lets us commit to the run with the factory the moment the window closes. No deposits, no partial payments.</div></details>
+        <details class="acc"><summary>Can I cancel or change my order?</summary><div class="acc-body">Changes are welcome before the order window closes. After production begins, exchanges follow our standard 30-day policy once you receive the item.</div></details>
+      </div>
+    </div>
+  </section>
+
+  <!-- how pre-order works + economics demo -->
+  <section class="band band--blue">
+    <div class="wrap" style="text-align:center">
+      <span class="kicker" style="color:#fff;justify-content:center">Admin / demo view</span>
+      <h2 style="color:#fff;margin-bottom:10px">Demand vs MOQ — per design, independently</h2>
+      <p style="color:rgba(255,255,255,.85);max-width:64ch;margin:0 auto 24px">Each concept design resolves to whichever is higher of actual pre-order demand or the factory minimum (assumed 1,000 units for this prototype). Open the admin panel to adjust demand and watch production quantity respond.</p>
+      <a class="btn btn--ghost-light" href="admin.html">Open the demand vs MOQ demo</a>
+    </div>
+  </section>
+
+</main>
+<script src="assets/components.js"></script>
+<script src="assets/app.js"></script>
+<script>
+  /* design selector on this page */
+  document.addEventListener('click', function (e) {
+    var opt = e.target.closest('.design-opt');
+    if (!opt) return;
+    document.querySelectorAll('.design-opt').forEach(function (o) { o.classList.remove('is-on'); });
+    opt.classList.add('is-on');
+    var art = document.getElementById('preArt');
+    if (art) {
+      art.style.setProperty('--m-a', opt.getAttribute('data-da'));
+      art.style.setProperty('--m-b', opt.getAttribute('data-db'));
+    }
+    var em = document.getElementById('preEmoji');
+    if (em) em.textContent = opt.getAttribute('data-demoji');
+    var t = document.getElementById('preTitle');
+    if (t) t.textContent = opt.getAttribute('data-dname') + ' — Disney pre-order design';
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Elly FurKids — Pet Blankets, Bows &amp; Apparel | The Elly Store</title>
+<meta name="description" content="Elly FurKids pillar — concept structure preview, pending Disney licence approval.">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Ovo&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body data-page="furkids">
+<main id="content">
+
+  <div class="wrap"><nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">Home</a><span class="sep">/</span><span aria-current="page">Elly FurKids</span></nav></div>
+
+  <section class="page-hero hero-p-furkids">
+    <div class="wrap page-hero__in">
+      <span class="concept-tag">Concept · pending Disney licence approval</span>
+      <span class="kicker" style="margin-top:10px">Pillar 06 · Elly FurKids</span>
+      <h1>Comfort for the furry members of the family</h1>
+      <p>Blankets that double as mats, bows and pet apparel — the same elly warmth and print play, sized for small, medium and large pets. This line is shown as a full concept experience while Disney licensing is confirmed.</p>
+      <div class="hero-tags">
+        <span class="badge badge--ink">Blankets &amp; mats</span>
+        <span class="badge badge--ink">Bows</span>
+        <span class="badge badge--ink">Pet apparel</span>
+        <span class="badge badge--ink">Sizes S · M · L</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Persistent licensing disclosure -->
+  <section class="band" style="background:var(--concept-bg);padding-block:16px;border-bottom:1px solid var(--concept-line)">
+    <div class="wrap" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <span class="concept-tag concept-tag--solid">Not yet a real product line</span>
+      <span class="small" style="color:var(--concept-ink)">Disney licensing for pet products is unconfirmed. Every FurKids page, product and checkout step carries this disclosure — nothing here should be mistaken for an approved Disney range.</span>
+    </div>
+  </section>
+
+  <div class="wrap" id="occBanner" hidden style="margin-top:18px">
+    <div class="notice-strip" style="border:1px dashed var(--line);border-radius:var(--radius)">
+      <div class="notice-strip__in" style="padding:10px 14px">
+        <span id="occBannerText"></span>
+        <button type="button" class="link-arrow" style="border-bottom:0;font-size:11px" onclick="this.closest('#occBanner').hidden=true">Dismiss</button>
+      </div>
+    </div>
+  </div>
+
+  <section class="block block--tight">
+    <div class="wrap shop">
+      <aside class="facet-panel" id="facetPanel" aria-label="Product filters">
+        <div class="facet-panel-head"><h4>Filters</h4><button type="button" class="icon-btn js-close-overlay" aria-label="Close filters"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+
+        <div class="facet-group">
+          <h4>Product type <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 16L5 9h14z"/></svg></h4>
+          <div class="facet-opts">
+            <label class="f-check"><input type="checkbox" data-f="Type" value="Blankets &amp; mats"><span>Blankets &amp; mats</span></label>
+            <label class="f-check"><input type="checkbox" data-f="Type" value="Bows"><span>Bows</span></label>
+            <label class="f-check"><input type="checkbox" data-f="Type" value="Pet apparel"><span>Pet apparel</span></label>
+          </div>
+        </div>
+        <div class="facet-group">
+          <h4>Pet size <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 16L5 9h14z"/></svg></h4>
+          <div class="facet-opts">
+            <label class="f-check"><input type="checkbox" data-f="Pet size" value="S — small"><span>S — small</span></label>
+            <label class="f-check"><input type="checkbox" data-f="Pet size" value="M — medium"><span>M — medium</span></label>
+            <label class="f-check"><input type="checkbox" data-f="Pet size" value="L — large"><span>L — large</span></label>
+          </div>
+        </div>
+        <div class="facet-group">
+          <h4>Character / franchise <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 16L5 9h14z"/></svg></h4>
+          <div class="facet-opts">
+            <p class="small muted">Same character facets as the rest of the catalog (subject to licence approval) — structure reserved.</p>
+          </div>
+        </div>
+        <button type="button" class="btn btn--ghost btn--sm m-clear js-clear-filters">Clear all filters</button>
+      </aside>
+
+      <div>
+        <div class="shop-toolbar">
+          <button type="button" class="facet-toggle" data-facet-toggle>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M7 12h10M10 18h4"/></svg> Filters
+          </button>
+          <p class="result-line"><b>Structure preview</b> — type and pet-size filters are wired; results appear once the concept range and product data are ready.</p>
+          <label class="sort">Sort
+            <select aria-label="Sort by">
+              <option>Featured</option><option>Newest</option>
+            </select>
+          </label>
+        </div>
+        <div class="active-filters"></div>
+        <div class="product-grid" data-ghost-grid="6" data-kind="furkids"></div>
+        <div class="empty-slot" style="display:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+          <strong>No products yet</strong>
+          <span>Concept range placeholder — products load once the range &amp; licensing status are confirmed.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band" style="background:var(--tint-furkids);padding-block:40px">
+    <div class="wrap" style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+      <div style="max-width:640px">
+        <h3 style="font-size:22px">Cross-sell moments (structure reserved)</h3>
+        <p class="small" style="color:var(--ink-soft);margin-top:6px">FurKids appears contextually in the Gifting Hub (pet-owner gift sets) and Customization (personalised name tag / bandana) — the same AOV cross-sell pattern used across the site (PRD §11).</p>
+      </div>
+      <a class="btn btn--dark" href="checkout.html">Preview FurKids checkout</a>
+    </div>
+  </section>
+
+</main>
+<script src="assets/components.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>

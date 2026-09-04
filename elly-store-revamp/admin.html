@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Demo Admin — Growth KPIs &amp; Pre-Order Production | The Elly Store</title>
+<meta name="description" content="Admin demo panel — structure preview.">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Ovo&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body data-page="admin">
+<main id="content" class="admin">
+
+  <div class="wrap"><nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">Home</a><span class="sep">/</span><span aria-current="page">Demo admin</span></nav></div>
+
+  <section class="block" style="padding-top:10px">
+    <div class="wrap">
+      <div class="occ-head">
+        <div>
+          <span class="kicker">Prototype · admin &amp; demo view</span>
+          <h1 class="sec" style="font-size:clamp(28px,3.4vw,40px)">Growth dashboard (illustrative)</h1>
+          <p class="small muted" style="margin-top:8px">Not live data — tiles are structured to show where real analytics plug in (PRD §8 item 9), and the Pre-Order table demonstrates the demand-vs-MOQ rule (PRD §8 item 6).</p>
+        </div>
+        <a class="btn btn--ghost btn--sm" href="pre-order.html">← Back to Pre-Order PDP</a>
+      </div>
+
+      <div class="demo-note">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>
+        <span><b>Three KPI families, weighted equally</b> (PRD §2): funnel efficiency · retention · cross-channel recognition. These tiles accept live analytics later — the layout and labels are the deliverable here.</span>
+      </div>
+
+      <!-- KPI tiles -->
+      <div class="kpi-grid">
+        <div class="kpi">
+          <span class="lab" style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-light)">Conversion rate</span>
+          <div style="display:flex;align-items:baseline;gap:10px"><span class="val">0.0%</span><span class="delta">—</span></div>
+          <p class="small muted" style="margin-top:6px">Funnel efficiency family · plugs into Google Analytics / Shopify analytics</p>
+        </div>
+        <div class="kpi kpi--coral">
+          <span class="lab" style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-light)">Average order value</span>
+          <div style="display:flex;align-items:baseline;gap:10px"><span class="val">S$0.00</span><span class="delta">—</span></div>
+          <p class="small muted" style="margin-top:6px">Funnel efficiency · cross-sell (Gifting &amp; Customization) should lift this</p>
+        </div>
+        <div class="kpi kpi--green">
+          <span class="lab" style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-light)">Cross-channel match rate</span>
+          <div style="display:flex;align-items:baseline;gap:10px"><span class="val">—%</span><span class="delta">demo</span></div>
+          <p class="small muted" style="margin-top:6px">Recognition family · % of profiles with online + in-store records (PRD §2)</p>
+        </div>
+      </div>
+
+      <!-- demand vs MOQ -->
+      <div class="panel">
+        <div class="panel__head">
+          <div>
+            <h3>Pre-Order production — demand vs MOQ</h3>
+            <p class="small muted">Each design is independent: production = whichever is higher of pre-order demand or factory MOQ (assumed <b>1,000 units</b>). MOQ is never shown to customers.</p>
+          </div>
+          <div class="demo-chip-line">
+            <span class="badge badge--demo">MOQ = 1,000 (assumption)</span>
+            <span class="badge badge--demo">Not split across designs</span>
+          </div>
+        </div>
+        <div class="panel__body">
+          <table class="tbl">
+            <thead>
+              <tr><th>Design (concept)</th><th>Pre-order demand</th><th>MOQ</th><th>Production qty</th><th class="bar-cell">Demand vs MOQ</th><th>Reason</th></tr>
+            </thead>
+            <tbody>
+              <tr class="js-moq-row" data-moq="1000">
+                <td>Heritage Shophouse <span class="muted">(concept)</span></td>
+                <td><span class="moq-control"><span class="qty-row" data-min="0" data-max="5000"><button type="button" data-step="-100">−</button><output value="820">820</output><button type="button" data-step="100">+</button></span>
+                  <button type="button" class="js-moq-preset" data-v="600" style="font-size:11px;border:1px solid var(--line);border-radius:999px;padding:4px 10px">600</button>
+                  <button type="button" class="js-moq-preset" data-v="1000" style="font-size:11px;border:1px solid var(--line);border-radius:999px;padding:4px 10px">1,000</button>
+                  <button type="button" class="js-moq-preset" data-v="1400" style="font-size:11px;border:1px solid var(--line);border-radius:999px;padding:4px 10px">1,400</button></span></td>
+                <td><span class="js-moq">1,000</span></td>
+                <td><b class="js-prod">1,000</b></td>
+                <td class="bar-cell"><div class="mini-bar" style="min-width:180px"></div></td>
+                <td class="js-reason small">—</td>
+              </tr>
+              <tr class="js-moq-row" data-moq="1000">
+                <td>Gardens by the Bay <span class="muted">(concept)</span></td>
+                <td><span class="moq-control"><span class="qty-row" data-min="0" data-max="5000"><button type="button" data-step="-100">−</button><output value="1275">1,275</output><button type="button" data-step="100">+</button></span>
+                  <button type="button" class="js-moq-preset" data-v="600" style="font-size:11px;border:1px solid var(--line);border-radius:999px;padding:4px 10px">600</button>
+                  <button type="button" class="js-moq-preset" data-v="1000" style="font-size:11px;border:1px solid var(--line);border-radius:999px;padding:4px 10px">1,000</button>
+                  <button type="button" class="js-moq-preset" data-v="1400" style="font-size:11px;border:1px solid var(--line);border-radius:999px;padding:4px 10px">1,400</button></span></td>
+                <td>1,000</td>
+                <td><b class="js-prod">1,275</b></td>
+                <td class="bar-cell"><div class="mini-bar" style="min-width:180px"></div></td>
+                <td class="js-reason small">—</td>
+              </tr>
+              <tr class="js-moq-row" data-moq="1000">
+                <td>Marina Bay Night Skyline <span class="muted">(concept)</span></td>
+                <td><span class="moq-control"><span class="qty-row" data-min="0" data-max="5000"><button type="button" data-step="-100">−</button><output value="430">430</output><button type="button" data-step="100">+</button></span>
+                  <button type="button" class="js-moq-preset" data-v="600" style="font-size:11px;border:1px solid var(--line);border-radius:999px;padding:4px 10px">600</button>
+                  <button type="button" class="js-moq-preset" data-v="1000" style="font-size:11px;border:1px solid var(--line);border-radius:999px;padding:4px 10px">1,000</button>
+                  <button type="button" class="js-moq-preset" data-v="1400" style="font-size:11px;border:1px solid var(--line);border-radius:999px;padding:4px 10px">1,400</button></span></td>
+                <td>1,000</td>
+                <td><b class="js-prod">1,000</b></td>
+                <td class="bar-cell"><div class="mini-bar" style="min-width:180px"></div></td>
+                <td class="js-reason small">—</td>
+              </tr>
+            </tbody>
+          </table>
+          <p class="small muted" style="margin-top:12px">Try it: raise demand above 1,000 on any row and production follows demand; below it, production stays at MOQ. Each design resolves independently — no demand sharing across the line (PRD §5.3).</p>
+        </div>
+      </div>
+
+      <!-- KPI families detail -->
+      <div class="panel">
+        <div class="panel__head">
+          <div>
+            <h3>KPI families — where each metric plugs in</h3>
+            <p class="small muted">Weighted equally per stakeholder direction (PRD §2) · demo placeholders.</p>
+          </div>
+        </div>
+        <div class="panel__body">
+          <table class="tbl">
+            <thead><tr><th>Family</th><th>Primary KPI</th><th>Supporting KPIs</th><th>Source (planned)</th></tr></thead>
+            <tbody>
+              <tr><td><b>Funnel efficiency</b></td><td>Conversion rate</td><td>Time-to-purchase · cart abandonment · search→purchase</td><td>Shopify + GA4</td></tr>
+              <tr><td><b>Retention</b></td><td>Repeat purchase rate / 12-mo LTV</td><td>Loyalty enrollment · win-back open/click · post-purchase flow</td><td>Klaviyo + Smile</td></tr>
+              <tr><td><b>Recognition</b></td><td>Cross-channel match rate</td><td>% unified history · time-to-recognition</td><td>Smile POS sync + store</td></tr>
+              <tr><td><b>Pre-Order health</b></td><td>Orders per design</td><td>Demand vs MOQ · lead time on-time %</td><td>Pre-order backend (future)</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- funnel tiles row -->
+      <div class="demo-note" style="margin-top:4px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16l-6.5 8v6l-3 2v-8z"/></svg>
+        <span><b>Funnel view (reserved):</b> Acquire → Recognise → Convert → Retain with per-stage counts will render here once analytics connect. Structure is ready to receive it.</span>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+<script src="assets/components.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>

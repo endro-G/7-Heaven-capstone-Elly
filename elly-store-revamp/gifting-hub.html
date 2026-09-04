@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gifting Hub — Gifts by Occasion, Age &amp; Budget | The Elly Store</title>
+<meta name="description" content="Gifting Hub pillar — structure preview.">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Ovo&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body data-page="gifting-hub">
+<main id="content">
+
+  <div class="wrap"><nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">Home</a><span class="sep">/</span><span aria-current="page">Gifting Hub</span></nav></div>
+
+  <section class="page-hero hero-p-gift">
+    <div class="wrap page-hero__in">
+      <span class="kicker">Pillar 04 · Gifting Hub</span>
+      <h1>Find a gift, not a guessing game</h1>
+      <p>Thoughtful edits for every milestone — curated by occasion, age and budget. Baby gift sets from $80, deluxe keepsake sets from $190, personalised gifts and digital gift cards.</p>
+      <div class="hero-tags">
+        <span class="badge badge--coral">Occasion-led</span>
+        <span class="badge badge--coral">Age-guided</span>
+        <span class="badge badge--coral">Budget-filtered</span>
+        <span class="badge badge--ink">Add a name at checkout</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap" id="occBanner" hidden style="margin-top:18px">
+    <div class="notice-strip" style="border:1px dashed var(--line);border-radius:var(--radius)">
+      <div class="notice-strip__in" style="padding:10px 14px">
+        <span id="occBannerText"></span>
+        <button type="button" class="link-arrow" style="border-bottom:0;font-size:11px" onclick="this.closest('#occBanner').hidden=true">Dismiss</button>
+      </div>
+    </div>
+  </div>
+
+  <section class="block block--tight">
+    <div class="wrap">
+      <!-- budget quick chips -->
+      <div class="chip-row" data-tab-chip-group style="margin-bottom:26px">
+        <button type="button" class="chip tab-chip is-on">Any budget</button>
+        <button type="button" class="chip tab-chip">Under $80</button>
+        <button type="button" class="chip tab-chip">$80–$150</button>
+        <button type="button" class="chip tab-chip">$150–$300</button>
+        <button type="button" class="chip tab-chip">$300+ · keepsake</button>
+        <a class="chip" href="cart.html">🎁 Gift card</a>
+      </div>
+
+      <div class="wrap shop" style="padding-inline:0">
+        <aside class="facet-panel" id="facetPanel" aria-label="Product filters">
+          <div class="facet-panel-head"><h4>Filters</h4><button type="button" class="icon-btn js-close-overlay" aria-label="Close filters"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+
+          <div class="facet-group">
+            <h4>Occasion <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 16L5 9h14z"/></svg></h4>
+            <div class="facet-opts">
+              <label class="f-check"><input type="checkbox" data-f="Occasion" value="Newborn &amp; baby shower"><span>Newborn &amp; baby shower</span></label>
+              <label class="f-check"><input type="checkbox" data-f="Occasion" value="Full month"><span>Full month</span></label>
+              <label class="f-check"><input type="checkbox" data-f="Occasion" value="Birthday"><span>Birthday</span></label>
+              <label class="f-check"><input type="checkbox" data-f="Occasion" value="Festive / Christmas"><span>Festive / Christmas</span></label>
+              <label class="f-check"><input type="checkbox" data-f="Occasion" value="Thank you / hostess"><span>Thank you / hostess</span></label>
+            </div>
+          </div>
+          <div class="facet-group">
+            <h4>Recipient <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 16L5 9h14z"/></svg></h4>
+            <div class="facet-opts">
+              <label class="f-check"><input type="checkbox" data-f="Recipient" value="Baby girls"><span>Baby girls</span></label>
+              <label class="f-check"><input type="checkbox" data-f="Recipient" value="Baby boys"><span>Baby boys</span></label>
+              <label class="f-check"><input type="checkbox" data-f="Recipient" value="Kids (3–14Y)"><span>Kids (3–14Y)</span></label>
+              <label class="f-check"><input type="checkbox" data-f="Recipient" value="Parents &amp; grandparents"><span>Parents &amp; grandparents</span></label>
+              <label class="f-check"><input type="checkbox" data-f="Recipient" value="Twins &amp; multiples"><span>Twins &amp; multiples</span></label>
+            </div>
+          </div>
+          <div class="facet-group">
+            <h4>Gift style <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 16L5 9h14z"/></svg></h4>
+            <div class="facet-opts">
+              <label class="f-check"><input type="checkbox" data-f="Style" value="Gift set (ready to give)"><span>Gift set (ready to give)</span></label>
+              <label class="f-check"><input type="checkbox" data-f="Style" value="Keepsake box"><span>Keepsake box</span></label>
+              <label class="f-check"><input type="checkbox" data-f="Style" value="Personalisable"><span>Personalisable</span></label>
+              <label class="f-check"><input type="checkbox" data-f="Style" value="Digital gift card"><span>Digital gift card</span></label>
+            </div>
+          </div>
+          <div class="facet-group">
+            <h4>Budget <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 16L5 9h14z"/></svg></h4>
+            <div class="facet-opts">
+              <label class="f-check"><input type="checkbox" data-f="Budget" value="Under $80"><span>Under $80</span></label>
+              <label class="f-check"><input type="checkbox" data-f="Budget" value="$80–$150"><span>$80–$150</span></label>
+              <label class="f-check"><input type="checkbox" data-f="Budget" value="$150–$300"><span>$150–$300</span></label>
+              <label class="f-check"><input type="checkbox" data-f="Budget" value="$300+"><span>$300+</span></label>
+            </div>
+          </div>
+          <button type="button" class="btn btn--ghost btn--sm m-clear js-clear-filters">Clear all filters</button>
+        </aside>
+
+        <div>
+          <div class="shop-toolbar">
+            <button type="button" class="facet-toggle" data-facet-toggle>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M7 12h10M10 18h4"/></svg> Filters
+            </button>
+            <p class="result-line"><b>Structure preview</b> — occasion, recipient and budget filters are wired; results appear once product data loads.</p>
+            <label class="sort">Sort
+              <select aria-label="Sort by">
+                <option>Featured</option><option>Best selling</option><option>Price: low to high</option><option>Price: high to low</option>
+              </select>
+            </label>
+          </div>
+          <div class="active-filters"></div>
+          <div class="product-grid" data-ghost-grid="8" data-kind="gift"></div>
+          <div class="empty-slot" style="display:none">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+            <strong>No products yet</strong>
+            <span>Filters will query the catalog once product data is loaded in the next step.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band" style="background:var(--tint-gift);padding-block:40px">
+    <div class="wrap" style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+      <div>
+        <h3 style="font-size:22px">Not sure where to start?</h3>
+        <p class="small" style="color:var(--ink-soft)">Answer two quick questions and we&rsquo;ll curate a shortlist — occasion first, then age &amp; budget. (Structure only — the guided flow comes with product data.)</p>
+      </div>
+      <a class="btn btn--dark" href="gifting-hub.html">Start guided gifting</a>
+    </div>
+  </section>
+
+</main>
+<script src="assets/components.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>
