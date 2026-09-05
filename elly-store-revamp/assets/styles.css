@@ -50,6 +50,8 @@
   --shadow-soft: 0 18px 50px -22px rgba(50, 30, 10, 0.28);
   --shadow-card: 0 10px 30px -18px rgba(50, 30, 10, 0.25);
   --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  /* springy overshoot for the scroll-bump pop (back-out curve) */
+  --ease-bump: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 /* ---------- Reset / base ---------- */
@@ -426,7 +428,7 @@ section.block--tight { padding-block: clamp(40px, 4.5vw, 60px); }
 }
 
 /* ---------- Hero ---------- */
-.hero { position: relative; overflow: hidden; background: var(--cream); transition: background .5s var(--ease); --hero-interval: 6s; }
+.hero { position: relative; overflow: hidden; background: var(--cream); transition: background .5s var(--ease); }
 .hero::after {
   content: ''; position: absolute; inset: 0; pointer-events: none; opacity: .5;
   background-image: radial-gradient(rgba(0,0,0,.05) 1px, transparent 1px); background-size: 26px 26px;
@@ -556,7 +558,7 @@ section.block--tight { padding-block: clamp(40px, 4.5vw, 60px); }
 
 /* ---------- Occasion rail ---------- */
 .occ-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 26px; flex-wrap: wrap; }
-.occ-rail { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
+.occ-rail { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; }
 .occ-card {
   display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px;
   border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper);
@@ -568,6 +570,29 @@ section.block--tight { padding-block: clamp(40px, 4.5vw, 60px); }
 .occ-card .tint .emoji { font-size: 22px; }
 .occ-card strong { font-size: 13px; letter-spacing: .02em; }
 .occ-card small { font-size: 11px; color: var(--ink-light); }
+
+/* illustrated occasion tiles (index): tighter card wrapping the art block */
+.occ-card:has(.occ-art) {
+  border-radius: 12px; padding: 9px 10px 16px; overflow: hidden;
+  transition: transform .22s var(--ease), box-shadow .22s var(--ease), border-color .22s var(--ease);
+}
+.occ-card:has(.occ-art):hover { transform: translateY(-4px); }
+.occ-art {
+  position: relative; display: grid; place-items: center; width: 100%;
+  aspect-ratio: 4 / 3; border-radius: 8px; overflow: hidden; margin-bottom: 6px;
+  background: linear-gradient(150deg, var(--art-a, #f7ede1), var(--art-b, #ebdcc4));
+}
+.occ-art::before {
+  content: ''; position: absolute; inset: 0; opacity: .5;
+  background-image: radial-gradient(rgba(40, 72, 142, .14) 1px, transparent 1px);
+  background-size: 13px 13px;
+}
+.occ-art::after {
+  content: ''; position: absolute; width: 96px; height: 96px; border-radius: 50%;
+  border: 1px dashed rgba(40, 72, 142, .16); top: -34px; right: -28px;
+}
+.occ-art svg { position: relative; z-index: 1; width: 56%; height: auto; transition: transform .3s var(--ease-bump); }
+.occ-card:hover .occ-art svg { transform: scale(1.1) rotate(-2deg); }
 
 /* ---------- Pillar cards ---------- */
 .pillar-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
@@ -597,6 +622,10 @@ section.block--tight { padding-block: clamp(40px, 4.5vw, 60px); }
 }
 .ph-card:hover .ph-card__media { box-shadow: var(--shadow-card); }
 .ph-card__media .media-ico { display: grid; place-items: center; gap: 8px; color: rgba(0,0,0,.32); text-align: center; padding: 10px; }
+
+/* real product cards (catalog-populated grids): swap the dashed placeholder for a photo */
+.ph-card--real .ph-card__media { border-style: solid; border-color: var(--line); background: var(--paper); }
+.ph-card--real .ph-card__media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .ph-card__media .media-ico svg { width: 34px; height: 34px; margin-inline: auto; }
 .ph-card__media .media-ico span { font-size: 10.5px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; }
 .ph-card__media .quick-add {
@@ -683,6 +712,10 @@ section.block--tight { padding-block: clamp(40px, 4.5vw, 60px); }
 .pdp__main .big-ico { text-align: center; color: rgba(0,0,0,.32); }
 .pdp__main .big-ico svg { width: 64px; height: 64px; margin: 0 auto 12px; }
 .pdp__main .big-ico span { font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; display: block; }
+.pdp__main.is-real { border-style: solid; }
+.pdp__main.is-real .pdp-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.pdp__main.is-real .pdp__tags { z-index: 1; }
+.pdp__thumb.is-real img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
 .pdp__tags { position: absolute; top: 14px; left: 14px; display: flex; flex-direction: column; gap: 7px; align-items: flex-start; }
 
 .pdp__crumbs { font-size: 12px; color: var(--ink-light); display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 14px; align-items: center; }
@@ -790,6 +823,8 @@ section.block--tight { padding-block: clamp(40px, 4.5vw, 60px); }
 .cart-line { display: grid; grid-template-columns: 88px 1fr auto; gap: 16px; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--line); }
 .cart-line__img { aspect-ratio: 1; border-radius: var(--radius); background: linear-gradient(150deg, var(--m-a, #f6efe3), var(--m-b, #e9dcc6)); display: grid; place-items: center; border: 1px dashed var(--line); position: relative; }
 .cart-line__img svg { width: 26px; height: 26px; color: rgba(0,0,0,.28); }
+.cart-line__img.is-real { border-style: solid; }
+.cart-line__img.is-real img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
 .cart-line__img .tag { position: absolute; top: -8px; left: -6px; font-size: 8.5px; }
 .cart-line h4 { font-size: 14.5px; margin-bottom: 3px; }
 .cart-line .meta { font-size: 12.5px; color: var(--ink-light); margin-bottom: 9px; display: flex; flex-direction: column; gap: 1px; }
@@ -1164,25 +1199,7 @@ section.block--tight { padding-block: clamp(40px, 4.5vw, 60px); }
 .price-tx { font-weight: 700; font-size: 13px; }
 
 /* --- rotating hero banner --- */
-.hero__top {
-  position: relative; z-index: 2; display: flex; align-items: center; justify-content: space-between;
-  gap: 16px; flex-wrap: wrap; padding-top: clamp(24px, 3.5vw, 44px);
-}
-.hero__controls { display: flex; align-items: center; gap: 12px; margin-left: auto; }
-.hero-count { font-size: 11px; font-weight: 700; letter-spacing: .14em; color: var(--ink-light); }
-.hero-dots { display: flex; gap: 8px; align-items: center; }
-.hero-dot {
-  position: relative; width: 34px; height: 5px; padding: 0; border: 0; border-radius: 999px;
-  background: rgba(0, 0, 0, .16); overflow: hidden; cursor: pointer;
-  transition: background .2s var(--ease);
-}
-.hero-dot:hover { background: var(--ink-light); }
-.hero-dot i {
-  position: absolute; inset: 0; border-radius: inherit; background: var(--coral);
-  transform: scaleX(0); transform-origin: left center;
-}
-.hero-dot.is-on i { animation: dotFill var(--hero-interval, 6s) linear forwards; }
-@keyframes dotFill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+/* banner timer / dots intentionally removed: visitors navigate via the side-edge arrows */
 .hero-arrow {
   width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--line); background: var(--paper);
   display: inline-flex; align-items: center; justify-content: center; color: var(--ink); cursor: pointer;
@@ -1190,6 +1207,18 @@ section.block--tight { padding-block: clamp(40px, 4.5vw, 60px); }
 }
 .hero-arrow:hover { background: var(--ink); color: #fff; border-color: var(--ink); transform: translateY(-1px); }
 .hero-arrow svg { width: 16px; height: 16px; }
+
+/* side-edge carousel arrows: overlay the banner, vertically centred, at the
+   left/right edges of the content column (count + dots stay top-right) */
+.hero__arrows {
+  position: absolute; z-index: 3; top: 50%; left: 0; right: 0;
+  transform: translateY(-50%);
+  display: flex; align-items: center; justify-content: space-between;
+  max-width: calc(var(--wrap) + var(--gutter) * 2);
+  margin-inline: auto; padding-inline: 10px;
+  pointer-events: none;
+}
+.hero__arrows .hero-arrow { pointer-events: auto; }
 
 .hero__slides { position: relative; z-index: 1; display: grid; }
 .hero-slide {
@@ -1239,17 +1268,35 @@ body.is-leaving {
   .tool-lbl { display: none; }
   .tool-link { padding: 8px; }
   .tool-ico svg { width: 24px; height: 24px; }
-  .hero__top { padding-top: 26px; }
 }
 @media (max-width: 640px) {
   .search-rec-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .hero__controls { gap: 8px; }
-  .hero-dot { width: 22px; }
+  .hero__arrows { padding-inline: 6px; }
+  .hero__arrows .hero-arrow { width: 32px; height: 32px; }
 }
 
 /* reduced motion: slides still rotate, just without the tween; active dot sits full */
 @media (prefers-reduced-motion: reduce) {
   body { animation: none; }
   .hero-slide, .hero-slide.is-on { transition: none; }
-  .hero-dot.is-on i { animation: none; transform: scaleX(1); }
+}
+
+/* ---------- Scroll bump (landing) ----------
+   Cards marked [data-bump] sit slightly shrunk + faded while off-screen,
+   then spring up to full size with an overshoot as they enter the viewport
+   ("bump in") and ease back down as they leave ("bump out"). Driven by
+   IntersectionObserver in app.js toggling the .bump-in class. */
+[data-bump] {
+  transform: scale(0.94) translateY(18px);
+  opacity: 0;
+  transition: transform 0.45s var(--ease), opacity 0.45s var(--ease);
+  will-change: transform, opacity;
+}
+[data-bump].bump-in {
+  transform: none;
+  opacity: 1;
+  transition: transform 0.62s var(--ease-bump), opacity 0.45s var(--ease);
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-bump], [data-bump].bump-in { transition: none; transform: none; opacity: 1; }
 }

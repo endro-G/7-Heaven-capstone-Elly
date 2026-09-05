@@ -31,6 +31,30 @@
     heart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 20.5S4 15 4 9.7A4.4 4.4 0 0 1 12 7.2a4.4 4.4 0 0 1 8 2.5C20 15 12 20.5 12 20.5z"/></svg>'
   };
 
+  /* ---------- Real product catalog (populated from the live theellystore.com feed) ----------
+     assets/products.js exposes window.EL_PRODUCTS; each item carries real name, price,
+     Shopify-CDN image, pillar kind and the intent tags that drive occasion-led rails. */
+  var PRODUCTS = (window.EL_PRODUCTS) || [];
+
+  /* occasion tile / URL param -> catalog intent tag */
+  var OCCASION_INTENT = {
+    'Newborn & Baby Shower': 'newborn',
+    'Big Brother / Little Sister': 'sibling',
+    'Theme Park Vacation': 'park',
+    'Family Photoshoot': 'photoshoot',
+    'Pajama Party / Sleepover': 'sleepover',
+    'Holiday Gift Boxes': 'gift',
+    'Birthday': 'birthday'
+  };
+
+  /* visitor segment -> product pool keys (used by the recommender grid + "rec" rails) */
+  var SEG_PICKS = {
+    'tourist-first': [{ k: 'disney', int: ['park'] }, { k: 'elly', int: ['park', 'swim'] }, { k: 'gift', int: ['gift'] }, { k: 'shoe', int: ['park'] }],
+    'local-first': [{ k: 'gift', int: ['newborn'] }, { k: 'elly', int: ['newborn'] }, { k: 'gift', int: ['sibling'] }, { k: 'elly', int: ['sleepover'] }],
+    'tourist-return': [{ k: 'disney', int: ['park', 'singapore'] }, { k: 'disney' }, { k: 'gift', int: ['gift'] }],
+    'local-return': [{ k: 'disney', int: ['photoshoot'] }, { k: 'elly', int: ['photoshoot'] }, { k: 'gift', int: ['birthday'] }, { k: 'gift', int: ['gift'] }]
+  };
+
   function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
   function ghostCard(kind, opts) {
@@ -56,13 +80,76 @@
       '</article>';
   }
 
+  /* ---------- Real product card (image, price, rating) ---------- */
+  function productCard(p) {
+    var badge = p.badge ? '<div class="ph-card__badges"><span class="badge ' + p.badgeCls + '">' + esc(p.badge) + '</span></div>' : '';
+    var stars = p.stars ? '<span class="rev">' + icon('star') + ' ' + esc(p.stars) + '</span>' : '<span class="rev" style="color:var(--line)">\u2605\u2605\u2605\u2605\u2605</span>';
+    return '<article class="ph-card ph-card--real" data-kind="' + p.k + '">' +
+      '<div class="ph-card__media">' + badge +
+      '<img src="' + esc(p.img) + '" alt="' + esc(p.n) + '" loading="lazy">' +
+      '<button type="button" class="quick-add js-add-demo">Add to bag</button></div>' +
+      '<h3 class="ph-card__title">' + esc(p.n) + '</h3>' +
+      '<div class="ph-card__meta"><span class="price-tx">' + esc(p.p) + '</span>' + stars + '</div>' +
+      '</article>';
+  }
+
+  /* collect the pool described by keys: {k: kind, int: intent} — kind/intent optional */
+  function pickPool(keys) {
+    var out = [], seen = {};
+    keys.forEach(function (key) {
+      PRODUCTS.forEach(function (p) {
+        var okK = !key.k || p.k === key.k;
+        var okI = !key.int || key.int.some(function (it) { return (p.int || []).indexOf(it) >= 0; });
+        if (okK && okI && !seen[p.n]) { seen[p.n] = true; out.push(p); }
+      });
+    });
+    return out;
+  }
+
+  /* spread-pick n products from a pool, rotating from the given seed (grids on one
+     page show different items) */
+  function fillFrom(pool, n, seed) {
+    if (!pool.length) return [];
+    var out = [], used = {}, i = 0;
+    var step = pool.length > n ? Math.max(1, Math.floor(pool.length / n)) : 1;
+    while (out.length < n && i < pool.length * 4) {
+      var p = pool[(seed + i * step) % pool.length];
+      if (!used[p.n]) { used[p.n] = true; out.push(p); }
+      i++;
+    }
+    return out;
+  }
+
   function fillGrids() {
+    var seed = 0;
     $$('[data-ghost-grid]').forEach(function (grid) {
       var n = parseInt(grid.getAttribute('data-ghost-grid'), 10) || 8;
       var kind = grid.getAttribute('data-kind') || 'elly';
-      var html = '';
-      for (var i = 0; i < n; i++) html += ghostCard(kind);
-      grid.innerHTML = html;
+      /* Elly FurKids stays as structure placeholders (concept line, not live products) */
+      if (kind === 'furkids') {
+        var ghost = '';
+        for (var g = 0; g < n; g++) ghost += ghostCard('furkids');
+        grid.innerHTML = ghost;
+        return;
+      }
+      var intent = grid.getAttribute('data-intent') || '';
+      var occ = occasionFromUrl();
+      if (occ && OCCASION_INTENT[occ]) intent = OCCASION_INTENT[occ];
+      var kinds = kind.split(' ');
+      var keys;
+      if (intent === 'rec') {
+        keys = SEG_PICKS[segSuggestionKey()] || SEG_PICKS['local-first'];
+      } else if (kinds.length > 1) {
+        /* mixed rails (e.g. "custom elly"): interleave one product from each kind */
+        var per = Math.ceil(n / kinds.length), flat = [];
+        kinds.forEach(function (k) { flat = flat.concat(fillFrom(pickPool([{ k: k }]), per, seed++)); });
+        grid.innerHTML = flat.slice(0, n).map(productCard).join('');
+        return;
+      } else {
+        keys = [{ k: kinds[0] }];
+        if (intent) keys = [{ k: kinds[0], int: [intent] }, { k: kinds[0] }];
+      }
+      grid.innerHTML = fillFrom(pickPool(keys), n, seed++).map(productCard).join('');
     });
   }
 
@@ -95,7 +182,7 @@
     var add = e.target.closest('.js-add-demo');
     if (add) {
       setBag(bagCount() + 1);
-      toast('Added to bag \u2014 <b>demo</b> (products not loaded yet). <a href="cart.html" style="text-decoration:underline;color:#fff">View bag</a>');
+      toast('Added to bag \u2014 <b>demo</b>. <a href="cart.html" style="text-decoration:underline;color:#fff">View bag</a>');
     }
   });
 
@@ -182,8 +269,8 @@
     var lbl = $('#signLbl');
     if (!lbl) return;
     var signedIn = demoSeg().guest === 'returning';
-    lbl.textContent = signedIn ? 'Hi, Demo' : 'Sign In';
-    lbl.title = signedIn ? 'Signed in as Demo Member \u00b7 1,240 pts (demo)' : 'Sign in to your account';
+    lbl.textContent = signedIn ? 'Hi, Chloe' : 'Sign In';
+    lbl.title = signedIn ? 'Signed in as Chloe \u00b7 1,240 pts (demo)' : 'Sign in to your account';
     var link = $('#signLink');
     if (link) link.setAttribute('aria-label', signedIn ? 'Your account' : 'Sign in to your account');
   }
@@ -357,8 +444,8 @@
     }
     var count = $('.result-line');
     if (count) {
-      if (vals.length) count.innerHTML = '<b>0 products</b> match your ' + vals.length + ' filter' + (vals.length > 1 ? 's' : '') + ' \u2014 grid fills when product data loads (structure preview).';
-      else count.innerHTML = '<b>Structure preview</b> \u2014 product cards reserved below, fill with data in the next step.';
+      if (vals.length) count.innerHTML = '<b>0 products</b> match your ' + vals.length + ' filter' + (vals.length > 1 ? 's' : '') + ' \u2014 live catalog (demo) once filters connect.';
+      else count.innerHTML = '<b>Live demo catalog</b> \u2014 products populated from theellystore.com feed.';
     }
     var grid = $('[data-ghost-grid]');
     var empty = $('.empty-slot');
@@ -473,7 +560,7 @@
       var picked = sizeSel ? $('.size-chip.is-on', sizeSel) : null;
       if (picked) {
         setBag(bagCount() + 1);
-        toast('Added to bag \u2014 <b>demo</b>. Sample line only; products load in the next step. <a href="cart.html" style="text-decoration:underline;color:#fff">View bag</a>');
+        toast('Added to bag \u2014 <b>demo</b>. <a href="cart.html" style="text-decoration:underline;color:#fff">View bag</a>');
       } else {
         toast('Please pick a size first (demo checkout flow)');
       }
@@ -736,6 +823,31 @@
     if (h) h.classList.toggle('is-stuck', window.scrollY > 8);
   }, { passive: true });
 
+  /* ---------- Scroll bump (landing) ----------
+     Cards marked [data-bump] pop up with a springy overshoot as they enter
+     the viewport and shrink/fade back down as they leave (bump in / bump out).
+     Anything already on screen at load settles in place so there is no flash. */
+  (function () {
+    var els = $$('[data-bump]');
+    if (!els.length) return;
+    var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!('IntersectionObserver' in window) || reduced) {
+      els.forEach(function (el) { el.classList.add('bump-in'); });
+      return;
+    }
+    var vh = window.innerHeight || document.documentElement.clientHeight;
+    els.forEach(function (el) {
+      var r = el.getBoundingClientRect();
+      if (r.top < vh && r.bottom > 0) el.classList.add('bump-in');
+    });
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        en.target.classList.toggle('bump-in', en.isIntersecting);
+      });
+    }, { threshold: 0 });
+    els.forEach(function (el) { io.observe(el); });
+  })();
+
   /* ---------- Quick-shop hover preview (landing) ---------- */
   function quickPanelHTML(p) {
     var intro =
@@ -869,9 +981,8 @@
     var set = RECS[segSuggestionKey()] || RECS['local-first'];
     var why = $('#recWhy');
     if (why) why.textContent = set.why;
-    grid.innerHTML = set.items.map(function (r) {
-      return ghostCard(r.k, { title: r.n, price: r.p, stars: r.stars, badge: r.badge, badgeCls: r.badgeCls });
-    }).join('');
+    var keys = SEG_PICKS[segSuggestionKey()] || SEG_PICKS['local-first'];
+    grid.innerHTML = fillFrom(pickPool(keys), 6, 0).map(productCard).join('');
   }
 
   /* --- recommender tiles under the hero (occasion rail) --- */
@@ -967,7 +1078,7 @@
     'local-return': [_lr1, _lf1, _pre, _cust]
   };
 
-  var heroTimer = null, heroIdx = 0, heroLen = 0, HERO_MS = 6000; /* keep in sync with CSS --hero-interval (6s) */
+  var heroTimer = null, heroIdx = 0, heroLen = 0, HERO_MS = 6000; /* auto-advance interval (ms) */
 
   /* realistic hero imagery per slide — real Elly Store photography/product shots,
      keyed by the slide headline so artwork slots render as images instead */
@@ -1058,6 +1169,7 @@
     var rec = $('#recRail');
     if (rec) rec.style.display = demoSeg().guest === 'returning' ? '' : 'none';
     reorderOccasions(demoSeg().geo);
+    fillGrids(); /* re-rank product rails per visitor segment */
     updateSignState();
     updateDemoStatus();
   }
@@ -1110,23 +1222,94 @@
       res.style.display = '';
       var grid = $('#resultGrid');
       var ql = q.toLowerCase();
-      var hits = allRecItems().filter(function (r) { return r.n.toLowerCase().indexOf(ql) >= 0; });
+      var hits = PRODUCTS.filter(function (p) { return p.n.toLowerCase().indexOf(ql) >= 0; });
       if (grid) {
         grid.innerHTML = hits.length
-          ? hits.slice(0, 8).map(function (r) { return ghostCard(r.k, { title: r.n, price: r.p, stars: r.stars }); }).join('')
-          : (function () { var h = ''; for (var i = 0; i < 8; i++) h += ghostCard('elly'); return h; })();
+          ? hits.slice(0, 8).map(productCard).join('')
+          : fillFrom(pickPool([{ k: 'elly' }, { k: 'disney' }, { k: 'gift' }]), 8, 0).map(productCard).join('');
       }
       var count = $('#resultCount');
       if (count) {
         count.textContent = hits.length
-          ? 'Showing ' + hits.length + ' match' + (hits.length > 1 ? 'es' : '') + ' \u2014 \u201c' + q + '\u201d (recommender-ranked \u00b7 products load next)'
-          : '0 products match \u201c' + q + '\u201d \u2014 results appear here once product data loads';
+          ? 'Showing ' + hits.length + ' match' + (hits.length > 1 ? 'es' : '') + ' \u2014 \u201c' + q + '\u201d (from the live catalog)'
+          : '0 products match \u201c' + q + '\u201d \u2014 showing popular picks instead';
       }
     }
   }
 
+  /* ---------- PDP + cart demo lines get real products ---------- */
+  function productByName(name) {
+    for (var i = 0; i < PRODUCTS.length; i++) if (PRODUCTS[i].n === name) return PRODUCTS[i];
+    return null;
+  }
+
+  function populatePDP() {
+    var pdp = $('.pdp');
+    if (!pdp) return;
+    var prod = null;
+    try {
+      var q = new URLSearchParams(window.location.search).get('p');
+      if (q) prod = PRODUCTS.filter(function (p) { return p.n.toLowerCase().indexOf(q.toLowerCase()) >= 0; })[0];
+    } catch (e) {}
+    if (!prod) prod = productByName("Skye Dress - Elsa's Ice Magic") || PRODUCTS[0];
+    var pillar = ({ elly: 'Elly Label', disney: 'Disney | elly', shoe: 'Shoes', gift: 'Gifting', custom: 'Customization' })[prod.k] || 'Elly Label';
+    var t = $('#pdpTitle'); if (t) t.textContent = prod.n;
+    var k = $('#pdpKicker'); if (k) k.textContent = pillar + ' \u00b7 ' + (prod.int || []).join(' / ');
+    var pr = $('#pdpPrice'); if (pr) pr.textContent = prod.p;
+    var d = $('#pdpDesc');
+    if (d) d.textContent = 'Made for comfort and play first \u2014 soft, breathable fabric, machine washable. Populated from the live catalog (theellystore.com) so the PDP layout has real product imagery, pricing and copy slots.';
+    var crumb = $('#pdpCrumb'); if (crumb) crumb.textContent = prod.n;
+    var main = $('.pdp__main');
+    if (main) {
+      var imgs = prod.imgs && prod.imgs.length ? prod.imgs : [prod.img];
+      main.classList.add('is-real');
+      main.innerHTML = '<div class="pdp__tags"><span class="badge badge--blue">Personalisable at checkout</span></div>' +
+        '<img class="pdp-img" src="' + esc(imgs[0]) + '" alt="' + esc(prod.n) + '">';
+    }
+    $$('.pdp__thumb').forEach(function (th, i) {
+      var imgs = prod.imgs && prod.imgs.length ? prod.imgs : [prod.img];
+      if (i < imgs.length) {
+        th.classList.add('is-real');
+        th.innerHTML = '<img src="' + esc(imgs[i]) + '" alt="Image ' + (i + 1) + '">';
+      }
+    });
+  }
+
+  function populateCartLines() {
+    var lines = $$('.js-cart-line');
+    if (!lines.length) return;
+    var picks = [
+      productByName("Skye Dress - Elsa's Ice Magic"),
+      productByName('Long-Sleeve Pyjamas Set - Rain And Cozy'),
+      productByName('Kids Tee - Doodle Mickey'),
+      productByName('Deluxe Beginnings Keepsake Baby Gift Set')
+    ].filter(Boolean);
+    if (!picks.length) return;
+    var sizes = ['3Y', '2Y', '12M', '0\u20136M'], colours = ['Ice blue', 'Rain & Cozy', 'Cream', 'Blue'];
+    lines.forEach(function (line, i) {
+      var prod = picks[i % picks.length];
+      if (!prod) return;
+      line.setAttribute('data-price', String(parseFloat(prod.p.replace(/S\$/, '')) || 0));
+      var img = $('.cart-line__img', line);
+      if (img) {
+        img.classList.add('is-real');
+        img.innerHTML = '<img src="' + esc(prod.img) + '" alt="' + esc(prod.n) + '">';
+      }
+      var h4 = $('h4', line);
+      if (h4) h4.textContent = prod.n;
+      var meta = $('.meta', line);
+      if (meta) {
+        var spans = $$('span', meta);
+        if (spans[0]) spans[0].textContent = 'Size: ' + sizes[i % sizes.length] + ' \u00b7 Colour: ' + colours[i % colours.length];
+        if (spans[1]) spans[1].textContent = 'From the live catalog \u00b7 demo line';
+      }
+    });
+  }
+
   /* ---------- Init ---------- */
   function init() {
+    populatePDP();
+    populateCartLines();
     fillGrids();
     refreshBag();
     initQuickShop();

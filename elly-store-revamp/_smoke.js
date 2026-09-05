@@ -73,7 +73,7 @@ try {
   check('shell injected', /site-head/.test(all) && /search-field/.test(all));
   check('header tool says Bag', />Bag<\/span>/.test(all));
   check('no header label says Cart', !/>Cart<\/span>/.test(all));
-  check('default signed-in: sign label = Hi, Demo', (registry['#signLbl'].textContent || '') === 'Hi, Demo');
+  check('default signed-in: sign label = Hi, Chloe', (registry['#signLbl'].textContent || '') === 'Hi, Chloe');
   check('mode default guest = returning', sandbox.EL && typeof sandbox.EL === 'object');
 } catch (err) { console.error('UNCAUGHT:', err && err.stack || err); failed = true; }
 process.exit(failed ? 1 : 0);

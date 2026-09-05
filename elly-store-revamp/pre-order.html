@@ -21,7 +21,8 @@
   .design-opt { border: 1.5px solid var(--line); border-radius: var(--radius); padding: 8px; cursor: pointer; text-align: center; background: var(--paper); transition: all .15s; }
   .design-opt:hover { border-color: var(--ink-light); }
   .design-opt.is-on { border-color: var(--coral); box-shadow: 0 0 0 3px var(--coral-wash); }
-  .design-opt .th { aspect-ratio: 3/4; border-radius: 2px; margin-bottom: 8px; background: linear-gradient(150deg, var(--d-a,#e3ecfb), var(--d-b,#c2d6f2)); display: grid; place-items: center; color: rgba(0,0,0,.35); font-size: 22px; border: 1px dashed rgba(0,0,0,.15); }
+  .design-opt .th { aspect-ratio: 3/4; border-radius: 2px; margin-bottom: 8px; overflow: hidden; background: linear-gradient(150deg, var(--d-a,#e3ecfb), var(--d-b,#c2d6f2)); border: 1px dashed rgba(0,0,0,.15); }
+  .design-opt .th img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .design-opt b { display: block; font-size: 12.5px; margin-bottom: 2px; }
   .design-opt span { font-size: 10.5px; color: var(--ink-light); display: block; }
 </style>
@@ -50,27 +51,24 @@
 
       <!-- design gallery -->
       <div>
-        <div class="pdp__main" id="preArt" style="--m-a:#e3ecfb;--m-b:#c2d6f2;aspect-ratio:3/3.6">
+        <div class="pdp__main is-real" id="preArt" style="--m-a:#e3ecfb;--m-b:#c2d6f2;aspect-ratio:3/4">
           <div class="pdp__tags">
             <span class="badge badge--coral">Pre-order · full payment upfront</span>
             <span class="badge badge--ink">Concept design</span>
           </div>
-          <div class="big-ico">
-            <span style="font-size:52px;line-height:1" id="preEmoji">🏘️</span>
-            <span style="margin-top:10px">Design artwork slot (1024×1365 portrait)</span>
-          </div>
+          <img class="pdp-img" id="preImg" src="assets/preorder/preorder-concept-heritage.png" alt="Heritage Shophouse concept mockup">
         </div>
-        <p class="small muted" style="margin-top:10px">Concept design — for prototype illustration only. Final artwork appears here after Disney approval.</p>
+        <p class="small muted" style="margin-top:10px">Concept mockup — prototype artwork for illustration only, not Disney-approved final art.</p>
         <span class="opt-label">Choose your design · concept set</span>
         <div class="design-select" id="designSelect">
-          <button type="button" class="design-opt is-on" data-dname="Heritage Shophouse" data-demoji="🏘️" data-da="#f6e7d2" data-db="#e6cba0">
-            <span class="th">🏘️</span><b>Heritage shophouse</b><span>Singapore concept</span>
+          <button type="button" class="design-opt is-on" data-dname="Heritage Shophouse" data-img="assets/preorder/preorder-concept-heritage.png" data-da="#f6e7d2" data-db="#e6cba0">
+            <span class="th"><img src="assets/preorder/preorder-concept-heritage.png" alt="Heritage Shophouse concept mockup"></span><b>Heritage shophouse</b><span>Singapore concept</span>
           </button>
-          <button type="button" class="design-opt" data-dname="Gardens by the Bay" data-demoji="🌳" data-da="#dcefe2" data-db="#aed9c4">
-            <span class="th">🌳</span><b>Gardens by the Bay</b><span>Singapore concept</span>
+          <button type="button" class="design-opt" data-dname="Gardens by the Bay" data-img="assets/preorder/preorder-concept-garden.png" data-da="#dcefe2" data-db="#aed9c4">
+            <span class="th"><img src="assets/preorder/preorder-concept-garden.png" alt="Gardens by the Bay concept mockup"></span><b>Gardens by the Bay</b><span>Singapore concept</span>
           </button>
-          <button type="button" class="design-opt" data-dname="Marina Bay Night Skyline" data-demoji="🌃" data-da="#d9d6f5" data-db="#a9a3e6">
-            <span class="th">🌃</span><b>Marina Bay skyline</b><span>Singapore concept</span>
+          <button type="button" class="design-opt" data-dname="Marina Bay Night Skyline" data-img="assets/preorder/preorder-concept-night-skyline.png" data-da="#d9d6f5" data-db="#a9a3e6">
+            <span class="th"><img src="assets/preorder/preorder-concept-night-skyline.png" alt="Marina Bay Night Skyline concept mockup"></span><b>Marina Bay skyline</b><span>Singapore concept</span>
           </button>
         </div>
       </div>
@@ -141,9 +139,14 @@
 
 </main>
 <script src="assets/components.js"></script>
+<script src="assets/products.js"></script>
 <script src="assets/app.js"></script>
 <script>
-  /* design selector on this page */
+  /* design selector on this page — swap the main concept mockup */
+  document.querySelectorAll('.design-opt').forEach(function (o) {
+    var src = o.getAttribute('data-img');
+    if (src) { var im = new Image(); im.src = src; } /* preload so switching is instant */
+  });
   document.addEventListener('click', function (e) {
     var opt = e.target.closest('.design-opt');
     if (!opt) return;
@@ -154,8 +157,12 @@
       art.style.setProperty('--m-a', opt.getAttribute('data-da'));
       art.style.setProperty('--m-b', opt.getAttribute('data-db'));
     }
-    var em = document.getElementById('preEmoji');
-    if (em) em.textContent = opt.getAttribute('data-demoji');
+    var img = document.getElementById('preImg');
+    var src = opt.getAttribute('data-img');
+    if (img && src) {
+      img.src = src;
+      img.alt = opt.getAttribute('data-dname') + ' concept mockup';
+    }
     var t = document.getElementById('preTitle');
     if (t) t.textContent = opt.getAttribute('data-dname') + ' — Disney pre-order design';
   });

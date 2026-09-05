@@ -217,7 +217,7 @@
       '<div class="m-drawer__top"><a href="index.html" class="brand"><img src="assets/elly-logo.webp" alt="The Elly Store"></a>' +
       '<button type="button" class="icon-btn js-close-drawer" aria-label="Close menu">' + I.close + '</button></div>' +
       '<nav class="m-drawer__nav">' +
-      '<a class="acc-pill" href="account.html">' + I.user + ' Hi, Demo Member \u00b7 1,240 pts</a>' +
+      '<a class="acc-pill" href="account.html">' + I.user + ' Hi, Chloe \u00b7 1,240 pts</a>' +
       links +
       '<div class="foot-note"><a class="btn btn--ghost btn--sm" href="cart.html">' + I.bag + ' View bag</a></div>' +
       '</nav></aside>';

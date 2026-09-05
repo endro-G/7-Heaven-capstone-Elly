@@ -16,19 +16,15 @@
 
   <!-- ============ Rotating hero banner + recommender tiles (PRD §5.1/§8.1) ============ -->
   <section class="hero" id="heroDynamic" aria-label="Welcome to The Elly Store">
-    <div class="wrap hero__top">
-      <div class="hero__controls">
-        <span class="hero-count" id="heroCount" aria-hidden="true">1 / 4</span>
-        <div class="hero-dots" id="heroDots" role="group" aria-label="Banner slides"></div>
-        <button type="button" class="hero-arrow js-hero-prev" aria-label="Previous banner">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
-        </button>
-        <button type="button" class="hero-arrow js-hero-next" aria-label="Next banner">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
-        </button>
-      </div>
-    </div>
     <div class="wrap hero__slides" id="heroSlides" aria-live="polite"></div>
+    <div class="hero__arrows">
+      <button type="button" class="hero-arrow js-hero-prev" aria-label="Previous banner">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+      </button>
+      <button type="button" class="hero-arrow js-hero-next" aria-label="Next banner">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
+      </button>
+    </div>
     <ul class="wrap hero__ticks">
       <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.4 4.9 5.4.8-3.9 3.8.9 5.4-4.8-2.6-4.8 2.6.9-5.4L4.2 8.7l5.4-.8z"/></svg> Loved by Singapore families</li>
       <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z"/><circle cx="7.2" cy="17.8" r="1.9"/><circle cx="17.4" cy="17.8" r="1.9"/></svg> Free SG shipping over $100</li>
@@ -37,7 +33,7 @@
   </section>
 
   <!-- ============ Recommender tiles (below banner, re-rank per visitor segment) ============ -->
-  <section class="block block--tight">
+  <section class="block block--tight" data-bump>
     <div class="wrap">
       <div class="occ-head">
         <div>
@@ -49,32 +45,92 @@
       </div>
       <div class="occ-rail" id="occRail">
         <a class="occ-card" id="occ-newborn" href="gifting-hub.html?occasion=Newborn%20%26%20Baby%20Shower">
-          <span class="tint" style="background:var(--tint-gift)"><span class="emoji">🍼</span></span>
+          <span class="occ-art" style="--art-a:#f8e9d3;--art-b:#f2d8b0" aria-hidden="true">
+            <svg viewBox="0 0 48 48" fill="none" stroke="#28488e" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M23 10h2v4"/><path d="M20 14h8"/><path d="M20 16h8v13a6 6 0 0 1-8 0V16z"/><path d="M20 21h8"/><path d="M24 33v4"/>
+              <path d="M34 16.5c-1.2-1.3-3.3-.5-3.3 1.3 0 1.8 3.3 3.9 3.3 3.9s3.3-2.1 3.3-3.9c0-1.8-2.1-2.6-3.3-1.3z" fill="#ff6070" stroke="none"/>
+              <path d="M9 13l1.2 2.3 2.3 1.2-2.3 1.2L9 20l-1.2-2.3-2.3-1.2 2.3-1.2z" fill="#28488e" stroke="none"/>
+            </svg>
+          </span>
           <strong>Newborn &amp; Baby Shower</strong>
           <small>Full month · keepsake sets</small>
         </a>
         <a class="occ-card" id="occ-sibling" href="elly-label.html?occasion=Big%20Brother%20%2F%20Little%20Sister">
-          <span class="tint" style="background:var(--tint-elly)"><span class="emoji">🧸</span></span>
+          <span class="occ-art" style="--art-a:#f7ede1;--art-b:#ebddc3" aria-hidden="true">
+            <svg viewBox="0 0 48 48" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7">
+              <path d="M6 11h36" stroke="#28488e"/><path d="M24 11v6" stroke="#28488e"/><path d="M33.4 11v7.4" stroke="#28488e"/>
+              <path d="M12 17h24l2.4 5.6-4.8 3.4v9.6a2.4 2.4 0 0 1-2.4 2.4H16.8a2.4 2.4 0 0 1-2.4-2.4v-9.6L9.6 22.6z" fill="#fff" stroke="#28488e"/>
+              <path d="M21 17v2.5M27 17v2.5" stroke="#28488e"/>
+              <path d="M24 29c-1 1-2.6.4-2.6 1.9 0 1.4 2.6 2.9 2.6 2.9s2.6-1.5 2.6-2.9c0-1.5-1.6-2.1-2.6-1.9z" fill="#ff6070" stroke="none"/>
+              <g transform="translate(20 9) scale(.55)">
+                <path d="M12 17h24l2.4 5.6-4.8 3.4v9.6a2.4 2.4 0 0 1-2.4 2.4H16.8a2.4 2.4 0 0 1-2.4-2.4v-9.6L9.6 22.6z" fill="#ffe9eb" stroke="#ff6070"/>
+                <path d="M24 29c-1 1-2.6.4-2.6 1.9 0 1.4 2.6 2.9 2.6 2.9s2.6-1.5 2.6-2.9c0-1.5-1.6-2.1-2.6-1.9z" fill="#28488e" stroke="none"/>
+              </g>
+            </svg>
+          </span>
           <strong>Big Brother / Little Sister</strong>
           <small>Matching sibling sets</small>
         </a>
         <a class="occ-card" id="occ-theme-park" href="disney-elly.html?occasion=Theme%20Park%20Vacation">
-          <span class="tint" style="background:var(--tint-disney)"><span class="emoji">🏰</span></span>
+          <span class="occ-art" style="--art-a:#dee9f8;--art-b:#c2d4f1" aria-hidden="true">
+            <svg viewBox="0 0 48 48" fill="none" stroke="#28488e" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="14" y="26" width="20" height="14" rx="1" fill="#fff"/>
+              <rect x="7" y="21" width="7" height="19" rx="1" fill="#fff"/>
+              <rect x="34" y="21" width="7" height="19" rx="1" fill="#fff"/>
+              <path d="M7 21l3.5-6 3.5 6z" fill="#ff6070"/>
+              <path d="M34 21l3.5-6 3.5 6z" fill="#ff6070"/>
+              <path d="M24 26v-9"/><path d="M24 17h8l-2.5 2.6 2.5 2.6h-8z" fill="#28488e" stroke="none"/>
+              <path d="M21.5 40v-5a2.5 2.5 0 0 1 5 0v5" fill="#ffe9eb"/>
+              <circle cx="10.5" cy="28" r="1.8" fill="#28488e"/>
+              <circle cx="37.5" cy="28" r="1.8" fill="#28488e"/>
+              <circle cx="42" cy="10" r="4.2" fill="#ff6070"/><path d="M42 14.2c-1 2.8-2.6 4.2-4.4 5.6"/>
+              <circle cx="36" cy="6" r="3" fill="#28488e" opacity=".85"/><path d="M36 9c-.6 1.8-1.6 2.8-2.8 3.8"/>
+            </svg>
+          </span>
           <strong>Theme Park Vacation</strong>
           <small>Park-ready twinning looks</small>
         </a>
         <a class="occ-card" id="occ-photoshoot" href="disney-elly.html?occasion=Family%20Photoshoot">
-          <span class="tint" style="background:var(--tint-custom)"><span class="emoji">📸</span></span>
+          <span class="occ-art" style="--art-a:#eae4f9;--art-b:#d6caf2" aria-hidden="true">
+            <svg viewBox="0 0 48 48" fill="none" stroke="#28488e" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="19" width="30" height="19" rx="4" fill="#fff"/>
+              <path d="M17 19l2.5-5h9l2.5 5z" fill="#fff"/>
+              <circle cx="24" cy="28.5" r="6.5" fill="#eae4f9"/>
+              <circle cx="24" cy="28.5" r="2.4" fill="#ff6070" stroke="none"/>
+              <circle cx="33.5" cy="23.5" r="1.5" fill="#28488e" stroke="none"/>
+              <path d="M6 8l1 2.2 2.2 1-2.2 1L6 14.4l-1-2.2-2.2-1 2.2-1z" fill="#ff6070" stroke="none"/>
+              <path d="M42 7l.9 2 2 .9-2 .9-.9 2-.9-2-2-.9 2-.9z" fill="#28488e" stroke="none"/>
+              <path d="M6 36c-.9-1-2.4-.5-2.4.9 0 1.3 2.4 2.8 2.4 2.8s2.4-1.5 2.4-2.8c0-1.4-1.5-1.9-2.4-.9z" fill="#ff6070" stroke="none"/>
+            </svg>
+          </span>
           <strong>Family Photoshoot</strong>
           <small>Outfits that photograph well</small>
         </a>
         <a class="occ-card" id="occ-sleepover" href="elly-label.html?occasion=Pajama%20Party%20%2F%20Sleepover">
-          <span class="tint" style="background:var(--tint-shoe)"><span class="emoji">🌙</span></span>
+          <span class="occ-art" style="--art-a:#f9e0e7;--art-b:#f1c4d3" aria-hidden="true">
+            <svg viewBox="0 0 48 48" fill="none" stroke="#28488e" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M24 6a20 20 0 1 0 18 38a16 16 0 0 1-18-38z" fill="#fff"/>
+              <path d="M14 12l1.1 2.4 2.4 1.1-2.4 1.1L14 19l-1.1-2.4-2.4-1.1 2.4-1.1z" fill="#ff6070" stroke="none"/>
+              <path d="M38 30l.8 1.8 1.8.8-1.8.8-.8 1.8-.8-1.8-1.8-.8 1.8-.8z" fill="#28488e" stroke="none"/>
+              <path d="M33 41l.6 1.3 1.3.6-1.3.6-.6 1.3-.6-1.3-1.3-.6 1.3-.6z" fill="#ff6070" stroke="none"/>
+              <path d="M9 39.5c-.9-1-2.4-.5-2.4.9 0 1.3 2.4 2.8 2.4 2.8s2.4-1.5 2.4-2.8c0-1.4-1.5-1.9-2.4-.9z" fill="#ff6070" stroke="none"/>
+            </svg>
+          </span>
           <strong>Pajama Party / Sleepover</strong>
           <small>PJs &amp; nightwear for all</small>
         </a>
         <a class="occ-card" id="occ-gift" href="gifting-hub.html?occasion=Holiday%20Gift%20Boxes">
-          <span class="tint" style="background:var(--cream)"><span class="emoji">🎁</span></span>
+          <span class="occ-art" style="--art-a:#fbeed8;--art-b:#f1d6a6" aria-hidden="true">
+            <svg viewBox="0 0 48 48" fill="none" stroke="#28488e" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="11" y="22" width="26" height="16" rx="1.5" fill="#fff"/>
+              <path d="M11 28h26"/>
+              <path d="M24 22v16" stroke="#ff6070"/>
+              <path d="M24 22c-2.5-7-13-6-11-10.5 2-4.5 8.5 1.5 11 8z" fill="#ffe9eb" stroke="#ff6070"/>
+              <path d="M24 22c2.5-7 13-6 11-10.5-2-4.5-8.5 1.5-11 8z" fill="#ffe9eb" stroke="#ff6070"/>
+              <circle cx="24" cy="21" r="1.8" fill="#ff6070" stroke="none"/>
+              <path d="M6 12l1 2.2 2.2 1-2.2 1L6 18.4l-1-2.2-2.2-1 2.2-1z" fill="#ff6070" stroke="none"/>
+            </svg>
+          </span>
           <strong>Holiday Gift Boxes</strong>
           <small>Curated, wrapped &amp; ready</small>
         </a>
@@ -111,12 +167,12 @@
         </div>
         <a class="link-arrow" href="account.html">View unified history</a>
       </div>
-      <div class="product-grid" data-ghost-grid="4" data-kind="disney"></div>
+      <div class="product-grid" data-ghost-grid="4" data-kind="disney" data-intent="rec"></div>
     </div>
   </section>
 
   <!-- ============ Pre-order spotlight ============ -->
-  <section class="band band--blue">
+  <section class="band band--blue" data-bump>
     <div class="wrap band__in">
       <div class="band__copy">
         <span class="kicker" style="color:#fff">Disney Pre-Order · new designs</span>
@@ -151,7 +207,7 @@
   </section>
 
   <!-- ============ Feature bands ============ -->
-  <section class="block block--tight">
+  <section class="block block--tight" data-bump>
     <div class="wrap">
       <div class="feat-grid">
         <article class="feat-card">
@@ -183,7 +239,7 @@
   <!-- ============ Customization + FurKids teasers ============ -->
   <section class="block block--tight" style="padding-top:0">
     <div class="wrap" style="display:grid;gap:22px">
-      <div class="band band--cream" style="border-radius:14px">
+      <div class="band band--cream" style="border-radius:14px" data-bump>
         <div class="wrap band__in" style="padding-inline:0">
           <div class="band__copy">
             <span class="kicker">Customization pillar</span>
@@ -196,7 +252,7 @@
           </div>
         </div>
       </div>
-      <div class="band" style="background:var(--tint-furkids);border-radius:14px">
+      <div class="band" style="background:var(--tint-furkids);border-radius:14px" data-bump>
         <div class="wrap band__in" style="padding-inline:0">
           <div class="band__copy">
             <span class="concept-tag" style="margin-bottom:12px">Concept · pending Disney licence approval</span>
@@ -213,7 +269,7 @@
   </section>
 
   <!-- ============ Featured rail (structure) ============ -->
-  <section class="block block--tight" style="background:var(--cream-2);border-top:1px solid var(--line-soft)">
+  <section class="block block--tight" style="background:var(--cream-2);border-top:1px solid var(--line-soft)" data-bump>
     <div class="wrap">
       <div class="occ-head">
         <div>
@@ -228,7 +284,7 @@
   </section>
 
   <!-- ============ Value props ============ -->
-  <section class="block block--tight">
+  <section class="block block--tight" data-bump>
     <div class="wrap">
       <div class="props">
         <div class="prop">
@@ -249,6 +305,7 @@
 
 </main>
 <script src="assets/components.js"></script>
+<script src="assets/products.js"></script>
 <script src="assets/app.js"></script>
 </body>
 </html>
