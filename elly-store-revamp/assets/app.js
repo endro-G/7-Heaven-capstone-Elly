@@ -178,19 +178,55 @@
     }
   });
 
-  /* ---------- Bag (in-memory demo counter) ---------- */
-  function bagCount() { return parseInt(ssGet('elly-bag') || '0', 10); }
-  function setBag(n) {
+  /* ---------- Bag (demo, session-scoped) ----------
+     The header badge count and the cart/checkout lines both come from one source:
+     elly-bag-items (the product names actually added). elly-bag mirrors its length
+     for the badge, so count and contents can never disagree. */
+  var CURRENT_PDP = null;
+  function bagItems() {
+    try {
+      var raw = ssGet('elly-bag-items');
+      var arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr : [];
+    } catch (e) { return []; }
+  }
+  function bagCount() { return bagItems().length; }
+  function saveBagItems(items) {
+    ssSet('elly-bag-items', JSON.stringify(items));
+    var n = items.length;
     ssSet('elly-bag', n);
     var c = $('#bagCount');
     if (c) { c.textContent = n; c.hidden = n <= 0; }
   }
-  function refreshBag() { setBag(bagCount()); }
+  function addToBag(name) {
+    var items = bagItems();
+    items.push(name);
+    saveBagItems(items);
+  }
+  function removeFromBag(name) {
+    var items = bagItems();
+    var i = items.indexOf(name);
+    if (i < 0) return false;
+    items.splice(i, 1);
+    saveBagItems(items);
+    return true;
+  }
+  function setBag(n) {
+    /* demo-only override used by the smoke harness; keep items in sync by padding/trimming */
+    var items = bagItems();
+    while (items.length < n) items.push('Beary Personalisable Baby Gift Set');
+    if (items.length > n) items.length = n;
+    saveBagItems(items);
+  }
+  function refreshBag() { saveBagItems(bagItems()); }
 
   document.addEventListener('click', function (e) {
     var add = e.target.closest('.js-add-demo');
     if (add) {
-      setBag(bagCount() + 1);
+      var card = add.closest('.ph-card');
+      var name = card ? (card.getAttribute('data-p') || REP_PRODUCT[card.getAttribute('data-kind')] || '') : '';
+      if (!name) name = 'Beary Personalisable Baby Gift Set';
+      addToBag(name);
       toast('Added to bag \u2014 <b>demo</b>. <a href="cart.html" style="text-decoration:underline;color:#fff">View bag</a>');
     }
   });
@@ -569,7 +605,8 @@
       var sizeSel = buy.closest('.pdp__info, .ph-info, form, .card');
       var picked = sizeSel ? $('.size-chip.is-on', sizeSel) : null;
       if (picked) {
-        setBag(bagCount() + 1);
+        var name = (CURRENT_PDP && CURRENT_PDP.n) || (($('#preTitle') && $('#preTitle').textContent) || 'Beary Personalisable Baby Gift Set');
+        addToBag(name);
         var pers = cfgSummaryText();
         toast('Added to bag \u2014 <b>demo</b>' + (pers ? ' \u00b7 ' + esc(pers) : '') + '. <a href="cart.html" style="text-decoration:underline;color:#fff">View bag</a>');
       } else {
@@ -645,11 +682,11 @@
     $$('.js-cart-line').forEach(function (line) {
       var out = $('.qty-row output', line);
       var price = parseFloat(line.getAttribute('data-price')) || 0;
-      var n = parseInt(out.value, 10) || 0;
+      var n = out ? (parseInt(out.value, 10) || 0) : 1;
       qty += n;
       subtotal += price * n;
       var lp = $('.line-price', line);
-      if (lp) lp.textContent = 'S$' + subtotal.toFixed(2);
+      if (lp) lp.textContent = 'S$' + (price * n).toFixed(2);
     });
     var st = $('#cartSubtotal'); if (st) st.textContent = 'S$' + subtotal.toFixed(2);
     var tot = $('#cartTotal'); if (tot) tot.textContent = 'S$' + subtotal.toFixed(2);
@@ -658,19 +695,13 @@
     if (lbl) lbl.textContent = subtotal >= 100 ? 'You\u2019ve unlocked free standard shipping' : 'S$' + (100 - subtotal).toFixed(2) + ' away from free standard shipping';
     return subtotal;
   }
-  function cartQty() {
-    var q = 0;
-    $$('.js-cart-line').forEach(function (l) { q += parseInt($('.qty-row output', l).value, 10) || 0; });
-    return q;
-  }
   document.addEventListener('qtychange', function (e) {
     if (e.target.closest('.js-cart-line')) {
       cartTotals();
-      setBag(cartQty());
     }
   });
   document.addEventListener('DOMContentLoaded', function () {
-    if ($('.js-cart-line')) { cartTotals(); setBag(cartQty()); }
+    if ($('.js-cart-line')) cartTotals();
     var checkoutBtn = $('.js-go-checkout');
     if (checkoutBtn) checkoutBtn.addEventListener('click', function (e) {
       e.preventDefault();
@@ -1680,6 +1711,7 @@
       if (q) prod = PRODUCTS.filter(function (p) { return p.n.toLowerCase().indexOf(q.toLowerCase()) >= 0; })[0];
     } catch (e) {}
     if (!prod) prod = productByName('Beary Personalisable Baby Gift Set') || PRODUCTS[0];
+    CURRENT_PDP = prod;
     var pillar = ({ elly: 'Elly Label', disney: 'Disney | elly', shoe: 'Shoes', gift: 'Gifting', custom: 'Customization' })[prod.k] || 'Elly Label';
     var t = $('#pdpTitle'); if (t) t.textContent = prod.n;
     var k = $('#pdpKicker'); if (k) k.textContent = pillar + ' \u00b7 ' + (prod.int || []).join(' / ');
@@ -1705,36 +1737,71 @@
     initConfigurator(prod);
   }
 
-  function populateCartLines() {
-    var lines = $$('.js-cart-line');
-    if (!lines.length) return;
-    var picks = [
-      productByName("Skye Dress - Elsa's Ice Magic"),
-      productByName('Long-Sleeve Pyjamas Set - Rain And Cozy'),
-      productByName('Kids Tee - Doodle Mickey'),
-      productByName('Deluxe Beginnings Keepsake Baby Gift Set')
-    ].filter(Boolean);
-    if (!picks.length) return;
-    var sizes = ['3Y', '2Y', '12M', '0\u20136M'], colours = ['Ice blue', 'Rain & Cozy', 'Cream', 'Blue'];
-    lines.forEach(function (line, i) {
-      var prod = picks[i % picks.length];
-      if (!prod) return;
-      line.setAttribute('data-price', String(parseFloat(prod.p.replace(/S\$/, '')) || 0));
-      var img = $('.cart-line__img', line);
-      if (img) {
-        img.classList.add('is-real');
-        img.innerHTML = '<img src="' + esc(prod.img) + '" alt="' + esc(prod.n) + '">';
-      }
-      var h4 = $('h4', line);
-      if (h4) h4.textContent = prod.n;
-      var meta = $('.meta', line);
-      if (meta) {
-        var spans = $$('span', meta);
-        if (spans[0]) spans[0].textContent = 'Size: ' + sizes[i % sizes.length] + ' \u00b7 Colour: ' + colours[i % colours.length];
-        if (spans[1]) spans[1].textContent = 'From the live catalog \u00b7 demo line';
-      }
-    });
+  /* Build the bag lines from the items actually added (elly-bag-items) — the header
+     badge and the cart/checkout lines share this one value, so count and contents can
+     never disagree. The cart page renders a full line (image, size/colour, qty stepper,
+     working Remove) per added item; the checkout summary renders a compact line per
+     item. Zero items -> empty state. */
+  /* items added that aren't in the catalog (e.g. a pre-order design) still get a
+     line so the badge count always equals the lines shown */
+  function fallbackProduct(name) {
+    return { n: name, p: 'S$0', img: '' };
   }
+  function cartLineHTML(prod, i, compact) {
+    var price = parseFloat((prod.p || 'S$0').replace(/S\$/, '')) || 0;
+    var sizes = ['3Y', '2Y', '12M', '0\u20136M'], colours = ['Ice blue', 'Rain & Cozy', 'Cream', 'Blue'];
+    if (compact) {
+      return '<div class="js-cart-line" data-name="' + esc(prod.n) + '" data-price="' + price + '" style="border-bottom:1px solid var(--line-soft);padding:10px 0;display:flex;gap:12px;align-items:center">' +
+        '<div style="width:46px;height:46px;border-radius:var(--radius);flex:none;overflow:hidden;border:1px solid var(--line)"><img src="' + esc(prod.img) + '" alt="' + esc(prod.n) + '" style="width:100%;height:100%;object-fit:cover"></div>' +
+        '<div style="flex:1;font-size:12.5px"><b>' + esc(prod.n) + '</b><br><span class="muted">' + sizes[i % sizes.length] + ' \u00b7 qty 1</span></div>' +
+        '<span style="font-weight:700;font-size:13px">S$' + price.toFixed(2) + '</span></div>';
+    }
+    return '<div class="js-cart-line" data-name="' + esc(prod.n) + '" data-price="' + price + '" style="border-top:1px solid var(--line)">' +
+      '<div class="cart-line">' +
+      '<div class="cart-line__img is-real" style="--m-a:#e3ecfb;--m-b:#c2d6f2"><img src="' + esc(prod.img) + '" alt="' + esc(prod.n) + '"></div>' +
+      '<div><h4>' + esc(prod.n) + '</h4>' +
+      '<div class="meta"><span>Size: ' + sizes[i % sizes.length] + ' \u00b7 Colour: ' + colours[i % colours.length] + '</span><span>From the live catalog \u00b7 demo line</span></div>' +
+      '<div class="qty-row" data-min="1" data-max="10"><button type="button" data-step="-1" aria-label="Decrease">\u2212</button><output>1</output><button type="button" data-step="1" aria-label="Increase">+</button></div>' +
+      '</div>' +
+      '<div class="cart-line__right"><span class="line-price">S$' + price.toFixed(2) + '</span>' +
+      '<button type="button" class="small muted js-remove-line" style="display:block;margin-top:10px;background:none;border:0;padding:0;text-align:right;text-decoration:underline;cursor:pointer">Remove</button></div>' +
+      '</div></div>';
+  }
+  function populateCartLines() {
+    var container = $('#cartLines') || $('#ckLines');
+    if (!container) return;
+    var compact = !!$('#ckLines');
+    var names = bagItems();
+    var empty = $('#cartEmpty');
+    if (!names.length) {
+      container.innerHTML = '';
+      if (empty) empty.style.display = '';
+      cartTotals();
+      return;
+    }
+    if (empty) empty.style.display = 'none';
+    var html = '';
+    names.forEach(function (name, i) {
+      var prod = productByName(name) || fallbackProduct(name);
+      html += cartLineHTML(prod, i, compact);
+    });
+    container.innerHTML = html;
+    cartTotals();
+  }
+
+  /* Remove a line: drop it from elly-bag-items and re-render — the badge count
+     updates from the same array, so it always matches what is left in the cart. */
+  document.addEventListener('click', function (e) {
+    var rm = e.target.closest('.js-remove-line');
+    if (!rm) return;
+    e.preventDefault();
+    var line = rm.closest('.js-cart-line');
+    var name = line ? line.getAttribute('data-name') : '';
+    if (name && removeFromBag(name)) {
+      populateCartLines();
+      toast('Removed from bag \u2014 <b>demo</b>');
+    }
+  });
 
   /* ---------- Init ---------- */
   function init() {
@@ -1793,4 +1860,11 @@
   window.EL.cfgSummaryText = cfgSummaryText;
   window.EL.inKind = inKind;
   window.EL.pickPool = pickPool;
+  window.EL.bagCount = bagCount;
+  window.EL.setBag = setBag;
+  window.EL.refreshBag = refreshBag;
+  window.EL.populateCartLines = populateCartLines;
+  window.EL.bagItems = bagItems;
+  window.EL.addToBag = addToBag;
+  window.EL.removeFromBag = removeFromBag;
 })();

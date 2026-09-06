@@ -39,7 +39,8 @@ const registry = {};
  '#configurator', '#persToggle', '#cfgMethods', '#cfgPlacements', '#cfgColours', '#cfgColoursWrap', '#cfgText', '#cfgTextHint',
  '#cfgMethod', '#cfgPlacement', '#cfgChars', '#cfgColour', '#cfgSummary', '#cfgStaffNote', '#cfgViewSeg', '#cfgPreview',
  '#cfgPlaceWrap', '#cfgTextWrap', '#cfgPatchesWrap', '#cfgPatches', '#cfgPatchSel', '#cfgPatchCount', '#cfgPatchHint',
- '#pdpTitle', '#pdpKicker', '#pdpPrice', '#pdpDesc', '#pdpCrumb', '.pdp', '.pdp__main']
+ '#pdpTitle', '#pdpKicker', '#pdpPrice', '#pdpDesc', '#pdpCrumb', '.pdp', '.pdp__main',
+ '#cartLines', '#ckLines', '#cartEmpty', '#cartSubtotal', '#cartTotal', '#shipMeter', '#shipMeterLabel']
   .forEach((s) => { registry[s] = makeEl('div'); });
 
 const listeners = {};
@@ -108,5 +109,34 @@ try {
   check('patches summary renders picked patches', (sandbox.EL.cfgSummaryText() || '').indexOf('Iron-on patches') >= 0);
   check('multi-kind overlap: Disney tee also in Customization pool', typeof sandbox.EL.inKind === 'function' && sandbox.EL.inKind(sandbox.EL_PRODUCTS[1], 'custom') === true && sandbox.EL.inKind(sandbox.EL_PRODUCTS[0], 'custom') === true);
   check('multi-kind overlap: pickPool includes cross-kind product once', (sandbox.EL.pickPool([{ k: 'custom' }]).map((p) => p.n).indexOf('Kids Tee - Doodle Mickey') >= 0));
+  /* bag count consistency: one shared counter element in the injected header, one
+     storage key, same value on every page (components.js injects it site-wide) */
+  check('bag count element injected in shared header', typeof registry['#bagCount'] === 'object' && /id="bagCount"/.test(all));
+  sandbox.EL.setBag(3);
+  check('bag count shows 3 after setBag(3)', String(registry['#bagCount'].textContent) === '3' && registry['#bagCount'].hidden === false);
+  check('bagCount() reads back the shared value', sandbox.EL.bagCount() === 3);
+  sandbox.EL.refreshBag();
+  check('refreshBag keeps the count in sync', String(registry['#bagCount'].textContent) === '3' && registry['#bagCount'].hidden === false);
+  sandbox.EL.setBag(0);
+  check('bag count hides at zero', String(registry['#bagCount'].textContent) === '0' && registry['#bagCount'].hidden === true);
+  /* cart/checkout lines derive their count from the same elly-bag items */
+  sandbox.EL.setBag(3);
+  sandbox.EL.populateCartLines();
+  check('cart page renders 3 lines from bag count', (registry['#cartLines']._html || '').split('js-cart-line').length - 1 === 3);
+  check('cart empty state hidden when items present', (registry['#cartEmpty'].style.display || '') === 'none');
+  sandbox.EL.setBag(0);
+  sandbox.EL.populateCartLines();
+  check('cart page shows empty state at zero', (registry['#cartLines']._html || '').indexOf('js-cart-line') < 0 && (registry['#cartEmpty'].style.display || '') !== 'none');
+  /* bag tracks the actual items added, and removal keeps count + contents in sync */
+  sandbox.EL.addToBag('Kids Tee - Doodle Mickey');
+  sandbox.EL.addToBag('Beary Personalisable Baby Gift Set');
+  check('bag stores the item names added', sandbox.EL.bagItems().indexOf('Kids Tee - Doodle Mickey') >= 0 && sandbox.EL.bagItems().length === 2);
+  check('badge count follows added items', sandbox.EL.bagCount() === 2 && String(registry['#bagCount'].textContent) === '2');
+  sandbox.EL.populateCartLines();
+  check('cart renders the actual added items', (registry['#cartLines']._html || '').indexOf('Kids Tee - Doodle Mickey') >= 0 && (registry['#cartLines']._html || '').indexOf('Beary Personalisable Baby Gift Set') >= 0);
+  check('remove drops the item from the bag', sandbox.EL.removeFromBag('Kids Tee - Doodle Mickey') === true && sandbox.EL.bagItems().length === 1 && sandbox.EL.bagItems().indexOf('Kids Tee - Doodle Mickey') < 0);
+  check('badge count matches remaining items after remove', sandbox.EL.bagCount() === 1 && String(registry['#bagCount'].textContent) === '1');
+  sandbox.EL.populateCartLines();
+  check('cart line removed and remaining item shown', (registry['#cartLines']._html || '').indexOf('Kids Tee - Doodle Mickey') < 0 && (registry['#cartLines']._html || '').indexOf('Beary Personalisable Baby Gift Set') >= 0);
 } catch (err) { console.error('UNCAUGHT:', err && err.stack || err); failed = true; }
 process.exit(failed ? 1 : 0);

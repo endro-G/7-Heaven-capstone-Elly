@@ -28,7 +28,9 @@
 
       <div class="cart-layout">
         <div>
-          <!-- demo sample lines -->
+          <!-- bag lines: rebuilt by app.js from the shared elly-bag counter so the
+               header badge and these lines always show the same number of items -->
+          <div id="cartLines">
           <div class="js-cart-line" data-price="68" style="border-top:1px solid var(--line)">
             <div class="cart-line">
               <div class="cart-line__img" style="--m-a:#e3ecfb;--m-b:#c2d6f2">
@@ -73,9 +75,10 @@
             </div>
           </div>
 
-          <div class="empty-slot" style="margin-top:22px">
-            <strong>Empty-bag state (for later)</strong>
-            <span>This friendly empty state replaces the sample lines once products load and nothing is in the bag.</span>
+          </div>
+          <div class="empty-slot" id="cartEmpty" style="margin-top:22px;display:none">
+            <strong>Your bag is empty</strong>
+            <span>Add something from the collections — the badge in the header and these lines stay in sync (demo counter).</span>
           </div>
 
           <p style="margin-top:18px">
