@@ -71,9 +71,9 @@
     {
       key: 'custom', label: 'Customization', url: 'customization.html', tint: 'custom', emoji: '\uD83E\uDDF5',
       tagline: 'Make it truly theirs.',
-      blurb: 'One place for Customization & Personalization \u2014 names, initials, numbers and thread colours. Embroidered or iron-on, across Elly Label, Disney | elly and gifts.',
+      blurb: 'One place for Customization & Personalization \u2014 embroidered initials with placement & thread colour, or iron-on patches from a pre-set selection, across Elly Label, Disney | elly and gifts.',
       groups: [
-        { title: 'Top-level type', links: ['Embroidered', 'Iron-on'] },
+        { title: 'Top-level type', links: ['Embroidered', 'Iron-on patches'] },
         { title: 'Personalise with', links: ['Name', 'Initials', 'Number', 'Thread colour', 'Placement'] },
         { title: 'Popular to personalise', links: ['Varsity tees & bombers', 'Robes & pullovers', 'Keepsake boxes', 'Baby gift sets'] }
       ],

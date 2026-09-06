@@ -22,9 +22,9 @@ node server.js
 | `elly-label.html` … `furkids.html` | The 6 category listings with **working facet UI** (filters, colour swatches, clear-all, empty states) |
 | `disney-elly.html` | Disney | elly listing + Pre-Order strip |
 | `furkids.html` | Full FurKids page with the persistent **“Concept only — not a Disney-licensed product”** disclosure |
-| `customization.html` | Embroidered/Iron-on method filters, thread colour, placement |
+| `customization.html` | Embroidered (initial + placement + thread colour) / iron-on patches (pre-set SG or Disney selection) methods, live PDP configurator with preview |
 | `pre-order.html` | Disney Pre-Order PDP: design selector (3 Singapore concepts), full-payment model, 8-week timeline, disclosure tags |
-| `pdp.html` | Generic product detail structure (sizes, qty, add-to-bag demo, accordions, cross-sell) |
+| `pdp.html` | Product detail with the **personalisation configurator** (embroidered initial / iron-on patches) + sizes, qty, add-to-bag demo, accordions, cross-sell |
 | `cart.html` / `checkout.html` | Bag + checkout with **all 3 tourist fulfilment options** (ship to SG/hotel · ship home · buy in-store/pop-up) |
 | `b2b.html` | B2B landing (use-case cards) → 5-step RFQ: order type/date → items → decoration (conditional fields) → **size×qty matrix + live tiered pricing** → artwork/shipping → two-stage quote confirmation |
 | `account.html` | Unified profile: in-store + online order history merged, loyalty points (Smile placeholder rules) |

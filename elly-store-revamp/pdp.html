@@ -52,7 +52,7 @@
         <div class="pdp__main" style="--m-a:#f6efe3;--m-b:#e9dcc6">
           <div class="pdp__tags">
             <span class="badge badge--ink">Structure preview</span>
-            <span class="badge badge--blue">Personalisable at checkout</span>
+            <span class="badge badge--blue">Personalisable</span>
           </div>
           <div class="big-ico">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M7 5.5h10l1.5 5.2a6.7 6.7 0 0 1-3.7 2l-.3 4.3H9.5l-.3-4.3a6.7 6.7 0 0 1-3.7-2z"/><path d="M8 3.5c1.6 0 2.4 1 4 1s2.4-1 4-1" stroke-linecap="round"/></svg>
@@ -93,11 +93,52 @@
           <button type="button" data-step="1" aria-label="Increase">+</button>
         </div>
 
+        <!-- Interactive personalisation configurator (PRD §5.3 · §8 #5) — hidden until "Add a name / initials". Built by app.js for products tagged personalisable. -->
+        <div class="configurator" id="configurator" hidden>
+          <div class="cfg-head">
+            <div>
+              <span class="kicker kicker--coral">Make it theirs</span>
+              <h3 style="margin-top:2px">Personalise before you add to bag</h3>
+            </div>
+            <div class="seg seg--coral" id="cfgViewSeg" aria-label="Configurator view">
+              <button type="button" class="is-on" data-cfgview="customer">Customer</button>
+              <button type="button" data-cfgview="staff">Staff · POS</button>
+            </div>
+          </div>
+          <div class="cfg-staff-note" id="cfgStaffNote" hidden>
+            <b>In-store capture</b> — same configurator on tablet/POS as the website; the order syncs to the customer&rsquo;s unified profile (PRD §5.2). Demo only.
+          </div>
+          <div class="cfg-row">
+            <span class="opt-label">Method <b id="cfgMethod">—</b></span>
+            <div class="cfg-chips" id="cfgMethods"></div>
+          </div>
+          <div class="cfg-row" id="cfgPlaceWrap">
+            <span class="opt-label">Placement <b id="cfgPlacement">—</b></span>
+            <div class="cfg-chips" id="cfgPlacements"></div>
+            <p class="small muted cfg-hint" id="cfgPlaceHint">Pick a placement — only ones that work on this item are offered.</p>
+          </div>
+          <div class="cfg-row" id="cfgTextWrap">
+            <span class="opt-label">Initial / name <b id="cfgChars">0</b></span>
+            <input type="text" class="cfg-text" id="cfgText" placeholder="e.g. AMELIA" autocomplete="off" spellcheck="false">
+            <p class="small muted cfg-hint" id="cfgTextHint"></p>
+          </div>
+          <div class="cfg-row cfg-colours" id="cfgColoursWrap">
+            <span class="opt-label">Thread colour <b id="cfgColour">—</b></span>
+            <div class="f-color" id="cfgColours"></div>
+          </div>
+          <div class="cfg-row" id="cfgPatchesWrap" hidden>
+            <span class="opt-label">Iron-on patches <b id="cfgPatchSel">—</b> <em class="cfg-free" id="cfgPatchCount"></em></span>
+            <div class="cfg-chips cfg-patches" id="cfgPatches"></div>
+            <p class="small muted cfg-hint" id="cfgPatchHint"></p>
+          </div>
+          <p class="cfg-summary" id="cfgSummary">Choose a method, placement and text to preview your personalisation here.</p>
+        </div>
+
         <div class="pdp__buy">
           <button type="button" class="btn btn--coral js-buy">Add to bag</button>
-          <a class="btn btn--ghost" href="customization.html">Personalise this item</a>
+          <button type="button" class="btn btn--ghost js-toggle-pers" id="persToggle" hidden>Add a name / initials</button>
         </div>
-        <p class="small muted" style="margin-top:10px">Cross-sell hook (PRD §5.3): eligible items surface &ldquo;add a name to this&rdquo; and &ldquo;complete the gift set&rdquo; at PDP — structure shown above.</p>
+        <p class="small muted" style="margin-top:10px">Cross-sell hook (PRD §5.3): eligible items personalise right here before you pay, and &ldquo;add a name to this&rdquo; also surfaces at cart. Gifting Hub keeps the &ldquo;complete the gift set&rdquo; hook.</p>
 
         <div class="pdp__assure">
           <div class="assure"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3l7 3v5c0 5-3.4 8.4-7 10-3.6-1.6-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg><b>30-day exchange</b>store credit</div>
@@ -107,7 +148,7 @@
 
         <details class="acc"><summary>Details &amp; care</summary><div class="acc-body">Fabric composition, care instructions and design story land here with product data.</div></details>
         <details class="acc"><summary>Shipping &amp; returns</summary><div class="acc-body">SG standard shipping S$6, free over S$100. 30-day exchange for store credit. Ships to 20+ countries.</div></details>
-        <details class="acc"><summary>Personalisation</summary><div class="acc-body">Embroidered or iron-on names/initials available at checkout on this item — thread colour and placement previewed before payment.</div></details>
+        <details class="acc"><summary>Personalisation</summary><div class="acc-body">Embroidered initials or iron-on patches — embroidered offers placement + thread colour, patches are picked from a pre-set selection (SG or Disney-only designs) and applied before dispatch. Live preview on the product image, before you add to bag (PRD §5.3).</div></details>
       </div>
     </div>
   </section>

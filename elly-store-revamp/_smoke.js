@@ -35,7 +35,11 @@ const registry = {};
  '#bagCount', '#toast', '.seg', '.demo-status', '#occBanner', '#occBannerText', 'body', '#content',
  '.search-field', '.js-open-search', '#recTilesKicker', '#recTilesTitle', '#recTilesSub', '#heroDynamic',
  '#b2bWizard', '#b2bMatrix', '#b2bLines', '#b2bTierNote', '#b2bRunQty', '#b2bRunSub', '#b2bRunDeco', '#b2bRunSave', '#b2bRunTotal',
- '#b2bQty', '#b2bSub', '#b2bSave', '#b2bTotal', '#b2bUnit', '#rushNote', '#artName', '#decoPanes', '#b2bDate', '#artFile', '#b2bRequest']
+ '#b2bQty', '#b2bSub', '#b2bSave', '#b2bTotal', '#b2bUnit', '#rushNote', '#artName', '#decoPanes', '#b2bDate', '#artFile', '#b2bRequest',
+ '#configurator', '#persToggle', '#cfgMethods', '#cfgPlacements', '#cfgColours', '#cfgColoursWrap', '#cfgText', '#cfgTextHint',
+ '#cfgMethod', '#cfgPlacement', '#cfgChars', '#cfgColour', '#cfgSummary', '#cfgStaffNote', '#cfgViewSeg', '#cfgPreview',
+ '#cfgPlaceWrap', '#cfgTextWrap', '#cfgPatchesWrap', '#cfgPatches', '#cfgPatchSel', '#cfgPatchCount', '#cfgPatchHint',
+ '#pdpTitle', '#pdpKicker', '#pdpPrice', '#pdpDesc', '#pdpCrumb', '.pdp', '.pdp__main']
   .forEach((s) => { registry[s] = makeEl('div'); });
 
 const listeners = {};
@@ -67,6 +71,10 @@ registry['#heroSlides'].querySelectorAll = function () { return []; };
 
 try {
   load('assets/components.js');
+  sandbox.EL_PRODUCTS = [
+    { n: 'Beary Personalisable Baby Gift Set', p: 'S$150', k: 'custom', img: 'x.jpg', custom: { methods: ['embroidered'], placements: ['front'] } },
+    { n: 'Kids Tee - Doodle Mickey', p: 'S$49.90', k: 'disney', kinds: ['disney', 'custom'], img: 'y.jpg', custom: { methods: ['patches'], patchSet: 'disney', patchCount: 2 } }
+  ];
   load('assets/app.js');
   check('scripts evaluate fully', typeof sandbox.EL === 'object' && typeof sandbox.EL.ghostCard === 'function');
   (listeners['DOMContentLoaded'] || []).forEach((fn) => fn());
@@ -84,5 +92,21 @@ try {
   check('startB2B exported', typeof sandbox.EL.startB2B === 'function');
   sandbox.EL.startB2B('Corporate', 1);
   check('startB2B reveals wizard without error', registry['#b2bWizard'].hidden === false);
+
+  /* PDP personalisation configurator (PRD §5.3 / §8 #5) */
+  check('PDP populated with default personalisable item', registry['#pdpTitle'].textContent === 'Beary Personalisable Baby Gift Set');
+  check('configurator toggle visible for eligible product', registry['#persToggle'].hidden === false);
+  check('configurator closed by default', registry['#configurator'].hidden === true);
+  check('embroidered-only product: method chips = Embroidered only', /Embroidered/.test(registry['#cfgMethods']._html || '') && !/Iron-on/.test(registry['#cfgMethods']._html || ''));
+  check('embroidered-only product: placement chips built (Front centre)', /Front centre/.test(registry['#cfgPlacements']._html || ''));
+  check('thread colour swatches built', /c-swatch/.test(registry['#cfgColours']._html || ''));
+  check('customer / staff (POS) view toggle present', typeof registry['#cfgViewSeg'] === 'object' && typeof registry['#cfgStaffNote'] === 'object');
+  sandbox.EL.initConfigurator({ n: 'Kids Tee - Doodle Mickey', p: 'S$49.90', k: 'disney', img: 'y.jpg', custom: { methods: ['patches'], patchSet: 'disney', patchCount: 2 } });
+  check('patches-only product: method chips = Iron-on patches', /Iron-on patches/.test(registry['#cfgMethods']._html || ''));
+  check('patches-only product: patch picker built (Pop Mickey)', /Pop Mickey/.test(registry['#cfgPatches']._html || ''));
+  check('patches-only product: patch picker row visible, text row hidden', registry['#cfgPatchesWrap'].hidden === false && registry['#cfgTextWrap'].hidden === true);
+  check('patches summary renders picked patches', (sandbox.EL.cfgSummaryText() || '').indexOf('Iron-on patches') >= 0);
+  check('multi-kind overlap: Disney tee also in Customization pool', typeof sandbox.EL.inKind === 'function' && sandbox.EL.inKind(sandbox.EL_PRODUCTS[1], 'custom') === true && sandbox.EL.inKind(sandbox.EL_PRODUCTS[0], 'custom') === true);
+  check('multi-kind overlap: pickPool includes cross-kind product once', (sandbox.EL.pickPool([{ k: 'custom' }]).map((p) => p.n).indexOf('Kids Tee - Doodle Mickey') >= 0));
 } catch (err) { console.error('UNCAUGHT:', err && err.stack || err); failed = true; }
 process.exit(failed ? 1 : 0);

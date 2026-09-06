@@ -84,7 +84,7 @@
   function productCard(p) {
     var badge = p.badge ? '<div class="ph-card__badges"><span class="badge ' + p.badgeCls + '">' + esc(p.badge) + '</span></div>' : '';
     var stars = p.stars ? '<span class="rev">' + icon('star') + ' ' + esc(p.stars) + '</span>' : '<span class="rev" style="color:var(--line)">\u2605\u2605\u2605\u2605\u2605</span>';
-    return '<article class="ph-card ph-card--real" data-kind="' + p.k + '">' +
+    return '<article class="ph-card ph-card--real" data-kind="' + p.k + '" data-p="' + esc(p.n) + '">' +
       '<div class="ph-card__media">' + badge +
       '<img src="' + esc(p.img) + '" alt="' + esc(p.n) + '" loading="lazy">' +
       '<button type="button" class="quick-add js-add-demo">Add to bag</button></div>' +
@@ -93,12 +93,16 @@
       '</article>';
   }
 
-  /* collect the pool described by keys: {k: kind, int: intent} — kind/intent optional */
+  /* collect the pool described by keys: {k: kind, int: intent} — kind/intent optional.
+     Categories overlap: a product may belong to several pillars (kinds) — its primary
+     kind is `k`, extra memberships live in `kinds` (e.g. a Disney tee that is also
+     personalisable shows under Customization too). */
+  function inKind(p, kind) { return p.k === kind || (p.kinds || []).indexOf(kind) >= 0; }
   function pickPool(keys) {
     var out = [], seen = {};
     keys.forEach(function (key) {
       PRODUCTS.forEach(function (p) {
-        var okK = !key.k || p.k === key.k;
+        var okK = !key.k || inKind(p, key.k);
         var okI = !key.int || key.int.some(function (it) { return (p.int || []).indexOf(it) >= 0; });
         if (okK && okI && !seen[p.n]) { seen[p.n] = true; out.push(p); }
       });
@@ -140,9 +144,14 @@
       if (intent === 'rec') {
         keys = SEG_PICKS[segSuggestionKey()] || SEG_PICKS['local-first'];
       } else if (kinds.length > 1) {
-        /* mixed rails (e.g. "custom elly"): interleave one product from each kind */
-        var per = Math.ceil(n / kinds.length), flat = [];
-        kinds.forEach(function (k) { flat = flat.concat(fillFrom(pickPool([{ k: k }]), per, seed++)); });
+        /* mixed rails (e.g. "custom elly"): interleave one product from each kind.
+           A product in multiple kinds is only shown once per page. */
+        var per = Math.ceil(n / kinds.length), flat = [], seenN = {};
+        kinds.forEach(function (k) {
+          fillFrom(pickPool([{ k: k }]), per, seed++).forEach(function (p) {
+            if (!seenN[p.n]) { seenN[p.n] = true; flat.push(p); }
+          });
+        });
         grid.innerHTML = flat.slice(0, n).map(productCard).join('');
         return;
       } else {
@@ -561,7 +570,8 @@
       var picked = sizeSel ? $('.size-chip.is-on', sizeSel) : null;
       if (picked) {
         setBag(bagCount() + 1);
-        toast('Added to bag \u2014 <b>demo</b>. <a href="cart.html" style="text-decoration:underline;color:#fff">View bag</a>');
+        var pers = cfgSummaryText();
+        toast('Added to bag \u2014 <b>demo</b>' + (pers ? ' \u00b7 ' + esc(pers) : '') + '. <a href="cart.html" style="text-decoration:underline;color:#fff">View bag</a>');
       } else {
         toast('Please pick a size first (demo checkout flow)');
       }
@@ -1169,11 +1179,11 @@
   };
   var _cust = {
     kicker: 'Customization', h1: 'Make it truly theirs',
-    sub: 'Names, initials, thread colours and placement \u2014 embroidered or iron-on, offered right at checkout on eligible items.',
+    sub: 'Embroidered initials with placement & thread colour \u2014 or iron-on patches from a pre-set selection, on eligible items before you pay.',
     cta: 'Explore customization', ctaHref: 'customization.html',
     art: '\ud83e\uddf5', tag: 'Customization', a: '#efeafb', b: '#dcd2f5', c: '#c2b4ec',
-    f1t: 'Embroidered or iron-on', f1v: 'top-level filter', f1c: 'var(--coral)',
-    f2t: 'Add at checkout', f2v: 'eligible items', f2c: 'var(--blue)'
+    f1t: 'Embroidered or iron-on patches', f1v: 'top-level filter', f1c: 'var(--coral)',
+    f2t: 'Initial + placement + thread', f2v: 'or pre-set patches', f2c: 'var(--blue)'
   };
   var _tf1 = {
     kicker: 'Visiting Singapore \u00b7 trending event', h1: 'Disney Cruise season is coming',
@@ -1401,15 +1411,275 @@
     return null;
   }
 
+  /* ---------- Interactive personalisation configurator (PRD §5.3 · §8 #5) ----------
+     Runs on the PDP for products tagged personalisable (prod.custom). Two methods,
+     matching the live store: embroidered (initial + placement + thread colour, e.g.
+     blankets) and iron-on patches (pick from a pre-set selection \u2014 SG designs or
+     Disney-only vinyls). A product may offer both or only one. One interface, two
+     views: customer self-serve and staff/POS (unified per PRD §5.3). */
+  var CUSTOM_PLACEMENTS = {
+    'left chest':       { label: 'Left chest',       max: 10, x: '24%', y: '31%', w: '32%' },
+    'full back':        { label: 'Full back',        max: 14, x: '50%', y: '42%', w: '46%' },
+    'sleeve / cuff':    { label: 'Sleeve / cuff',    max: 8,  x: '52%', y: '74%', w: '32%' },
+    'front':            { label: 'Front centre',     max: 10, x: '50%', y: '50%', w: '42%' },
+    'corner':           { label: 'Blanket corner',   max: 12, x: '24%', y: '78%', w: '44%' },
+    'hood':             { label: 'Hood',             max: 8,  x: '50%', y: '12%', w: '34%' },
+    'keepsake box lid': { label: 'Keepsake box lid', max: 12, x: '50%', y: '46%', w: '50%' }
+  };
+  var CUSTOM_COLOURS = [
+    { name: 'Cream', hex: '#f2e8d5' }, { name: 'Coral', hex: '#ff6070' }, { name: 'Navy', hex: '#30346f' },
+    { name: 'Gold', hex: '#c9a227' }, { name: 'White', hex: '#ffffff' }, { name: 'Black', hex: '#1d1d1d' }
+  ];
+  var CUSTOM_PATCH_SETS = {
+    sg: {
+      label: 'Singapore designs',
+      note: 'pre-set Singapore-inspired patch designs (e.g. Team Kopi, Chilli Crab Hero) applied to the chest and arms',
+      patches: [
+        { id: 'kopi',   name: 'Team Kopi',                   hex: '#7b4a2d' },
+        { id: 'teh',    name: 'Team Teh',                    hex: '#c9a227' },
+        { id: 'milo',   name: 'StyloMilo',                   hex: '#6b4423' },
+        { id: 'chilli', name: 'Chilli Crab Hero',            hex: '#e14b3b' },
+        { id: 'break',  name: 'Breakfast Legends',           hex: '#d98a3f' },
+        { id: 'durian', name: 'Durian King',                 hex: '#a67c00' },
+        { id: 'kiasu',  name: 'Kiasu Spirit',                hex: '#3f7fbf' },
+        { id: 'slide',  name: 'Slide First, Homework Later!', hex: '#7a9e4d' },
+        { id: 'tissue', name: 'Tissue Warriors',             hex: '#b56576' }
+      ]
+    },
+    disney: {
+      label: 'Disney vinyls',
+      note: 'Disney-only iron-on vinyl patches (e.g. Pop Mickey) applied to the front before dispatch',
+      patches: [
+        { id: 'mickey', name: 'Pop Mickey', hex: '#e14b3b' },
+        { id: 'minnie', name: 'Pop Minnie', hex: '#ff6f91' },
+        { id: 'donald', name: 'Pop Donald', hex: '#3f7fbf' },
+        { id: 'daisy',  name: 'Pop Daisy',  hex: '#c9a227' },
+        { id: 'pluto',  name: 'Pop Pluto',  hex: '#8a6d3b' },
+        { id: 'goofy',  name: 'Pop Goofy',  hex: '#7a9e4d' }
+      ]
+    }
+  };
+  var CFG_METHOD_LABELS = { embroidered: 'Embroidered', patches: 'Iron-on patches' };
+  var CFG = { prod: null, method: '', placement: '', text: '', colourName: 'Coral', colourHex: '#ff6070', patches: [], open: false };
+  var PATCH_SPOTS = [
+    { x: '26%', y: '32%' }, { x: '48%', y: '32%' }, { x: '70%', y: '32%' },
+    { x: '37%', y: '52%' }, { x: '59%', y: '52%' }, { x: '48%', y: '68%' }
+  ];
+
+  function cfgEligible(prod) { return !!(prod && prod.custom && prod.custom.methods && prod.custom.methods.length); }
+  function cfgPlacementCfg(key) { return CUSTOM_PLACEMENTS[key] || { label: key, max: 10, x: '50%', y: '50%', w: '40%' }; }
+  function cfgPatchSet() { return CUSTOM_PATCH_SETS[(CFG.prod && CFG.prod.custom && CFG.prod.custom.patchSet) || 'sg'] || CUSTOM_PATCH_SETS.sg; }
+  function cfgPatchCount() { return (CFG.prod && CFG.prod.custom && CFG.prod.custom.patchCount) || 2; }
+  function cfgPatchById(id) {
+    var set = cfgPatchSet();
+    for (var i = 0; i < set.patches.length; i++) if (set.patches[i].id === id) return set.patches[i];
+    return null;
+  }
+  function cfgSummaryText() {
+    var parts = [];
+    if (CFG.method) parts.push(CFG_METHOD_LABELS[CFG.method] || CFG.method);
+    if (CFG.method === 'patches') {
+      if (CFG.patches.length) parts.push(CFG.patches.map(function (id) { var p = cfgPatchById(id); return p ? p.name : id; }).join(' + '));
+    } else {
+      if (CFG.text) parts.push("'" + CFG.text.toUpperCase() + "'");
+      if (CFG.placement) parts.push(cfgPlacementCfg(CFG.placement).label);
+      if (CFG.colourName) parts.push(CFG.colourName + ' thread');
+    }
+    return parts.join(' \u00b7 ');
+  }
+
+  function cfgRenderPreview() {
+    var pv = $('.cfg-preview');
+    if (!pv) return;
+    if (CFG.method === 'patches') {
+      if (!CFG.patches.length) { pv.classList.remove('is-on'); return; }
+      pv.classList.add('is-on');
+      pv.style.left = '50%'; pv.style.top = '44%'; pv.style.width = '84%';
+      pv.innerHTML = CFG.patches.map(function (id, i) {
+        var p = cfgPatchById(id);
+        var spot = PATCH_SPOTS[i % PATCH_SPOTS.length];
+        return '<span class="cfg-pv-patch" style="left:' + spot.x + ';top:' + spot.y + ';--patchc:' + (p ? p.hex : '#555') + '">' + esc(p ? p.name : id) + '</span>';
+      }).join('') + '<span class="cfg-pv-tag">Iron-on patches \u00b7 applied before dispatch</span>';
+      return;
+    }
+    if (!CFG.placement) { pv.classList.remove('is-on'); return; }
+    var pc = cfgPlacementCfg(CFG.placement);
+    pv.style.left = pc.x; pv.style.top = pc.y; pv.style.width = pc.w;
+    pv.classList.add('is-on');
+    if (CFG.text) {
+      pv.innerHTML = '<span class="cfg-pv-text" style="color:' + CFG.colourHex + '">' + esc(CFG.text.toUpperCase()) + '</span>' +
+        '<span class="cfg-pv-tag">' + esc(pc.label) + ' \u00b7 ' + esc(CFG_METHOD_LABELS[CFG.method] || CFG.method) + '</span>';
+    } else {
+      pv.innerHTML = '<span class="cfg-pv-marker"></span><span class="cfg-pv-tag">' + esc(pc.label) + '</span>';
+    }
+  }
+
+  function cfgRefresh() {
+    var isPatches = CFG.method === 'patches';
+    var max = CFG.placement ? cfgPlacementCfg(CFG.placement).max : 0;
+    var input = $('#cfgText');
+    if (input) {
+      input.maxLength = max || 16;
+      if (max && CFG.text.length > max) CFG.text = CFG.text.slice(0, max);
+      if (input.value !== CFG.text) input.value = CFG.text;
+    }
+    var m = $('#cfgMethod'); if (m) m.textContent = CFG.method ? (CFG_METHOD_LABELS[CFG.method] || CFG.method) : '\u2014';
+    var p = $('#cfgPlacement'); if (p) p.textContent = CFG.placement ? cfgPlacementCfg(CFG.placement).label : '\u2014';
+    var ch = $('#cfgChars'); if (ch) ch.textContent = CFG.text.length + (max ? ' / ' + max : '');
+    var c = $('#cfgColour'); if (c) c.textContent = (CFG.method === 'embroidered' && CFG.colourName) ? CFG.colourName : '\u2014';
+    var placeWrap = $('#cfgPlaceWrap'); if (placeWrap) placeWrap.hidden = isPatches;
+    var textWrap = $('#cfgTextWrap'); if (textWrap) textWrap.hidden = isPatches;
+    var colours = $('#cfgColoursWrap'); if (colours) colours.hidden = isPatches;
+    var patchWrap = $('#cfgPatchesWrap'); if (patchWrap) patchWrap.hidden = !isPatches;
+    var th = $('#cfgTextHint');
+    if (th) th.textContent = isPatches ? '' : (CFG.placement
+      ? (cfgPlacementCfg(CFG.placement).label + ' fits up to ' + max + ' characters \u2014 spaces count.')
+      : 'Pick a placement first \u2014 the character limit depends on it.');
+    var set = cfgPatchSet();
+    var pcSel = $('#cfgPatchSel');
+    if (pcSel) pcSel.textContent = CFG.patches.length ? CFG.patches.map(function (id) { var p = cfgPatchById(id); return p ? p.name : id; }).join(' + ') : '\u2014';
+    var pcCount = $('#cfgPatchCount');
+    if (pcCount) pcCount.textContent = CFG.patches.length + ' of ' + cfgPatchCount() + ' free';
+    var ph = $('#cfgPatchHint');
+    if (ph) ph.textContent = set.note + '. Pick up to ' + cfgPatchCount() + ' free.';
+    var sum = $('#cfgSummary');
+    if (sum) {
+      var s = cfgSummaryText();
+      sum.textContent = s ? 'Personalisation: ' + s + ' \u2014 the preview on the image updates live.' : 'Choose a method, then set the details to preview your personalisation here.';
+    }
+    cfgRenderPreview();
+  }
+
+  function cfgPickMethod(name) {
+    CFG.method = name;
+    $$('#cfgMethods .cfg-chip').forEach(function (b) { b.classList.toggle('is-on', b.getAttribute('data-v') === name); });
+    cfgRefresh();
+  }
+  function cfgPickPlacement(key) {
+    CFG.placement = key;
+    $$('#cfgPlacements .cfg-chip').forEach(function (b) { b.classList.toggle('is-on', b.getAttribute('data-v') === key); });
+    cfgRefresh();
+  }
+  function cfgPickColour(name, hex) {
+    CFG.colourName = name; CFG.colourHex = hex;
+    $$('#cfgColours .c-swatch').forEach(function (s) { s.classList.toggle('is-on', s.getAttribute('data-c') === name); });
+    cfgRefresh();
+  }
+  function cfgPickPatch(id) {
+    var i = CFG.patches.indexOf(id);
+    if (i >= 0) CFG.patches.splice(i, 1);
+    else if (CFG.patches.length < cfgPatchCount()) CFG.patches.push(id);
+    else { toast('You get ' + cfgPatchCount() + ' free patches \u2014 remove one to swap (demo).'); return; }
+    $$('#cfgPatches .cfg-chip').forEach(function (b) { b.classList.toggle('is-on', CFG.patches.indexOf(b.getAttribute('data-v')) >= 0); });
+    cfgRefresh();
+  }
+  function cfgToggleLabel() {
+    if (!CFG.prod || !CFG.prod.custom || !CFG.prod.custom.methods) return 'Add personalisation';
+    var hasE = CFG.prod.custom.methods.indexOf('embroidered') >= 0;
+    var hasP = CFG.prod.custom.methods.indexOf('patches') >= 0;
+    if (hasE && hasP) return 'Add a name or patches';
+    if (hasP) return 'Add iron-on patches';
+    return 'Add a name / initials';
+  }
+  function setPersOpen(open) {
+    CFG.open = open;
+    var cfg = $('#configurator'), tog = $('#persToggle');
+    if (cfg) cfg.hidden = !open;
+    if (tog) tog.textContent = open ? 'Hide personalisation' : cfgToggleLabel();
+  }
+
+  function initConfigurator(prod) {
+    CFG.prod = prod; CFG.method = ''; CFG.placement = ''; CFG.text = ''; CFG.colourName = 'Coral'; CFG.colourHex = '#ff6070'; CFG.patches = []; CFG.open = false;
+    var cfg = $('#configurator'), tog = $('#persToggle');
+    var eligible = cfgEligible(prod);
+    if (tog) tog.hidden = !eligible;
+    if (cfg) cfg.hidden = true;
+    if (!eligible) return;
+    var mm = $('#cfgMethods');
+    if (mm) mm.innerHTML = prod.custom.methods.map(function (mth) {
+      return '<button type="button" class="cfg-chip" data-v="' + mth + '">' + (CFG_METHOD_LABELS[mth] || mth) + '</button>';
+    }).join('');
+    var pp = $('#cfgPlacements');
+    if (pp) pp.innerHTML = (prod.custom.placements || []).map(function (pl) {
+      return '<button type="button" class="cfg-chip" data-v="' + pl + '">' + cfgPlacementCfg(pl).label + '</button>';
+    }).join('');
+    var cc = $('#cfgColours');
+    if (cc) cc.innerHTML = CUSTOM_COLOURS.map(function (col) {
+      return '<button type="button" class="c-swatch' + (col.name === 'Coral' ? ' is-on' : '') + '" data-c="' + col.name + '" style="background:' + col.hex + '" aria-label="' + col.name + ' thread"></button>';
+    }).join('');
+    var pk = $('#cfgPatches');
+    if (pk) pk.innerHTML = cfgPatchSet().patches.map(function (pt) {
+      return '<button type="button" class="cfg-chip cfg-patch" data-v="' + pt.id + '"><span class="cfg-patch-dot" style="background:' + pt.hex + '"></span>' + pt.name + '</button>';
+    }).join('');
+    if (tog) tog.textContent = cfgToggleLabel();
+    var input = $('#cfgText'); if (input) input.value = '';
+    cfgPickMethod(prod.custom.methods.indexOf('embroidered') >= 0 ? 'embroidered' : prod.custom.methods[0]);
+    try {
+      if (new URLSearchParams(window.location.search).get('personalise') === '1') setPersOpen(true);
+    } catch (e) {}
+  }
+
+  /* configurator interactions */
+  document.addEventListener('click', function (e) {
+    var tog = e.target.closest('.js-toggle-pers');
+    if (tog) { setPersOpen(!CFG.open); return; }
+    var mth = e.target.closest('#cfgMethods .cfg-chip');
+    if (mth) { cfgPickMethod(mth.getAttribute('data-v')); return; }
+    var pl = e.target.closest('#cfgPlacements .cfg-chip');
+    if (pl) { cfgPickPlacement(pl.getAttribute('data-v')); return; }
+    var sw = e.target.closest('#cfgColours .c-swatch');
+    if (sw) {
+      var col = CUSTOM_COLOURS.filter(function (c) { return c.name === sw.getAttribute('data-c'); })[0];
+      if (col) cfgPickColour(col.name, col.hex);
+      return;
+    }
+    var pch = e.target.closest('#cfgPatches .cfg-chip');
+    if (pch) { cfgPickPatch(pch.getAttribute('data-v')); return; }
+    var vb = e.target.closest('#cfgViewSeg button[data-cfgview]');
+    if (vb) {
+      $$('#cfgViewSeg button').forEach(function (x) { x.classList.toggle('is-on', x === vb); });
+      var note = $('#cfgStaffNote');
+      if (note) note.hidden = vb.getAttribute('data-cfgview') !== 'staff';
+      toast('Configurator view: <b>' + (vb.getAttribute('data-cfgview') === 'staff' ? 'Staff \u00b7 POS' : 'Customer') + '</b> \u2014 same interface, in-store capture on tablet/POS (demo)');
+      return;
+    }
+  });
+  document.addEventListener('input', function (e) {
+    if (e.target && e.target.id === 'cfgText') {
+      var max = CFG.placement ? cfgPlacementCfg(CFG.placement).max : 16;
+      CFG.text = String(e.target.value).slice(0, max);
+      if (e.target.value !== CFG.text) e.target.value = CFG.text;
+      cfgRefresh();
+    }
+  });
+
+  /* product cards deep-link to the PDP (?p= resolves the catalog); ghost cards use a
+     representative item so every listing page feeds a working PDP */
+  var REP_PRODUCT = {
+    elly: 'Overalls - Turquoise Vases',
+    disney: 'Kids Tee - Doodle Mickey',
+    gift: 'Deluxe Beginnings Keepsake Baby Gift Set',
+    custom: 'Beary Personalisable Baby Gift Set',
+    shoe: 'Jefferson Print Child Skyway Blue/ Shell White/ Twirling Horses'
+  };
+  document.addEventListener('click', function (e) {
+    var card = e.target.closest('.ph-card');
+    if (!card || e.target.closest('.quick-add')) return;
+    var q = card.getAttribute('data-p') || REP_PRODUCT[card.getAttribute('data-kind')];
+    if (q) window.location.href = 'pdp.html?p=' + encodeURIComponent(q);
+  });
+
   function populatePDP() {
     var pdp = $('.pdp');
-    if (!pdp) return;
+    /* only run on a real product PDP: pages that reuse the .pdp layout shell but are
+       not product pages (e.g. pre-order design gallery) must keep their own markup */
+    if (!pdp || !$('#pdpTitle')) return;
     var prod = null;
     try {
       var q = new URLSearchParams(window.location.search).get('p');
       if (q) prod = PRODUCTS.filter(function (p) { return p.n.toLowerCase().indexOf(q.toLowerCase()) >= 0; })[0];
     } catch (e) {}
-    if (!prod) prod = productByName("Skye Dress - Elsa's Ice Magic") || PRODUCTS[0];
+    if (!prod) prod = productByName('Beary Personalisable Baby Gift Set') || PRODUCTS[0];
     var pillar = ({ elly: 'Elly Label', disney: 'Disney | elly', shoe: 'Shoes', gift: 'Gifting', custom: 'Customization' })[prod.k] || 'Elly Label';
     var t = $('#pdpTitle'); if (t) t.textContent = prod.n;
     var k = $('#pdpKicker'); if (k) k.textContent = pillar + ' \u00b7 ' + (prod.int || []).join(' / ');
@@ -1421,8 +1691,9 @@
     if (main) {
       var imgs = prod.imgs && prod.imgs.length ? prod.imgs : [prod.img];
       main.classList.add('is-real');
-      main.innerHTML = '<div class="pdp__tags"><span class="badge badge--blue">Personalisable at checkout</span></div>' +
-        '<img class="pdp-img" src="' + esc(imgs[0]) + '" alt="' + esc(prod.n) + '">';
+      main.innerHTML = '<div class="pdp__tags">' + (cfgEligible(prod) ? '<span class="badge badge--coral">Personalisable</span>' : '') + '</div>' +
+        '<img class="pdp-img" src="' + esc(imgs[0]) + '" alt="' + esc(prod.n) + '">' +
+        '<div class="cfg-preview" id="cfgPreview"></div>';
     }
     $$('.pdp__thumb').forEach(function (th, i) {
       var imgs = prod.imgs && prod.imgs.length ? prod.imgs : [prod.img];
@@ -1431,6 +1702,7 @@
         th.innerHTML = '<img src="' + esc(imgs[i]) + '" alt="Image ' + (i + 1) + '">';
       }
     });
+    initConfigurator(prod);
   }
 
   function populateCartLines() {
@@ -1517,4 +1789,8 @@
   window.EL.toast = toast;
   window.EL.goStep = goStep;
   window.EL.startB2B = startB2B;
+  window.EL.initConfigurator = initConfigurator;
+  window.EL.cfgSummaryText = cfgSummaryText;
+  window.EL.inKind = inKind;
+  window.EL.pickPool = pickPool;
 })();
