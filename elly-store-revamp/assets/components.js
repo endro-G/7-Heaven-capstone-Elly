@@ -33,7 +33,7 @@
         { title: 'Shop by type', links: ['Newborn essentials', 'Dresses & sets', 'Tops & bottoms', 'Sleepwear', 'Swimwear', 'Outerwear'] },
         { title: 'Collections', links: ['New In', 'Wear Your SG', 'Occasionwear', 'Matching family outfits'] }
       ],
-      note: 'Facets on this pillar: age \u00b7 product type \u00b7 colour \u00b7 character-free (Elly Label is non-Disney).'
+      note: 'Facets in this category: age \u00b7 product type \u00b7 colour \u00b7 character-free (Elly Label is non-Disney).'
     },
     {
       key: 'disney-elly', label: 'Disney | elly', url: 'disney-elly.html', tint: 'disney', emoji: '\u2728',
@@ -55,7 +55,7 @@
         { title: 'Shop by type', links: ['Sneakers', 'Sandals', 'Ballet flats & Mary Janes', 'Adventure shoes', 'Waterplay'] },
         { title: 'Shop by brand', links: ['Biomecanics', 'Bobux', 'Garvalin', 'KEEN', 'Native', 'Old Soles'] }
       ],
-      note: 'Facets on this pillar: stage \u00b7 shoe type \u00b7 brand \u00b7 size \u00b7 colour.'
+      note: 'Facets in this category: stage \u00b7 shoe type \u00b7 brand \u00b7 size \u00b7 colour.'
     },
     {
       key: 'gift', label: 'Gifting Hub', url: 'gifting-hub.html', tint: 'gift', emoji: '\uD83C\uDF81',
@@ -71,7 +71,7 @@
     {
       key: 'custom', label: 'Customization', url: 'customization.html', tint: 'custom', emoji: '\uD83E\uDDF5',
       tagline: 'Make it truly theirs.',
-      blurb: 'One pillar for Customization & Personalization \u2014 names, initials, numbers and thread colours. Embroidered or iron-on, across Elly Label, Disney | elly and gifts.',
+      blurb: 'One place for Customization & Personalization \u2014 names, initials, numbers and thread colours. Embroidered or iron-on, across Elly Label, Disney | elly and gifts.',
       groups: [
         { title: 'Top-level type', links: ['Embroidered', 'Iron-on'] },
         { title: 'Personalise with', links: ['Name', 'Initials', 'Number', 'Thread colour', 'Placement'] },
@@ -119,7 +119,7 @@
     var intro =
       '<div class="mega__intro">' +
       '<div class="mega__eyebrow"><span class="mega__emoji" style="background:var(--tint-' + p.tint + ')">' + p.emoji + '</span>' +
-      '<span class="mega__kicker">Pillar \u00b7 ' + esc(p.label) + '</span></div>' +
+      '<span class="mega__kicker">' + esc(p.label) + '</span></div>' +
       '<h3>' + esc(p.tagline) + '</h3>' +
       '<p>' + esc(p.blurb) + '</p>' +
       '<div class="mega__cta"><a class="btn btn--coral btn--sm" href="' + p.url + '">Shop all ' + esc(p.label) + '</a>' +
@@ -161,7 +161,7 @@
     return PILLARS.map(function (p) {
       return '<a class="q-ql q-ql--' + p.tint + '" href="' + p.url + '">' +
         '<span class="q-ql__em">' + p.emoji + '</span>' +
-        '<span class="q-ql__tx"><b>' + esc(p.label) + '</b><i>Shop the pillar</i></span>' +
+        '<span class="q-ql__tx"><b>' + esc(p.label) + '</b><i>Shop the range</i></span>' +
         I.arrow + '</a>';
     }).join('');
   }
@@ -184,7 +184,7 @@
       '<div class="chips-group" id="recentChipsWrap" hidden><span class="chips-label">Recently searched</span><div class="chip-row" id="recentChips"></div></div>' +
       '<div class="chips-group" id="suggestChipsWrap"><span class="chips-label" id="suggestLabel">Suggested searches</span><div class="chip-row chip-row--col" id="suggestChips"></div></div>' +
       '<div class="chips-group" id="occasionChipsWrap"><span class="chips-label">Shop by occasion</span><div class="chip-row chip-row--col" id="occasionChips"></div></div>' +
-      '<div class="chips-group"><span class="chips-label">Or jump to a pillar</span><div class="search-pillars">' + pillarMiniLinks() + '</div></div>' +
+      '<div class="chips-group"><span class="chips-label">Or jump to a category</span><div class="search-pillars">' + pillarMiniLinks() + '</div></div>' +
       '</aside>' +
       '<div class="search-main">' +
       '<div class="search-idle">' +

@@ -1010,7 +1010,7 @@
   function quickPanelHTML(p) {
     var intro =
       '<div class="mega__intro"><div class="mega__eyebrow"><span class="mega__emoji" style="background:var(--tint-' + p.tint + ')">' + p.emoji + '</span>' +
-      '<span class="mega__kicker">' + p.label + ' pillar</span></div>' +
+      '<span class="mega__kicker">' + p.label + '</span></div>' +
       '<h3>' + p.tagline + '</h3>' +
       '<p>' + p.blurb + '</p>' +
       '<div class="mega__cta"><a class="btn btn--coral btn--sm" href="' + p.url + '">Shop all ' + p.label + '</a>' +
@@ -1168,7 +1168,7 @@
     f2t: 'Full payment', f2v: 'guaranteed fulfilment', f2c: 'var(--blue)'
   };
   var _cust = {
-    kicker: 'Customization pillar', h1: 'Make it truly theirs',
+    kicker: 'Customization', h1: 'Make it truly theirs',
     sub: 'Names, initials, thread colours and placement \u2014 embroidered or iron-on, offered right at checkout on eligible items.',
     cta: 'Explore customization', ctaHref: 'customization.html',
     art: '\ud83e\uddf5', tag: 'Customization', a: '#efeafb', b: '#dcd2f5', c: '#c2b4ec',
@@ -1248,7 +1248,7 @@
     'Birthday season is coming — we remembered': { i: 'hero/hero-deluxe-boxes.jpg', a: 'Keepsake gift box from an in-store purchase' },
     'Because you shopped with us': { i: 'hero/hero-sailor-mickey.png', a: 'Nautical Mickey design — restocked in your sizes' },
     'Be first to own a brand-new design': { i: 'hero/hero-preorder-garden.png', a: 'Pre-order concept artwork — Gardens by the Bay (illustrative, not approved)' },
-    'Make it truly theirs': { i: 'hero/hero-bomber.jpg', a: 'Embroidered varsity bomber from the Customization pillar' }
+    'Make it truly theirs': { i: 'hero/hero-bomber.jpg', a: 'Embroidered varsity bomber from the Customization range' }
   };
 
   function heroSlideHTML(st, i) {

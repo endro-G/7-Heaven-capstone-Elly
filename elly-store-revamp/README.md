@@ -19,9 +19,9 @@ node server.js
 | Page | What it shows |
 |---|---|
 | `index.html` | Brand-led landing: **4-slide live rotating hero banner** with real Elly Store imagery (segment-aware PRD slide order, auto-advances continuously with a coral progress fill on the active dot), **recommender tiles below the banner**, demo controls, feature bands, Pre-Order spotlight, value props |
-| `elly-label.html` … `furkids.html` | The 6 pillar listings with **working facet UI** (filters, colour swatches, clear-all, empty states) |
-| `disney-elly.html` | Pillar + Pre-Order strip |
-| `furkids.html` | Full pillar with the persistent **“Concept only — not a Disney-licensed product”** disclosure |
+| `elly-label.html` … `furkids.html` | The 6 category listings with **working facet UI** (filters, colour swatches, clear-all, empty states) |
+| `disney-elly.html` | Disney | elly listing + Pre-Order strip |
+| `furkids.html` | Full FurKids page with the persistent **“Concept only — not a Disney-licensed product”** disclosure |
 | `customization.html` | Embroidered/Iron-on method filters, thread colour, placement |
 | `pre-order.html` | Disney Pre-Order PDP: design selector (3 Singapore concepts), full-payment model, 8-week timeline, disclosure tags |
 | `pdp.html` | Generic product detail structure (sizes, qty, add-to-bag demo, accordions, cross-sell) |
@@ -46,11 +46,11 @@ node server.js
   **always-visible search field right of centre** (no scrolling needed) that **grows on
   focus while the brand/icons shrink** (Quince-style), Quince-style **search dropdown**
   with a suggestion rail + **recommender product grid** (per-visitor-segment picks),
-  6-pillar **hover mega menus**, mobile drawer and footer.
+  six-category **hover mega menus**, mobile drawer and footer.
 - **Page transitions**: every same-site navigation fades the page out through a brand
   flash (elly wordmark) and fades the next page in; in-page anchors smooth-scroll.
 - **Landing quick discovery**: the header search (with the PRD recommender panel) and the
-  six-pillar top navigation work on every page, so shoppers reach any pillar in one click.
+  six-category top navigation work on every page, so shoppers reach any category in one click.
 - **Interactions**: `assets/app.js` (live-rotating hero with dots/arrows + animated
   progress fill on the active dot, search open/close/typing, recommender engine per segment,
   visitor demo toggle, search chips, ghost grids, facets, tabs, qty steppers, B2B tiers,
