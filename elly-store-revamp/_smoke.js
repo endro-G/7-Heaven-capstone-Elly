@@ -33,7 +33,9 @@ const registry = {};
  '#suggestChips', '#suggestLabel', '#recentChips', '#recentChipsWrap', '#occasionChips', '#resultGrid',
  '#resultCount', '.search-idle', '#searchResults', '#hdrUtil', '#signLbl', '#signLink', '#mDrawer',
  '#bagCount', '#toast', '.seg', '.demo-status', '#occBanner', '#occBannerText', 'body', '#content',
- '.search-field', '.js-open-search', '#recTilesKicker', '#recTilesTitle', '#recTilesSub', '#heroDynamic']
+ '.search-field', '.js-open-search', '#recTilesKicker', '#recTilesTitle', '#recTilesSub', '#heroDynamic',
+ '#b2bWizard', '#b2bMatrix', '#b2bLines', '#b2bTierNote', '#b2bRunQty', '#b2bRunSub', '#b2bRunDeco', '#b2bRunSave', '#b2bRunTotal',
+ '#b2bQty', '#b2bSub', '#b2bSave', '#b2bTotal', '#b2bUnit', '#rushNote', '#artName', '#decoPanes', '#b2bDate', '#artFile', '#b2bRequest']
   .forEach((s) => { registry[s] = makeEl('div'); });
 
 const listeners = {};
@@ -75,5 +77,12 @@ try {
   check('no header label says Cart', !/>Cart<\/span>/.test(all));
   check('default signed-in: sign label = Hi, Chloe', (registry['#signLbl'].textContent || '') === 'Hi, Chloe');
   check('mode default guest = returning', sandbox.EL && typeof sandbox.EL === 'object');
+  check('B2B banner injected (headline + sub-line + CTA)', /b2b-banner/.test(all) && /Bulk and corporate orders, made simple/.test(all) && /Start your quote/.test(all) && /b2b\.html/.test(all));
+  check('mobile drawer has B2B link', /b2b\.html">B2B &amp; bulk quotes<\/a>/.test(all));
+  registry['#b2bWizard'].hidden = true;
+  check('B2B wizard hidden by default', registry['#b2bWizard'].hidden === true);
+  check('startB2B exported', typeof sandbox.EL.startB2B === 'function');
+  sandbox.EL.startB2B('Corporate', 1);
+  check('startB2B reveals wizard without error', registry['#b2bWizard'].hidden === false);
 } catch (err) { console.error('UNCAUGHT:', err && err.stack || err); failed = true; }
 process.exit(failed ? 1 : 0);

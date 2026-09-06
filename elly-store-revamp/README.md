@@ -21,12 +21,12 @@ node server.js
 | `index.html` | Brand-led landing: **4-slide live rotating hero banner** with real Elly Store imagery (segment-aware PRD slide order, auto-advances continuously with a coral progress fill on the active dot), **recommender tiles below the banner**, demo controls, feature bands, Pre-Order spotlight, value props |
 | `elly-label.html` … `furkids.html` | The 6 pillar listings with **working facet UI** (filters, colour swatches, clear-all, empty states) |
 | `disney-elly.html` | Pillar + Pre-Order strip |
-| `furkids.html` | Full pillar with the persistent **“Concept — pending Disney licence approval”** disclosure |
+| `furkids.html` | Full pillar with the persistent **“Concept only — not a Disney-licensed product”** disclosure |
 | `customization.html` | Embroidered/Iron-on method filters, thread colour, placement |
 | `pre-order.html` | Disney Pre-Order PDP: design selector (3 Singapore concepts), full-payment model, 8-week timeline, disclosure tags |
 | `pdp.html` | Generic product detail structure (sizes, qty, add-to-bag demo, accordions, cross-sell) |
 | `cart.html` / `checkout.html` | Bag + checkout with **all 3 tourist fulfilment options** (ship to SG/hotel · ship home · buy in-store/pop-up) |
-| `b2b.html` | Self-serve RFQ: order type → items/qty → **live tiered pricing** → quote summary |
+| `b2b.html` | B2B landing (use-case cards) → 5-step RFQ: order type/date → items → decoration (conditional fields) → **size×qty matrix + live tiered pricing** → artwork/shipping → two-stage quote confirmation |
 | `account.html` | Unified profile: in-store + online order history merged, loyalty points (Smile placeholder rules) |
 | `admin.html` | Demo dashboard: 3 KPI families + interactive **demand vs MOQ** per Pre-Order design |
 
@@ -40,7 +40,9 @@ node server.js
 ## Prototype conventions
 
 - **Shell**: `assets/components.js` auto-injects on every page (from `<body data-page>`):
-  announcement bar, sticky header — brand left, **larger Sign In + Cart icons** and an
+  announcement bar, scrolling **B2B banner** ("Bulk and corporate orders, made simple" ·
+  "Start your quote" CTA, PRD §10), sticky header —
+  brand left, **larger Sign In + Cart icons** and an
   **always-visible search field right of centre** (no scrolling needed) that **grows on
   focus while the brand/icons shrink** (Quince-style), Quince-style **search dropdown**
   with a suggestion rail + **recommender product grid** (per-visitor-segment picks),
@@ -55,7 +57,7 @@ node server.js
   fulfilment options, admin MOQ demo).
 - **Ghost cards**: `data-ghost-grid` fills placeholder product cards — swap the filler for
   real product data next; all facets/grid code is already wired to receive it.
-- **Demo disclosure**: badge/ribbon pattern `Concept · pending Disney licence approval` marks
+- **Demo disclosure**: badge/ribbon pattern `Concept only — not a Disney-licensed product` marks
   FurKids; `Concept design — prototype illustration only` marks Pre-Order art (per PRD §§5.3, 8, 11).
 - All prices/discounts/tiers/points are **illustrative placeholders** (PRD §12 open items).
 

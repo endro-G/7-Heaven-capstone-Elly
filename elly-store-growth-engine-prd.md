@@ -13,8 +13,8 @@
 The Elly Store is repositioning as **"Singapore's Disney design-house label."** This PRD defines a growth engine spanning **three pillars** to grow Disney-line revenue 3x over 18–24 months:
 
 1. **Consumer Growth Engine** (§§4–9): the core Acquire → Recognise → Convert → Retain funnel layered onto theellystore.com, serving tourists and locals as one unified funnel.
-2. **B2B Channels** (§10, new): bulk, family, event, and corporate orders — a distinct demand source from individual consumer purchases, with its own quote/pricing flow.
-3. **Elly FurKids** (§11, new): a Disney-licensed pet products line (blankets/mats, bows, apparel), riding the rising pet-ownership trend as a new category adjacent to the core kids' apparel business. *Disney licensing feasibility for this pillar is unconfirmed — see §11 for how this is handled in the prototype.*
+2. **B2B Channels** (§10, new): bulk/wholesale, corporate, and corporate-event orders — a distinct demand source from individual consumer purchases, with its own quote/pricing flow. *Family/multi-child orders are treated as consumer (B2C) purchases and are not part of the B2B channel.*
+3. **Elly FurKids** (§11, new): a Disney-branded pet products concept (blankets/mats, bows, apparel), riding the rising pet-ownership trend as a new category adjacent to the core kids' apparel business. *This is a concept only — the business has not applied for, and is not in the process of pursuing, Disney licensing for this category. See §11 for how the prototype represents this.*
 
 Pillar 1 is the largest and most developed pillar in this PRD; Pillars 2 and 3 supplement it to help meet the overall 3x GMV objective through channels and categories the core funnel alone doesn't reach.
 
@@ -120,6 +120,13 @@ This is the connective tissue of the whole engine — without it, tourists who b
   - Consolidates "Customization" and "Personalization" into one pillar.
   - Top-level type filter: Embroidered vs. Iron-on.
   - Attribute filters: name, initials, thread colour (embroidered only), placement.
+- **Interactive customization configurator** — improves on the current live-site flow, where personalization is a generic text field chosen at checkout after the item is already in the cart, with no visual feedback on what the customer will actually receive. The configurator moves this to the **product page, before add-to-cart**:
+  1. Type selection: Embroidered vs. Iron-on.
+  2. Placement selection, shown against that specific product's image — only placements valid for that product are offered (e.g. left chest, full back, sleeve).
+  3. Text entry (name/initials), with live character-count validation matching what the chosen placement/size can accommodate.
+  4. Thread colour selection (embroidered only).
+  5. **Live preview**: the product image updates to show an approximate rendering of the chosen text, placement, and colour, so the customer sees what they're ordering rather than guessing from a text field.
+  - **Unified for customer and staff use**: the same configurator interface is usable both by a customer self-serve online, and by a sales assistant on a tablet/POS in-store — replacing whatever manual or ad hoc process currently captures in-store customization orders. One interface for both channels means staff don't need a separate system to learn, in-store customization orders are captured with the same structured data as online ones, and — per the unified profile in §5.2 — the resulting order feeds into the customer's cross-channel history regardless of which channel it was placed on.
 - **Tourist-specific fulfillment options at checkout** — all three offered, selectable by the customer:
   1. **Ship to SG address/hotel** (e.g. before they fly home)
   2. **Ship to home country** (after they've left Singapore)
@@ -157,7 +164,7 @@ The catalog spans Disney and non-Disney items across many attributes (product ty
 3. Shoe Boutique
 4. Gifting Hub
 5. **Customization** *(consolidates "Customization" and "Personalization")*
-6. **Elly FurKids** *(new — see §11; Disney-branded pet products, clearly marked as pending licensing per §11)*
+6. **Elly FurKids** *(new — see §11; Disney-branded pet products concept, clearly marked as a concept only — no license applied for or in progress — per §11)*
 
 **Layer 2 — Cross-cutting facets (filters, not categories).** Applied within any pillar or search result, not as separate nav items:
 - **Character/franchise** (Mickey, Minnie, Princess, Toy Story, etc.) — this absorbs what would otherwise be endless Disney sub-categories.
@@ -201,13 +208,13 @@ Every product carries multiple tags across these facets so it can appear correct
   2. Search bar on focus showing recently-searched chips plus segment-appropriate suggestion chips (trending intents for first-time, recommender-based for returning).
   3. Top nav reflecting the pillar/facet taxonomy model (§6): pillars in nav, facets as in-page filters.
   4. Occasion-based browse groupings, each populated with real products.
-  5. Customization pillar with working Embroidered/Iron-on filter + name/initials/thread colour/placement attributes.
+  5. The interactive customization configurator on a product page: type selection → placement → text entry with validation → thread colour (embroidered) → live preview updating on the product image — demonstrated as usable in the same interface by both a customer view and a staff/POS view.
   6. Disney Pre-Order PDP flow: design → lead-time messaging → full-payment checkout, with an admin/demo view showing per-design production quantity resolving to whichever is higher of demand or MOQ (independently per design, not split across a product line).
   7. Checkout flow showing all three tourist fulfillment options.
   8. A logged-in account view showing unified purchase history (mock in-store + online records) and loyalty points balance.
   9. A simple admin/demo panel showing the three KPI families (conversion/AOV, repeat rate, cross-channel match rate) as illustrative dashboard tiles — not live data, but structured to show where real analytics would plug in.
   10. The B2B self-serve RFQ flow (§10): order-type selection → item/quantity → live tiered pricing → quote summary.
-  11. The Elly FurKids pillar (§11): product listing, PDP, and cart/checkout, with the pending-licensing badge visible throughout.
+  11. The Elly FurKids pillar (§11): product listing, PDP, and cart/checkout, with the concept-only disclosure badge visible throughout.
   12. The same core journeys above, working cleanly at phone, tablet, and laptop/PC breakpoints.
 - **Tech assumption**: no multi-currency/multi-language build needed. Open to custom/headless approach; does not need to be constrained to Shopify's native theme system for the prototype.
 
@@ -219,42 +226,49 @@ Every product carries multiple tags across these facets so it can appear correct
 - Multi-currency and multi-language support.
 - Chatty AI upgrade (flagged for future phase only).
 - Physical POS system changes beyond the loyalty-capture prompt described in §5.2.
-- Actual Disney licensing negotiation/confirmation for the Elly FurKids category (§11) — this is a legal/business-development workstream, not a prototype deliverable.
-- Live payment processing, invoicing, or ERP/ordering-system integration for B2B quotes (§10) — the prototype demonstrates the self-serve quote *experience*, not backend order fulfillment.
+- Actual Disney licensing application or negotiation for the Elly FurKids category (§11) — no application has been made or is in progress; this is a legal/business-development workstream for the future, not a prototype deliverable.
+- Live Shopify Draft Order/Admin API integration, invoicing, or ERP/ordering-system integration for B2B quotes (§10) — the prototype demonstrates the self-serve quote *experience*, not the backend Shopify wiring, which is a production-build task.
+- Shopify Plus-exclusive B2B features (native company accounts, self-serve Net terms, multi-location profiles) — not required for the RFQ flow as scoped in §10.
 
 ---
 
 ## 10. Growth Pillar 2 — B2B Channels
 
-Bulk, family, event, and corporate orders are a distinct demand source from individual consumer purchases — larger order sizes, different buying process (quote-driven, not impulse), and a different success metric (deal size, not conversion rate).
+Bulk/wholesale, corporate, and corporate-event orders are a distinct demand source from individual consumer purchases — larger order sizes, different buying process (quote-driven, not impulse), and a different success metric (deal size, not conversion rate). **Scope: B2B covers bulk/wholesale (company) orders and corporate orders/corporate events only — family and multi-child orders are considered B2C and are excluded from this channel.** Replaces the traditional "contact a person for bulk orders" model with a structured, self-serve intake — this removes the 2–3 clarifying-email cycle that normally precedes a quote by capturing everything the production team needs upfront.
 
-- **Self-serve quote/RFQ flow**, entirely on-site (not routed to a contact form):
-  1. **Order-type selector**: Bulk/Wholesale, Family (multi-child/sibling sets), Event (e.g. birthday party favours), or Corporate (corporate gifting).
-  2. **Item + quantity selection**, drawing from the same product catalog as consumer browsing (including Customization pillar items, since bulk+customized is a common combination for events/corporate).
-  3. **Live tiered bulk pricing**, updating as quantity is adjusted. Placeholder tiers for prototype (illustrative — replace with real pricing before production):
-     - 10–49 units: 10% off
-     - 50–99 units: 15% off
-     - 100–299 units: 20% off
-     - 300+ units: "Custom quote" — flags for manual sales follow-up rather than an automatic discount
-  4. **Quote summary screen**: itemized list, tier discount applied, total — presented as a downloadable/shareable quote, not an immediate checkout (this is a quote-request flow, not a live payment flow; see Out of Scope, §9).
-- **Cross-sell awareness**: the RFQ flow should surface Customization options contextually (e.g. "add names for the whole group") given family/event/corporate orders are natural customization use-cases.
+- **Entry point**: a persistent, visually distinct **banner at the top of every page** ("Bulk and corporate orders, made simple" with a "Start your quote" CTA — not mixed into the product-browsing pillars in §6), so it's discoverable site-wide regardless of which page a business buyer lands on first. This leads to a **dedicated B2B landing page** (value proposition, trust signals, and use-case cards for Bulk/wholesale, Corporate gifting, and Corporate events) with a "Start your quote" CTA into the wizard below — appropriate since a buyer arriving via the banner hasn't necessarily specified what they need yet.
+- **Contextual nudges** on relevant product/pillar pages (e.g. a "Ordering 10 or more?" banner on the Customization pillar) skip the landing page entirely and **deep-link straight into the RFQ wizard with that item pre-selected** — this visitor has already shown specific intent, so the landing page would be an extra, unnecessary step (consistent with the minimal-click principle in §3).
+- **Self-serve quote/RFQ flow**, entirely on-site, as a multi-step form (not a single long page) with conditional fields — e.g. selecting "Embroidery" as decoration method reveals placement and thread-colour fields; selecting "Screen print" would show different fields instead:
+  1. **Event/order details**: order type (Bulk/Wholesale, Corporate, Corporate event), event date or deadline (flags rush-fee territory for sales review, not an automatic surcharge in the prototype).
+  2. **Product and decoration**: garment/item selection (from the same catalog as consumer browsing, including Customization pillar items), decoration method (Embroidery / Screen print / Iron-on / DTG), with method-specific conditional fields (placement, thread colour, etc.).
+  3. **Quantity by size**: a matrix field (size × quantity), with a running total, since bulk pricing tiers are based on total units.
+  4. **Artwork upload and shipping**: file upload for logos/artwork (high-res formats), and shipping logistics (single bulk shipment vs. split shipping to multiple locations).
+- **Live tiered bulk pricing**, updating as quantity is adjusted, shown as an instant estimate. Placeholder tiers for prototype (illustrative — replace with real pricing before production):
+  - 10–49 units: 10% off
+  - 50–99 units: 15% off
+  - 100–299 units: 20% off
+  - 300+ units: "Custom quote" — flags for manual sales follow-up rather than an automatic discount
+- **Two-stage quote-to-checkout (recommended over full straight-through automation)**: the form generates an **instant estimate**, not an instant payment link. For anything beyond a standard catalog item at standard decoration (i.e. most bulk/corporate orders — custom artwork, placement, or a rush date), production feasibility and true cost still need a human check before money changes hands. Flow: **instant estimate shown on-site → submission creates a Shopify Draft Order (via Admin API) with all captured specs and artwork attached → sales reviews and confirms/adjusts → confirmed checkout link sent to the customer** (card, bank transfer, or Net terms if available). This keeps the "no back-and-forth email" benefit while avoiding an auto-sent checkout link on a quote the factory can't actually deliver at that price.
+- **Platform note**: theellystore.com runs on Shopify (plan tier to be confirmed). Draft Order creation via the Admin API is available on all Shopify plans, so this flow does not depend on Shopify Plus. Plus-exclusive features (native B2B company accounts, self-serve Net terms, multi-location company profiles) are **not required** for this flow and are out of scope for now (see §9) — worth revisiting only if the business later wants self-serve net-terms billing for repeat corporate accounts.
+- **Build approach recommendation**: a custom-built form (theme extension or custom Liquid template) wired to the Admin API via webhook, rather than a third-party form-builder app. A generic form-builder app's UI will not match the brand fidelity and interaction quality required elsewhere in this PRD (§3) — it will read as a bolted-on widget rather than a native part of the site.
+- **Cross-sell awareness**: the RFQ flow should surface Customization options contextually (e.g. "add names or a logo for the whole order") given wholesale/corporate/corporate-event orders are natural customization use-cases.
 - **Prototype demonstration**: the full flow above, end-to-end, with the same brand fidelity and responsive requirements as §8.
 
 ---
 
 ## 11. Growth Pillar 3 — Elly FurKids
 
-A Disney-licensed pet products line — blankets/mats, bows, and pet apparel — riding the rising pet-ownership trend as a category adjacent to the core kids' apparel business.
+A Disney-branded pet products concept (not a Disney-licensed line) — blankets/mats, bows, and pet apparel — riding the rising pet-ownership trend as a category adjacent to the core kids' apparel business.
 
-**Licensing status — read before building:** Disney licensing feasibility for pet products is **unconfirmed**. Per stakeholder direction, the prototype represents this as a **full Disney-branded FurKids line**, built as an aspirational demo, but it must be **clearly and consistently marked as pending licensing approval** everywhere it appears — this is a hard requirement, not a nice-to-have, so the prototype is never mistaken for a confirmed product line:
-- A persistent badge/ribbon on the FurKids nav pillar and every FurKids page (e.g. "Concept — Pending Disney License Approval").
+**Licensing status — read before building:** This pillar is a **concept only**. The business has **not applied for, and is not in the process of pursuing**, Disney licensing for the pet-products category — there is no application, negotiation, or approval underway. Per stakeholder direction, the prototype nonetheless represents this as a **full Disney-branded FurKids concept**, built as an aspirational demo — but it must be **clearly and consistently disclosed as a concept, not a real or in-progress product line**, everywhere it appears. This is a hard requirement, not a nice-to-have, so the prototype is never mistaken for a confirmed or pending licensing arrangement:
+- A persistent badge/ribbon on the FurKids nav pillar and every FurKids page (e.g. "Concept only — not a Disney-licensed product"). Avoid any wording implying an application, review, or approval process is underway (e.g. do not use "pending," "under review," or "awaiting approval").
 - The same disclosure pattern used for the Pre-Order concept artwork (§5.3) — consistent visual language for "this is illustrative, not confirmed" across the whole prototype.
 
 - **6th top-level nav pillar** (alongside Elly Label, Disney|elly, Shoe Boutique, Gifting Hub, Customization — see §6).
 - **Product range**: blankets (doubling as mats), bows, and pet apparel.
 - **Taxonomy**: follows the same pillar/facet model as §6 — facets for pet size (S/M/L), product type (blanket-mat/bow/apparel), and character/franchise, consistent with how the rest of the catalog is organised.
 - **Cross-sell opportunity**: surfaced contextually in Gifting Hub (pet-owner gift sets) and Customization (e.g. name tag/bandana personalization), consistent with the AOV cross-sell pattern already used elsewhere (§5.3).
-- **Prototype demonstration**: full pillar with product listing, PDP, and cart/checkout consistent with the rest of the site — with the pending-licensing badge visible throughout.
+- **Prototype demonstration**: full pillar with product listing, PDP, and cart/checkout consistent with the rest of the site — with the concept-only disclosure badge visible throughout.
 
 ---
 
@@ -263,7 +277,7 @@ A Disney-licensed pet products line — blankets/mats, bows, and pet apparel —
 - [ ] Typical MOQ figures from approved factories, to reflect realistically in the pre-order demand-vs-MOQ demo logic. *(Resolved for prototype purposes — see §5.3, assumption of 1,000 units.)*
 - [ ] Smile loyalty program's current point-earning/redemption rules. *(Resolved for prototype purposes — see §5.4, placeholder rules to be replaced with real Smile configuration before production.)*
 - [ ] Actual bulk/corporate pricing tiers and discount thresholds for B2B (§10) — prototype uses illustrative placeholder tiers.
-- [ ] Confirmation of Disney's willingness to license the pet-products category for Elly FurKids (§11) — this is a real open business question, not just a prototype placeholder.
+- [ ] Whether the business wants to pursue Disney licensing for the pet-products category for Elly FurKids (§11) at all — this is a real open business question (no application has been made or started), not just a prototype placeholder.
 - [ ] Elly FurKids product range and pricing, if different from placeholder assumptions in §11.
 
 ---

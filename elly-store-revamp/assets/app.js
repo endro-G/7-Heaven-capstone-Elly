@@ -540,7 +540,8 @@
     if (q) {
       var row = q.closest('.qty-row');
       var out = $('output', row);
-      var cur = parseInt(out.value, 10) || 1;
+      var raw = parseInt(out.value, 10);
+      var cur = isNaN(raw) ? 1 : raw;
       var min = parseInt(row.getAttribute('data-min') || '1', 10);
       var max = parseInt(row.getAttribute('data-max') || '99', 10);
       var next = Math.min(max, Math.max(min, cur + parseInt(q.getAttribute('data-step'), 10)));
@@ -671,7 +672,7 @@
     });
   });
 
-  /* ---------- B2B quote (tiered pricing, PRD §10) ---------- */
+  /* ---------- B2B quote (tiered pricing + RFQ wizard, PRD §10) ---------- */
   var TIERS = [
     { min: 10, max: 49, disc: 0.10 },
     { min: 50, max: 99, disc: 0.15 },
@@ -679,44 +680,89 @@
     { min: 300, max: Infinity, disc: null }
   ];
 
+  /* sample catalog rows for the RFQ demo (PRD §10) — real items plug in from the catalog later */
+  var B2B_ITEMS = [
+    { name: 'Sample \u00b7 Disney tee', unit: 34 },
+    { name: 'Sample \u00b7 Elly romper', unit: 29 },
+    { name: 'Sample \u00b7 personalised robe', unit: 59 }
+  ];
+  var B2B_SIZES = {
+    0: ['0\u20131Y', '2\u20133Y', '4\u20135Y', '6\u20137Y', '8\u201310Y', '11\u201314Y'],
+    1: ['0\u20133M', '3\u20136M', '6\u201312M', '1\u20132Y', '2\u20133Y'],
+    2: ['2\u20133Y', '4\u20135Y', '6\u20137Y', '8\u201310Y', '11\u201314Y']
+  };
+  var B2B_OTYPE_ALIAS = { bulk: 'Bulk / wholesale', corporate: 'Corporate', event: 'Corporate event' };
+  var b2bDeco = { method: 'Standard', add: 0 };
+
+  function buildB2BMatrix() {
+    var box = $('#b2bMatrix');
+    if (!box) return;
+    box.innerHTML = B2B_ITEMS.map(function (it, i) {
+      var sizes = B2B_SIZES[i] || [];
+      var th = sizes.map(function (s) { return '<th>' + s + '</th>'; }).join('');
+      var td = sizes.map(function () {
+        return '<td><div class="qty-row" data-min="0" data-max="500">' +
+          '<button type="button" data-step="-1" aria-label="Decrease">\u2212</button>' +
+          '<output>0</output>' +
+          '<button type="button" data-step="1" aria-label="Increase">+</button></div></td>';
+      }).join('');
+      return '<div class="js-b2b-line b2b-line" data-idx="' + i + '" data-name="' + it.name + '" data-unit="' + it.unit + '" style="margin-bottom:26px">' +
+        '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px">' +
+        '<b>' + it.name + '</b><span class="muted small">S$' + it.unit.toFixed(2) + ' each</span>' +
+        '<span class="small" style="margin-left:auto">Line total: <b class="js-line-total">S$0.00</b> \u00b7 <b class="js-line-qty">0</b> units</span></div>' +
+        '<div class="sz-scroll"><table class="sz-matrix"><thead><tr>' + th + '</tr></thead><tbody><tr>' + td + '</tr></tbody></table></div>' +
+        '</div>';
+    }).join('');
+  }
+
   function b2bRecalc() {
     var totalQty = 0, subtotal = 0, rowsHtml = '';
     $$('.js-b2b-line').forEach(function (line) {
-      var q = parseInt($('.qty-row output', line).value, 10) || 0;
+      if (line.classList.contains('is-off')) return;
+      var q = 0;
+      $$('.qty-row output', line).forEach(function (o) { q += parseInt(o.value, 10) || 0; });
       var unit = parseFloat(line.getAttribute('data-unit')) || 0;
       var name = line.getAttribute('data-name') || 'Item';
       totalQty += q;
       subtotal += q * unit;
-      if (q > 0) {
-        rowsHtml += '<div class="r"><span>' + name + ' \u00d7 ' + q + '</span><b>S$' + (q * unit).toFixed(2) + '</b></div>';
-      }
       var per = $('.js-line-total', line);
       if (per) per.textContent = 'S$' + (q * unit).toFixed(2);
+      var qo = $('.js-line-qty', line);
+      if (qo) qo.textContent = q;
+      if (q > 0) rowsHtml += '<div class="r"><span>' + name + ' \u00d7 ' + q + '</span><b>S$' + (q * unit).toFixed(2) + '</b></div>';
     });
+    var deco = (b2bDeco.add && totalQty) ? b2bDeco.add * totalQty : 0;
+    if (deco) rowsHtml += '<div class="r"><span>Decoration \u00b7 ' + b2bDeco.method + ' \u00d7 ' + totalQty + ' units</span><b>S$' + deco.toFixed(2) + '</b></div>';
+
     var tier = totalQty >= 10 ? (TIERS.find(function (t) { return totalQty >= t.min && totalQty <= t.max; }) || null) : null;
     var custom = tier && tier.disc === null;
     var disc = tier && !custom ? tier.disc : 0;
     var save = subtotal * disc;
-    var total = subtotal - save;
+    var total = subtotal + deco - save;
     var belowMin = totalQty > 0 && totalQty < 10;
 
     $$('.tier-table tr[data-tier]').forEach(function (tr) {
       tr.classList.toggle('is-on', !!tier && parseInt(tr.getAttribute('data-tier'), 10) === tier.min);
     });
-    var out = {
-      qty: $('#b2bQty'), sub: $('#b2bSub'), save: $('#b2bSave'), total: $('#b2bTotal'), unit: $('#b2bUnit'), tierNote: $('#b2bTierNote'), lines: $('#b2bLines'), unitNote: $('#b2bUnitNote')
-    };
-    if (out.qty) out.qty.textContent = totalQty;
-    if (out.sub) out.sub.textContent = 'S$' + subtotal.toFixed(2);
-    if (out.save) out.save.textContent = custom ? '\u2014' : (save ? '-\u00a0S$' + save.toFixed(2) : 'S$0.00');
-    if (out.total) out.total.textContent = custom ? 'Custom quote' : 'S$' + total.toFixed(2);
-    if (out.unit) out.unit.textContent = subtotal && totalQty ? 'S$' + (total / totalQty).toFixed(2) : '\u2014';
-    if (out.lines) out.lines.innerHTML = rowsHtml || '<div class="r"><span>No items added yet</span><b>\u2014</b></div>';
-    if (out.tierNote) {
-      if (!totalQty) out.tierNote.textContent = 'Add quantities to preview live tiered pricing.';
-      else if (belowMin) out.tierNote.textContent = 'Below the 10-unit tier minimum \u2014 contact us for smaller orders.';
-      else if (custom) out.tierNote.textContent = '300+ units \u2014 this flags for our team to prepare a custom quote (per prototype pricing model).';
-      else out.tierNote.textContent = 'Tier applied: ' + tier.min + '\u2013' + (tier.max === Infinity ? '+' : tier.max) + ' units \u00b7 ' + (disc * 100) + '% off.';
+    function set(id, txt) { var el = $(id); if (el) el.textContent = txt; }
+    set('#b2bQty', totalQty);
+    set('#b2bSub', 'S$' + subtotal.toFixed(2));
+    set('#b2bSave', custom ? '\u2014' : (save ? '-\u00a0S$' + save.toFixed(2) : 'S$0.00'));
+    set('#b2bTotal', custom ? 'Custom quote' : 'S$' + total.toFixed(2));
+    set('#b2bUnit', totalQty ? 'S$' + (total / totalQty).toFixed(2) : '\u2014');
+    set('#b2bRunQty', totalQty);
+    set('#b2bRunSub', 'S$' + subtotal.toFixed(2));
+    set('#b2bRunDeco', 'S$' + deco.toFixed(2));
+    set('#b2bRunSave', custom ? '\u2014' : (save ? '-\u00a0S$' + save.toFixed(2) : 'S$0.00'));
+    set('#b2bRunTotal', custom ? 'Custom quote' : 'S$' + total.toFixed(2));
+    var lines = $('#b2bLines');
+    if (lines) lines.innerHTML = rowsHtml || '<div class="r"><span>No items added yet</span><b>\u2014</b></div>';
+    var note = $('#b2bTierNote');
+    if (note) {
+      if (!totalQty) note.textContent = 'Add quantities to preview live tiered pricing.';
+      else if (belowMin) note.textContent = 'Below the 10-unit tier minimum \u2014 contact us for smaller orders.';
+      else if (custom) note.textContent = '300+ units \u2014 this flags for our team to prepare a custom quote (per prototype pricing model).';
+      else note.textContent = 'Tier applied: ' + tier.min + '\u2013' + (tier.max === Infinity ? '+' : tier.max) + ' units \u00b7 ' + (disc * 100) + '% off.';
     }
   }
   document.addEventListener('qtychange', function (e) {
@@ -739,12 +785,134 @@
   document.addEventListener('click', function (e) {
     var next = e.target.closest('.js-b2b-next');
     if (next) {
-      var g = next.getAttribute('data-goto');
-      if (g === '2' && bagCount() === 0 && !$('.js-b2b-line')) {
-        /* allow: sample lines present */
+      var g = parseInt(next.getAttribute('data-goto'), 10);
+      b2bRecalc();
+      goStep(g);
+    }
+  });
+
+  /* reveal wizard + preselect order type (landing CTA / use-case cards / deep links) */
+  function setB2BOType(name) {
+    if (!name) return;
+    $$('.otype').forEach(function (c) { c.classList.toggle('is-on', c.getAttribute('data-name') === name); });
+    $$('.js-otype-label').forEach(function (t) { t.textContent = name; });
+  }
+  function startB2B(otypeName, step) {
+    var wiz = $('#b2bWizard');
+    if (!wiz) return;
+    wiz.hidden = false;
+    setB2BOType(otypeName || '');
+    goStep(step || 1);
+    setTimeout(function () {
+      if (wiz.scrollIntoView) wiz.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 80);
+  }
+  document.addEventListener('click', function (e) {
+    var st = e.target.closest('.js-b2b-start');
+    if (!st) return;
+    startB2B(st.getAttribute('data-otype') || '', parseInt(st.getAttribute('data-step') || '1', 10));
+  });
+
+  /* deep-link support: b2b.html?otype=corporate&step=2 */
+  function applyB2BQuery() {
+    if (!$('#b2bWizard')) return;
+    var params = {};
+    (window.location.search || '').replace(/^\?/, '').split('&').forEach(function (kv) {
+      if (!kv) return;
+      var p = kv.split('=');
+      params[decodeURIComponent(p[0])] = decodeURIComponent(p[1] || '');
+    });
+    if (!params.start && !params.otype && !params.step) return;
+    var otype = B2B_OTYPE_ALIAS[String(params.otype || '').toLowerCase()] || '';
+    var step = Math.min(Math.max(parseInt(params.step, 10) || 1, 1), 6);
+    startB2B(otype, step);
+  }
+
+  /* item include/exclude (step 2) */
+  document.addEventListener('click', function (e) {
+    var inc = e.target.closest('.js-b2b-inc');
+    if (!inc) return;
+    var on = !inc.classList.contains('is-on');
+    inc.classList.toggle('is-on', on);
+    var idx = inc.getAttribute('data-idx');
+    $$('.js-b2b-line').forEach(function (line) {
+      if (line.getAttribute('data-idx') !== idx) return;
+      line.classList.toggle('is-off', !on);
+      if (!on) {
+        $$('.qty-row output', line).forEach(function (o) { o.value = 0; o.textContent = 0; });
       }
-      goStep(parseInt(g, 10));
-      if (g === '2') b2bRecalc();
+    });
+    b2bRecalc();
+  });
+
+  /* decoration method chips + thread colour swatches (step 3) */
+  document.addEventListener('click', function (e) {
+    var chip = e.target.closest('.deco-chip');
+    if (!chip) return;
+    var row = chip.closest('.chip-row');
+    if (row) $$('.deco-chip', row).forEach(function (c) { c.classList.remove('is-active'); });
+    chip.classList.add('is-active');
+    b2bDeco.method = chip.getAttribute('data-method');
+    b2bDeco.add = parseFloat(chip.getAttribute('data-add')) || 0;
+    $$('#decoPanes [data-method-pane]').forEach(function (p) { p.hidden = p.getAttribute('data-method-pane') !== b2bDeco.method; });
+    b2bRecalc();
+  });
+  document.addEventListener('click', function (e) {
+    var sw = e.target.closest('.sw');
+    if (!sw) return;
+    $$('.sw', sw.parentElement).forEach(function (c) { c.classList.remove('is-on'); });
+    sw.classList.add('is-on');
+  });
+
+  /* rush-date flag (step 1) */
+  document.addEventListener('change', function (e) {
+    if (e.target.id !== 'b2bDate') return;
+    var v = e.target.value;
+    var note = $('#rushNote');
+    if (!note) return;
+    var days = 0;
+    if (v) days = Math.ceil((new Date(v).getTime() - Date.now()) / 86400000);
+    note.hidden = !v || days >= 21;
+  });
+
+  /* artwork upload (step 5) — client-side only */
+  document.addEventListener('change', function (e) {
+    if (e.target.id !== 'artFile') return;
+    var f = e.target.files && e.target.files[0];
+    var t = $('#artName');
+    if (t) t.textContent = f ? 'File ready: ' + f.name + ' \u2014 demo only, nothing is uploaded.' : 'No file chosen.';
+  });
+
+  /* two-stage close-out: request quote → confirmation (PRD §10) */
+  document.addEventListener('click', function (e) {
+    var req = e.target.closest('#b2bRequest');
+    if (req) {
+      var q = parseInt((($('#b2bQty') || {}).textContent), 10) || 0;
+      if (!q) { toast('Add at least one size quantity before requesting a quote.'); return; }
+      toast('Quote request received \u2014 <b>demo only</b>. No live order was placed.', true);
+      goStep(6);
+      var wiz = $('#b2bWizard');
+      if (wiz && wiz.scrollIntoView) wiz.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+    var dl = e.target.closest('.js-b2b-download');
+    if (dl) { toast('Quote downloaded as PDF \u2014 <b>demo</b> (shareable-quote UI planned).'); return; }
+    var rs = e.target.closest('.js-b2b-reset');
+    if (rs) {
+      $$('.js-b2b-line').forEach(function (line) {
+        $$('.qty-row output', line).forEach(function (o) { o.value = 0; o.textContent = 0; });
+        line.classList.remove('is-off');
+      });
+      $$('.js-b2b-inc').forEach(function (r) { r.classList.add('is-on'); });
+      $$('.deco-chip').forEach(function (c) { c.classList.toggle('is-active', c.getAttribute('data-method') === 'Standard'); });
+      b2bDeco = { method: 'Standard', add: 0 };
+      $$('#decoPanes [data-method-pane]').forEach(function (p) { p.hidden = true; });
+      var d = $('#b2bDate'); if (d) d.value = '';
+      var rn = $('#rushNote'); if (rn) rn.hidden = true;
+      var an = $('#artName'); if (an) an.textContent = 'No file chosen.';
+      var f = $('#artFile'); if (f) f.value = '';
+      b2bRecalc();
+      goStep(1);
     }
   });
 
@@ -755,16 +923,6 @@
     $$('.otype', o.parentElement).forEach(function (c) { c.classList.remove('is-on'); });
     o.classList.add('is-on');
     $$('.js-otype-label').forEach(function (t) { t.textContent = o.getAttribute('data-name'); });
-  });
-
-  /* B2B submit → quote preview */
-  document.addEventListener('click', function (e) {
-    var s = e.target.closest('.js-request-quote');
-    if (s) {
-      e.preventDefault();
-      toast('Quote request received \u2014 <b>demo only</b>. No live order was placed.', true);
-      goStep(3);
-    }
   });
 
   /* ---------- Admin: demand vs MOQ demo (PRD §8.6) ---------- */
@@ -823,7 +981,7 @@
     if (h) h.classList.toggle('is-stuck', window.scrollY > 8);
   }, { passive: true });
 
-  /* ---------- Scroll bump (landing) ----------
+  /* ---------- Scroll bump (site-wide) ----------
      Cards marked [data-bump] pop up with a springy overshoot as they enter
      the viewport and shrink/fade back down as they leave (bump in / bump out).
      Anything already on screen at load settles in place so there is no flash. */
@@ -866,7 +1024,7 @@
         }).join('') + '</ul></div>';
     }).join('');
     var note = '<div class="mega__note">' +
-      (p.concept ? '<span class="concept-tag">Concept \u2014 pending Disney licence approval</span>' : '<span class="mega__note-ico">' + icon('bolt') + '</span>') +
+      (p.concept ? '<span class="concept-tag">Concept only \u2014 not a Disney-licensed product</span>' : '<span class="mega__note-ico">' + icon('bolt') + '</span>') +
       '<span>' + p.note + '</span></div>';
     return '<div class="mega__in">' + intro +
       '<div class="mega__right"><div class="mega__cols">' + cols + '</div>' + note + '</div></div>';
@@ -1316,8 +1474,10 @@
     applyHeroState();
     updateFacetUI();
     if ($('.js-cart-line')) cartTotals();
+    buildB2BMatrix();
     if ($('.js-b2b-line')) b2bRecalc();
     goStep(1);
+    applyB2BQuery();
     /* qtychange listeners need an initial pass for moq rows */
     $$('.js-moq-row').forEach(function (r) {
       var out = $('.qty-row output', r);
@@ -1356,4 +1516,5 @@
   window.EL.ghostCard = ghostCard;
   window.EL.toast = toast;
   window.EL.goStep = goStep;
+  window.EL.startB2B = startB2B;
 })();

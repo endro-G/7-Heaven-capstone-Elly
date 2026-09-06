@@ -80,15 +80,15 @@
       note: 'Customization is offered at checkout on eligible items \u2014 no separate flow needed.'
     },
     {
-      key: 'furkids', label: 'Elly FurKids', url: 'furkids.html', tint: 'furkids', pending: true, emoji: '\uD83D\uDC3E',
+      key: 'furkids', label: 'Elly FurKids', url: 'furkids.html', tint: 'furkids', emoji: '\uD83D\uDC3E',
       tagline: 'Comfort for the furry members of the family.',
-      blurb: 'Blankets that double as mats, bows and pet apparel \u2014 the same elly warmth, sized for S/M/L pets. Shown as a concept line pending Disney licence approval.',
+      blurb: 'Blankets that double as mats, bows and pet apparel \u2014 the same elly warmth, sized for S/M/L pets. Shown as a concept line only \u2014 not a Disney-licensed product.',
       groups: [
         { title: 'Shop by type', links: ['Blankets & mats', 'Bows', 'Pet apparel'] },
         { title: 'Shop by size', links: ['Small pets', 'Medium pets', 'Large pets'] },
         { title: 'Gift the pet owner', links: ['Pet gift sets', 'Personalised name tag', 'Matching family + pet looks'] }
       ],
-      note: 'Concept line \u2014 pending Disney licence approval. Nothing here is confirmed product.',
+      note: 'Concept line only \u2014 not a Disney-licensed product. Nothing here is confirmed product.',
       concept: true
     }
   ];
@@ -123,7 +123,7 @@
       '<h3>' + esc(p.tagline) + '</h3>' +
       '<p>' + esc(p.blurb) + '</p>' +
       '<div class="mega__cta"><a class="btn btn--coral btn--sm" href="' + p.url + '">Shop all ' + esc(p.label) + '</a>' +
-      (p.concept ? '<span class="concept-tag concept-tag--solid">Concept \u00b7 pending Disney licence</span>' : '') +
+      (p.concept ? '<span class="concept-tag concept-tag--solid">Concept only \u00b7 not Disney-licensed</span>' : '') +
       '</div>' +
       (p.key === 'disney-elly' ? '<a class="link-arrow link-arrow--light" href="pre-order.html">Preview the Disney Pre-Order flow</a>' : '') +
       '</div>';
@@ -135,7 +135,7 @@
         }).join('') + '</ul></div>';
     }).join('');
     var note = p.concept
-      ? '<span class="concept-tag">Concept \u2014 pending Disney licence approval</span>'
+      ? '<span class="concept-tag">Concept only \u2014 not a Disney-licensed product</span>'
       : '<span class="mega__note-ico">' + I.bolt + '</span>';
     return '<div class="mega">' +
       '<div class="wrap mega__in">' + intro +
@@ -149,8 +149,8 @@
   function navRow(activeKey) {
     var items = PILLARS.map(function (p) {
       var current = p.key === activeKey ? ' aria-current="page"' : '';
-      var flag = p.concept ? '<span class="nav-flag">Pending licence</span>' : '';
-      var tip = p.concept ? ' title="Concept \u2014 pending Disney licence approval"' : '';
+      var flag = p.concept ? '<span class="nav-flag">Concept only</span>' : '';
+      var tip = p.concept ? ' title="Concept only \u2014 not a Disney-licensed product"' : '';
       return '<li class="has-mega"><a class="navlink"' + current + tip + ' href="' + p.url + '">' + esc(p.label) + flag + I.caret + '</a>' + megaHTML(p) + '</li>';
     }).join('');
     return '<nav class="hdr-nav" aria-label="Primary"><ul class="hdr-nav__in wrap">' + items + '</ul></nav>';
@@ -219,13 +219,30 @@
       '<nav class="m-drawer__nav">' +
       '<a class="acc-pill" href="account.html">' + I.user + ' Hi, Chloe \u00b7 1,240 pts</a>' +
       links +
-      '<div class="foot-note"><a class="btn btn--ghost btn--sm" href="cart.html">' + I.bag + ' View bag</a></div>' +
+      '<div class="foot-note"><a class="btn btn--ghost btn--sm" href="cart.html">' + I.bag + ' View bag</a>' +
+      '<a class="btn btn--coral btn--sm" href="b2b.html">B2B &amp; bulk quotes</a></div>' +
       '</nav></aside>';
   }
 
   /* ---------- header ----------
      Layout: brand left · expanding search right of centre · then Sign In + Cart
      On focus the search field grows and the brand/icons shrink (Quince-style). */
+  /* ---------- B2B banner (PRD §10 entry point — replaces the old utility pill) ----------
+     Slim full-width band at the very top of every page; scrolls away with the page
+     (not part of the sticky header). Desktop shows the full sub-line; phones get a
+     condensed sub-line so the band stays ~50–70px tall. */
+  function b2bBannerHTML() {
+    return '<div class="b2b-banner">' +
+      '<div class="wrap b2b-banner__in">' +
+      '<div class="b2b-banner__copy">' +
+      '<b>Bulk and corporate orders, made simple</b>' +
+      '<span class="b2b-banner__sub">Tell us what you need once \u2014 get tiered pricing and a quote back, no back and forth emails</span>' +
+      '<span class="b2b-banner__sub b2b-banner__sub--short">Tell us once \u2014 get tiered pricing and a quote, no back-and-forth emails</span>' +
+      '</div>' +
+      '<a class="btn btn--coral btn--sm b2b-banner__cta" href="b2b.html">Start your quote ' + I.arrow + '</a>' +
+      '</div></div>';
+  }
+
   function headerHTML(activeKey) {
     return '<header class="site-head" id="siteHead">' +
       '<div class="hdr-util" id="hdrUtil">' +
@@ -233,7 +250,7 @@
       '<button type="button" class="icon-btn burger js-burger" aria-label="Open menu">' + I.menu + '</button>' +
       '<a href="index.html" class="brand brand--stack" aria-label="The Elly Store \u2014 home">' +
       '<img src="assets/elly-logo.webp" alt="The Elly Store">' +
-      '<span class="brand__tag">Kids \u00b7 Family \u00b7 0\u201314</span></a>' +
+      '<span class="brand__tag">Kids \u00b7 0\u201314 \u00b7 Family</span></a>' +
       '<div class="hdr-search" id="hdrSearch">' +
       '<form role="search" class="search-field js-open-search" action="#" onsubmit="return false">' +
       '<span class="sf-ico">' + I.search + '</span>' +
@@ -304,7 +321,7 @@
     if (document.getElementById('siteHead')) return; /* guard double inject */
     var b = document.body;
     var headWrap = document.createElement('div');
-    headWrap.innerHTML = announcementHTML() + headerHTML(activeKey || '');
+    headWrap.innerHTML = b2bBannerHTML() + announcementHTML() + headerHTML(activeKey || '');
     /* move EVERY injected child (announcement + <header>) to the top of <body>
        — inserting only headWrap.firstChild used to drop the header entirely */
     while (headWrap.firstChild) b.insertBefore(headWrap.firstChild, b.firstChild);
