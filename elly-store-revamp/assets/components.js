@@ -310,7 +310,7 @@
       '<span class="announce__loc">' +
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="10" r="5"/><path d="M8.5 14.5L6 21l6-2.5L18 21l-2.5-6.5"/></svg>' +
       ' Singapore \u00b7 ships worldwide</span>' +
-      '<span class="announce__msg"><b>Prototype preview</b> \u2014 UI structure only, products load next</span>' +
+      '<span class="announce__msg"><b>Prototype preview</b></span>' +
       '<span class="announce__sep">\u00b7</span>' +
       '<span>Free SG standard shipping over <b>$100</b> \u00b7 30-day exchange</span>' +
       '</div></div>';
@@ -321,7 +321,9 @@
     if (document.getElementById('siteHead')) return; /* guard double inject */
     var b = document.body;
     var headWrap = document.createElement('div');
-    headWrap.innerHTML = b2bBannerHTML() + announcementHTML() + headerHTML(activeKey || '');
+    /* skip the B2B banner on the B2B page itself — visitors are already there */
+    var onB2B = (b.getAttribute('data-page') || '') === 'b2b';
+    headWrap.innerHTML = (onB2B ? '' : b2bBannerHTML()) + announcementHTML() + headerHTML(activeKey || '');
     /* move EVERY injected child (announcement + <header>) to the top of <body>
        — inserting only headWrap.firstChild used to drop the header entirely */
     while (headWrap.firstChild) b.insertBefore(headWrap.firstChild, b.firstChild);

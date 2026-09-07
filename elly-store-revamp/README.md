@@ -26,7 +26,7 @@ node server.js
 | `pre-order.html` | Disney Pre-Order PDP: design selector (3 Singapore concepts), full-payment model, 8-week timeline, disclosure tags |
 | `pdp.html` | Product detail with the **personalisation configurator** (embroidered initial / iron-on patches) + sizes, qty, add-to-bag demo, accordions, cross-sell |
 | `cart.html` / `checkout.html` | Bag + checkout with **all 3 tourist fulfilment options** (ship to SG/hotel · ship home · buy in-store/pop-up) |
-| `b2b.html` | B2B landing (use-case cards) → 5-step RFQ: order type/date → items → decoration (conditional fields) → **size×qty matrix + live tiered pricing** → artwork/shipping → two-stage quote confirmation |
+| `b2b.html` | B2B landing (use-case cards) → 5-step RFQ: order type/date → **item rows with a product dropdown** (sizes + decoration options appear under the selected item; add/remove rows) → artwork/shipping → your details → **review & confirm** (the validated details are frozen and echoed back; Request and printable Download live on this step) → two-stage confirmation + printable quote sheet |
 | `account.html` | Unified profile: in-store + online order history merged, loyalty points (Smile placeholder rules) |
 | `admin.html` | Demo dashboard: 3 KPI families + interactive **demand vs MOQ** per Pre-Order design |
 

@@ -10,6 +10,94 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Ovo&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/styles.css">
+<style>
+  details.acc { border: 1px solid var(--line); border-radius: var(--radius); margin-top: 14px; background: var(--paper); }
+  details.acc summary { list-style: none; cursor: pointer; padding: 16px 18px; font-weight: 700; font-size: 14px; letter-spacing: .03em; display: flex; justify-content: space-between; align-items: center; }
+  details.acc summary::-webkit-details-marker { display: none; }
+  details.acc summary::after { content: '+'; font-size: 18px; color: var(--coral); }
+  details.acc[open] summary::after { content: '–'; }
+  details.acc .acc-body { padding: 0 18px 16px; font-size: 14px; color: var(--ink-soft); }
+  .acc-body a { color: var(--blue-deep); font-weight: 700; text-decoration: underline; white-space: nowrap; }
+  .how-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; counter-reset: how; }
+  .how-step { position: relative; border: 1.5px solid var(--line); border-radius: var(--radius); padding: 20px 18px 18px 60px; background: var(--paper); }
+  .how-step::before { counter-increment: how; content: counter(how); position: absolute; left: 18px; top: 20px; width: 28px; height: 28px; border-radius: 50%; background: var(--ink); color: #fff; display: grid; place-items: center; font-size: 13px; font-weight: 700; }
+  .how-step b { display: block; font-size: 14.5px; margin-bottom: 4px; }
+  .how-step span { font-size: 13px; color: var(--ink-soft); line-height: 1.5; }
+
+  /* step-2 per-line picker & options */
+  .b2b-line { border: 1.5px solid var(--line); border-radius: var(--radius); background: var(--paper); padding: 18px; margin-bottom: 14px; }
+  .b2b-line[hidden] { display: none; }
+  .b2b-line__head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+  .b2b-line__head b { font-size: 15px; }
+  .b2b-line__head .lbl { font-size: 12px; color: var(--ink-light); }
+  .b2b-line__head .tally { margin-left: auto; font-size: 12.5px; color: var(--ink-soft); }
+  .b2b-line .qty-row { height: 36px; }
+  .b2b-line .qty-row button { width: 30px; height: 36px; font-size: 15px; }
+  .b2b-line .qty-row output { min-width: 28px; font-size: 13px; }
+  .szq-wrap { display: flex; flex-wrap: wrap; gap: 8px 10px; margin-bottom: 14px; }
+  .szq { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: var(--radius); padding: 5px 6px 5px 10px; background: var(--cream-2); }
+  .szq .szq-lbl { font-size: 11.5px; font-weight: 700; color: var(--ink-soft); }
+  .b2b-moq-warn { color: var(--coral-deep, #b33642); font-weight: 700; }
+  .b2b-moq-ok { color: #178a54; font-weight: 700; }
+  .line-note { margin-top: 10px; font-size: 12px; }
+
+  /* step-2 dropdown rows */
+  .b2b-row { margin-bottom: 14px; }
+  .b2b-row__bar { display: flex; align-items: center; gap: 10px; }
+  .b2b-row__bar select { flex: 1; min-width: 0; border: 1.5px solid var(--line); border-radius: var(--radius); background: var(--paper); font: inherit; font-size: 14px; padding: 12px 14px; cursor: pointer; color: var(--ink); }
+  .b2b-row__bar select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-wash); }
+  .b2b-rm { flex: none; width: 42px; height: 46px; border: 1.5px solid var(--line); border-radius: var(--radius); background: var(--paper); font-size: 19px; line-height: 1; color: var(--ink-light); cursor: pointer; }
+  .b2b-rm:hover { border-color: var(--coral); color: var(--coral); }
+  .b2b-row .b2b-line { margin-top: 10px; }
+
+  /* step-2 selected-item art + decoration visualisers */
+  .b2b-item-img { width: 62px; height: 62px; border: 1.5px solid var(--line); border-radius: var(--radius); background: var(--paper); flex: none; object-fit: cover; }
+  .b2b-line__head { align-items: center; }
+  .b2b-colours { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+  .b2b-colour { width: 28px; height: 28px; border-radius: var(--radius); border: 2px solid transparent; cursor: pointer; padding: 0; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .08); transition: transform .12s var(--ease-bump); }
+  .b2b-colour:hover { transform: scale(1.1); }
+  .b2b-colour.is-on { border-color: var(--ink); }
+  .emb-field { min-width: 230px; }
+  .b2b-diag { margin-top: 12px; }
+  .b2b-fig { margin: 0; }
+  .b2b-fig svg { width: 92px; height: 92px; display: block; border: 1px solid var(--line); border-radius: var(--radius); }
+  .b2b-fig figcaption { font-size: 11.5px; color: var(--ink-light); margin-top: 4px; text-align: center; }
+
+  /* printable quote sheet */
+  #printQuote { display: none; }
+  @media print {
+    body > :not(#printQuote) { display: none !important; }
+    #printQuote { display: block !important; }
+  }
+  #printQuote { font-family: Georgia, 'Times New Roman', serif; color: #000; padding: 8px 6px; }
+  #printQuote h1 { font-size: 20px; margin: 0 0 2px; }
+  #printQuote .sub { font-size: 11px; color: #444; margin-bottom: 14px; }
+  #printQuote table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 12px; }
+  #printQuote th, #printQuote td { border-bottom: 1px solid #ccc; padding: 6px 8px; text-align: left; vertical-align: top; }
+  #printQuote th { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; }
+  #printQuote .right { text-align: right; }
+  #printQuote .tot td { border-top: 2px solid #000; border-bottom: 0; font-weight: 700; }
+  #printQuote .meta td { border-bottom: 0; }
+  #printQuote .foot { font-size: 10.5px; color: #555; border-top: 1px solid #ccc; margin-top: 16px; padding-top: 8px; }
+
+  /* review & confirm step (frozen draft echo) */
+  .rev-grid { display: grid; gap: 18px; grid-template-columns: 1fr 1fr; align-items: start; }
+  .rev-card { border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper); padding: 16px 18px; }
+  .rev-card h3 { font-size: 11.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-light); margin: 0 0 10px; }
+  .rev-kv { display: grid; gap: 2px 18px; grid-template-columns: auto 1fr; font-size: 13.5px; }
+  .rev-kv dt { color: var(--ink-light); font-weight: 600; }
+  .rev-kv dd { margin: 0 0 6px; color: var(--ink); overflow-wrap: anywhere; }
+  .rev-card--wide { grid-column: 1 / -1; }
+  .rev-line { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line-soft); font-size: 13.5px; }
+  .rev-line:last-child { border-bottom: 0; }
+  .rev-line .right { text-align: right; }
+  .rev-card .r { display: flex; justify-content: space-between; gap: 10px; font-size: 14px; padding: 6px 0; color: var(--ink-soft); }
+  .rev-card .r b { color: var(--ink); }
+  .rev-card .disc { color: #178a54; font-weight: 700; }
+  .rev-card .total { border-top: 1px solid var(--line); margin-top: 10px; padding-top: 12px; font-size: 15px; color: var(--ink); }
+  .rev-card .total .price { font-size: 22px; }
+  @media (max-width: 860px) { .rev-grid { grid-template-columns: 1fr; } }
+</style>
 </head>
 <body data-page="b2b">
 <main id="content">
@@ -21,10 +109,6 @@
       <span class="kicker">B2B channels</span>
       <h1>Bulk, corporate &amp; event orders</h1>
       <p>Build your order online and watch tiered pricing update live — then request a shareable quote. Same catalog as the store, including customization for whole-group personalisation.</p>
-      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:22px">
-        <button type="button" class="btn btn--coral js-b2b-start" data-step="1">Start your quote</button>
-        <a class="btn btn--ghost" href="#b2bLanding" style="scroll-behavior:smooth">See how it works</a>
-      </div>
       <div class="hero-tags">
         <span class="badge badge--blue">Self-serve RFQ</span>
         <span class="badge badge--blue">Live tiered pricing</span>
@@ -37,7 +121,7 @@
   <!-- ============ B2B landing (value prop + use cases, PRD §10) ============ -->
   <section class="block block--tight" id="b2bLanding" data-bump>
     <div class="wrap">
-      <div class="occ-head" style="margin-bottom:18px">
+      <div class="occ-head" style="margin-bottom:20px">
         <div>
           <span class="kicker">One request. Everything we need up front.</span>
           <h2 class="sec">Why order B2B with The Elly Store?</h2>
@@ -49,6 +133,21 @@
         <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 5-3.2 8.4-7 10-3.8-1.6-7-5-7-10V6z"/></svg> Human review before any payment is taken</li>
       </ul>
 
+      <div style="margin:clamp(40px,4.5vw,60px) 0 34px">
+        <div class="occ-head" style="margin-bottom:20px">
+          <div>
+            <span class="kicker">No back-and-forth email — the whole process</span>
+            <h2 class="sec">How a B2B order works</h2>
+          </div>
+        </div>
+        <div class="how-grid">
+          <div class="how-step"><b>Build &amp; get an instant estimate</b><span>Pick items, sizes, quantities and decoration — tiered pricing updates live as you go. No payment needed yet.</span></div>
+          <div class="how-step"><b>Submit your quote request</b><span>Artwork and shipping specs are captured on-site. Our team reviews feasibility within ~2 working days.</span></div>
+          <div class="how-step"><b>Receive a confirmed quote</b><span>A formal quote with a checkout link is emailed to you. Nothing is charged until you approve it.</span></div>
+          <div class="how-step"><b>Pay &amp; we produce</b><span>Pay by card, bank transfer or Net terms where available — production begins after you confirm.</span></div>
+        </div>
+      </div>
+
       <div class="b2b-use-grid">
         <button type="button" class="use-card js-b2b-start" data-otype="Bulk / wholesale">
           <span class="emoji">🏭</span>
@@ -59,20 +158,97 @@
         <button type="button" class="use-card js-b2b-start" data-otype="Corporate">
           <span class="emoji">💼</span>
           <b>Corporate gifting</b>
-          <span>Client gifts, staff appreciation &amp; company giveaways — with embroidery of your logo or names.</span>
+          <span>Client gifts, staff appreciation &amp; company giveaways — from 20 units, with embroidery of your logo or names.</span>
           <span class="go">Start corporate quote <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
         </button>
         <button type="button" class="use-card js-b2b-start" data-otype="Corporate event">
           <span class="emoji">🎤</span>
           <b>Corporate events</b>
-          <span>Launches, conferences &amp; workplace occasions — team wear decorated and delivered on your deadline.</span>
+          <span>Launches, conferences &amp; workplace occasions — from 20 units, team wear decorated and delivered on your deadline.</span>
           <span class="go">Start event quote <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
         </button>
       </div>
-      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:26px">
+    </div>
+  </section>
+
+  <!-- ============ B2B pricing at a glance (pre-quote transparency) ============ -->
+  <section class="block block--tight" id="b2bPricing" data-bump>
+    <div class="wrap">
+      <div class="occ-head" style="margin-bottom:20px">
+        <div>
+          <span class="kicker">Know the numbers before you start</span>
+          <h2 class="sec">Bulk pricing at a glance</h2>
+          <p class="small muted" style="max-width:64ch;margin:8px 0 0">Discounts apply across your whole order, based on total units across all items — decoration add-ons are per unit on top. Tiers shown are illustrative for this prototype and are confirmed with your quote.</p>
+        </div>
+      </div>
+      <div class="b2b-grid" style="display:grid;gap:26px;grid-template-columns:1fr 1fr;align-items:start">
+        <div class="b2b-live-panel" style="border:1px solid var(--line);border-radius:var(--radius);padding:18px;background:var(--paper)">
+          <span class="kicker" style="font-size:11px;margin-bottom:12px;display:block">Tiered discount · off list price</span>
+          <table class="tier-table" style="width:100%">
+            <thead><tr><th>Total units</th><th>Discount</th><th>Example · S$49.90 tee</th></tr></thead>
+            <tbody>
+              <tr><td>10 – 49</td><td>10% off</td><td>S$44.91 / unit</td></tr>
+              <tr><td>50 – 99</td><td>15% off</td><td>S$42.42 / unit</td></tr>
+              <tr><td>100 – 299</td><td>20% off</td><td>S$39.92 / unit</td></tr>
+              <tr><td>300+</td><td>Custom quote</td><td>— sales follows up</td></tr>
+            </tbody>
+          </table>
+          <p class="small muted" style="margin:12px 0 0">Order minimums — <b>Bulk / wholesale</b>: 10 units per design · <b>Corporate gifting</b>: 20 units · <b>Corporate events</b>: 20 units.</p>
+        </div>
+        <div>
+          <span class="kicker" style="font-size:11px;margin-bottom:12px;display:block">Decoration add-ons · per unit</span>
+          <ul class="b2b-trust" style="flex-direction:column;align-items:flex-start;gap:9px;margin:0">
+            <li>Standard (no decoration) — no add-on</li>
+            <li>Iron-on — S$4 / unit</li>
+            <li>Screen print — S$6 / unit (1 colour)</li>
+            <li>Embroidery — S$8 / unit</li>
+            <li>DTG (full colour) — S$12 / unit</li>
+          </ul>
+          <p class="small muted" style="margin:16px 0 0">Shipping is quoted with your confirmed quote — one bulk shipment to a single address, or split to multiple locations.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ Before you start (pre-quote answers) ============ -->
+  <section class="block block--tight" id="b2bFaq" data-bump>
+    <div class="wrap">
+      <div class="occ-head" style="margin-bottom:20px">
+        <div>
+          <span class="kicker">Quick answers</span>
+          <h2 class="sec">Before you start a quote</h2>
+        </div>
+      </div>
+
+      <details class="acc"><summary>Which items can I order, and are adult sizes available?</summary>
+        <div class="acc-body">You pick from the same catalog as the store — including Customization pieces. All three order types include adult sizes. As you build your quote, each item shows its own size run (adult products show XS and up), so you'll see exactly what's available for each product before you request.</div></details>
+
+      <details class="acc"><summary>What are the minimums?</summary>
+        <div class="acc-body">Bulk / wholesale: 10 units per design. Corporate gifting: 20 units. Corporate events: 20 units. If you're close to a minimum, start the quote anyway — our team confirms feasibility with your estimate.</div></details>
+
+      <details class="acc"><summary>Can I get samples or speak to someone first?</summary>
+        <div class="acc-body">Yes — call or WhatsApp <a href="tel:+6596281037">+65 9628 1037</a> to request samples or speak with our sales team before you start.</div></details>
+
+      <details class="acc"><summary>How long does an order take?</summary>
+        <div class="acc-body">Your quote request is reviewed within ~2 working days. For ready-stock items with personalisation, production takes up to 14 working days after you confirm your order. Deadlines under 3 weeks are flagged for rush review by our team — they confirm feasibility before you commit.</div></details>
+
+      <details class="acc"><summary>What artwork do I need to provide?</summary>
+        <div class="acc-body">High-res logo or artwork — PNG, AI, SVG or PDF, 300dpi preferred; vector artwork is best for screen print and embroidery. If you only have a rough idea, that's fine — our team helps during review.</div></details>
+
+      <details class="acc"><summary>How do payment and invoicing work?</summary>
+        <div class="acc-body">You only pay after approving your confirmed quote — by card, bank transfer or Net terms where available. An official invoice is issued with your order.</div></details>
+
+      <details class="acc"><summary>Do I need to be a registered business?</summary>
+        <div class="acc-body">Bulk / wholesale is for retailers and resellers — we may ask for your business registration. Corporate and event orders don't require one; HR teams, founders and event organisers order directly.</div></details>
+
+      <details class="acc"><summary>Where do you ship?</summary>
+        <div class="acc-body">Singapore and worldwide, matching the store. Shipping cost is confirmed with your quote before you pay — one bulk shipment to a single address, or split across multiple locations. Freight and duties apply where relevant.</div></details>
+
+      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:30px">
         <button type="button" class="btn btn--coral js-b2b-start" data-step="1">Start your quote — it takes ~3 minutes</button>
         <p class="small muted" style="margin:0">Wholesale/reseller? Pick <b>Bulk / wholesale</b> in the first step.</p>
       </div>
+      <p class="small muted" style="margin:16px 0 0">Prefer to talk first? Samples &amp; sales enquiries: <a href="tel:+6596281037">+65 9628 1037</a>.</p>
     </div>
   </section>
 
@@ -82,10 +258,10 @@
       <!-- stepper -->
       <div class="steps" role="tablist" aria-label="Quote steps">
         <div class="step-i is-on" data-step-i="1" onclick="EL && EL.goStep && EL.goStep(1)"><span class="no">1</span>Order type</div>
-        <div class="step-i" data-step-i="2" onclick="EL && EL.goStep && EL.goStep(2)"><span class="no">2</span>Items</div>
-        <div class="step-i" data-step-i="3" onclick="EL && EL.goStep && EL.goStep(3)"><span class="no">3</span>Decoration</div>
-        <div class="step-i" data-step-i="4" onclick="EL && EL.goStep && EL.goStep(4)"><span class="no">4</span>Sizes &amp; qty</div>
-        <div class="step-i" data-step-i="5" onclick="EL && EL.goStep && EL.goStep(5)"><span class="no">5</span>Artwork &amp; review</div>
+        <div class="step-i" data-step-i="2" onclick="EL && EL.goStep && EL.goStep(2)"><span class="no">2</span>Items &amp; options</div>
+        <div class="step-i" data-step-i="3" onclick="EL && EL.goStep && EL.goStep(3)"><span class="no">3</span>Artwork &amp; shipping</div>
+        <div class="step-i" data-step-i="4" onclick="EL && EL.goStep && EL.goStep(4)"><span class="no">4</span>Your details</div>
+        <div class="step-i" data-step-i="5" onclick="EL && EL.b2bReview && EL.b2bReview()"><span class="no">5</span>Review &amp; confirm</div>
       </div>
 
       <!-- step 1 — order type & event details -->
@@ -96,10 +272,10 @@
             <span class="emoji">📦</span><b>Bulk / wholesale</b><span>Retailers &amp; resellers — minimum 10 units</span>
           </button>
           <button type="button" class="otype" data-name="Corporate">
-            <span class="emoji">💼</span><b>Corporate</b><span>Corporate gifting &amp; client presents</span>
+            <span class="emoji">💼</span><b>Corporate</b><span>Corporate gifting &amp; client presents — from 20 units</span>
           </button>
           <button type="button" class="otype" data-name="Corporate event">
-            <span class="emoji">🎤</span><b>Corporate event</b><span>Workplace events — launches, conferences, team days</span>
+            <span class="emoji">🎤</span><b>Corporate event</b><span>Workplace events — launches, conferences, team days · from 20 units</span>
           </button>
         </div>
 
@@ -116,127 +292,19 @@
         </div>
       </div>
 
-      <!-- step 2 — item selection -->
+      <!-- step 2 — items & per-line options -->
       <div class="step-pane js-b2b-step" data-step="2">
-        <span class="kicker" style="margin-bottom:14px">Pick items for this quote</span>
-        <p class="small muted" style="margin-bottom:18px">Choose from the same catalog as the store (incl. Customization items). Sample rows drive the demo — real catalog items plug into these rows (PRD §10). Quantities &amp; sizes are set in step 4.</p>
-
-        <div class="inc-list">
-          <button type="button" class="inc-row is-on js-b2b-inc" data-idx="0">
-            <span class="inc-thumb" style="background:linear-gradient(150deg,#e3ecfb,#c2d6f2)"></span>
-            <span class="inc-tx"><b>Sample · Disney tee</b><span>Disney | elly · S$34.00 each</span></span>
-            <span class="inc-check">✓</span>
-          </button>
-          <button type="button" class="inc-row is-on js-b2b-inc" data-idx="1">
-            <span class="inc-thumb" style="background:linear-gradient(150deg,#f6efe3,#e9dcc6)"></span>
-            <span class="inc-tx"><b>Sample · Elly romper</b><span>Elly Label · S$29.00 each</span></span>
-            <span class="inc-check">✓</span>
-          </button>
-          <button type="button" class="inc-row is-on js-b2b-inc" data-idx="2">
-            <span class="inc-thumb" style="background:linear-gradient(150deg,#efeafb,#dcd2f5)"></span>
-            <span class="inc-tx"><b>Sample · personalised robe</b><span>Customization · S$59.00 each</span></span>
-            <span class="inc-check">✓</span>
-          </button>
-        </div>
-
-        <div style="margin-top:22px;display:flex;gap:12px;flex-wrap:wrap">
-          <button type="button" class="btn btn--ghost js-b2b-next" data-goto="1">Back</button>
-          <button type="button" class="btn btn--coral js-b2b-next" data-goto="3">Choose decoration — next</button>
-        </div>
-      </div>
-
-      <!-- step 3 — decoration method + conditional fields -->
-      <div class="step-pane js-b2b-step" data-step="3">
-        <span class="kicker" style="margin-bottom:14px">Decoration &amp; personalisation</span>
-        <p class="small muted" style="margin-bottom:16px">Method applies to the whole quote — our team confirms per-item placement before production. Add-on is per unit, shown in your estimate.</p>
-
-        <div class="chip-row" role="radiogroup" aria-label="Decoration method">
-          <button type="button" class="chip is-active deco-chip" data-method="Standard" data-add="0">Standard (no decoration)</button>
-          <button type="button" class="chip deco-chip" data-method="Embroidery" data-add="8">Embroidery</button>
-          <button type="button" class="chip deco-chip" data-method="Iron-on" data-add="4">Iron-on</button>
-          <button type="button" class="chip deco-chip" data-method="Screen print" data-add="6">Screen print</button>
-          <button type="button" class="chip deco-chip" data-method="DTG" data-add="12">DTG (full colour)</button>
-        </div>
-
-        <div id="decoPanes" style="margin-top:18px;max-width:640px">
-          <!-- embroidery: placement + thread colour -->
-          <div class="deco-pane" data-method-pane="Embroidery" hidden>
-            <div class="form-grid">
-              <div class="field">
-                <label for="embPlace">Placement</label>
-                <select id="embPlace">
-                  <option>Left chest</option>
-                  <option>Sleeve</option>
-                  <option>Full back</option>
-                  <option>Centre front</option>
-                </select>
-              </div>
-              <div class="field">
-                <label>Thread colour</label>
-                <div class="sw-row" role="radiogroup" aria-label="Thread colour">
-                  <button type="button" class="sw is-on" data-col="Coral" style="background:#FF6070" aria-label="Coral"></button>
-                  <button type="button" class="sw" data-col="Blue" style="background:#4D6EB5" aria-label="Blue"></button>
-                  <button type="button" class="sw" data-col="Ink" style="background:#1a1a1a" aria-label="Ink"></button>
-                  <button type="button" class="sw" data-col="White" style="background:#fff" aria-label="White"></button>
-                  <button type="button" class="sw" data-col="Gold" style="background:#C9A227" aria-label="Gold"></button>
-                  <button type="button" class="sw" data-col="Forest" style="background:#2F6B4F" aria-label="Forest"></button>
-                </div>
-              </div>
-            </div>
-            <p class="small muted" style="margin-top:12px">Adds <b>S$8.00 per unit</b>. Names, initials or a small logo — up to ~12 characters for the chest.</p>
-          </div>
-          <!-- screen print -->
-          <div class="deco-pane" data-method-pane="Screen print" hidden>
-            <div class="form-grid" style="max-width:340px">
-              <div class="field">
-                <label for="spColours">Ink colours</label>
-                <select id="spColours">
-                  <option>1 colour</option>
-                  <option>2 colours</option>
-                  <option>3 colours</option>
-                </select>
-              </div>
-            </div>
-            <p class="small muted" style="margin-top:12px">Adds <b>S$6.00 per unit</b> (1 colour). Best for large single-colour logos — vector artwork required in step 5.</p>
-          </div>
-          <!-- DTG -->
-          <div class="deco-pane" data-method-pane="DTG" hidden>
-            <p class="small muted">Adds <b>S$12.00 per unit</b>. Full-colour photo-style prints — upload your artwork in step 5. Great for corporate keepsakes and event merchandise.</p>
-          </div>
-          <!-- iron-on -->
-          <div class="deco-pane" data-method-pane="Iron-on" hidden>
-            <div class="form-grid" style="max-width:340px">
-              <div class="field">
-                <label for="ioSize">Transfer size</label>
-                <select id="ioSize"><option>Small (A6)</option><option>Medium (A5)</option><option>Large (A4)</option></select>
-              </div>
-            </div>
-            <p class="small muted" style="margin-top:12px">Adds <b>S$4.00 per unit</b>. Heat-transfer name or design — fastest turnaround for events.</p>
-          </div>
-        </div>
-
-        <div class="deco-pane" style="border-style:solid;border-color:var(--line-soft);background:transparent">
-          <p style="font-size:13.5px;color:var(--ink-soft);margin:0"><b style="color:var(--ink)">Adding names or a logo for the whole order?</b> Corporate, event &amp; wholesale orders pair naturally with <a href="customization.html" style="text-decoration:underline">Customization</a> — tell us in your quote notes and our team will price personalisation at bulk rates.</p>
-        </div>
-
-        <div style="margin-top:22px;display:flex;gap:12px;flex-wrap:wrap">
-          <button type="button" class="btn btn--ghost js-b2b-next" data-goto="2">Back</button>
-          <button type="button" class="btn btn--coral js-b2b-next" data-goto="4">Set sizes &amp; quantities — next</button>
-        </div>
-      </div>
-
-      <!-- step 4 — size × quantity matrix + live tiered pricing -->
-      <div class="step-pane js-b2b-step" data-step="4">
-        <div class="b2b-grid" style="display:grid;gap:26px;grid-template-columns:1.35fr .65fr;align-items:start">
+        <div class="b2b-grid" style="display:grid;gap:26px;grid-template-columns:1.5fr .75fr;align-items:start">
           <div>
-            <span class="kicker" style="margin-bottom:12px">Sizes &amp; quantities</span>
-            <p class="small muted" style="margin-bottom:16px">Enter quantities per size. Bulk tiers are based on your total units across all items — the panel updates live.</p>
+            <span class="kicker" style="margin-bottom:12px">Choose items &amp; set options</span>
+            <p class="small muted" style="margin-bottom:16px">Pick an item from the dropdown — its sizes, quantities and decoration options appear below it. Add another line to include more items. Minimums: wholesale 10 units per design · corporate &amp; events 20 units total.</p>
 
-            <div id="b2bMatrix"></div>
-            <p class="small muted" style="margin-top:12px">Sizes shown are illustrative placeholders — real size runs plug in from the catalog (PRD §10).</p>
+            <div id="b2bRows"></div>
+            <button type="button" class="btn btn--ghost btn--sm js-b2b-add" style="margin-top:4px">+ Add another item</button>
+            <p class="small muted" style="margin-top:16px">Real catalogue items from the store — photos, prices and size runs are live. Decoration add-ons are illustrative for this demo; per-item feasibility is confirmed with your quote.</p>
           </div>
 
-          <div class="b2b-live-panel" style="border:1px solid var(--line);border-radius:var(--radius);padding:18px;background:var(--paper)">
+          <div class="b2b-live-panel" style="border:1px solid var(--line);border-radius:var(--radius);padding:18px;background:var(--paper);position:sticky;top:170px">
             <span class="kicker" style="font-size:11px;margin-bottom:12px;display:block">Live tiered pricing</span>
             <table class="tier-table" style="width:100%">
               <thead><tr><th>Units</th><th>Discount</th></tr></thead>
@@ -247,7 +315,7 @@
                 <tr data-tier="300"><td>300+</td><td>Custom quote <span class="muted" style="font-size:11.5px">— sales follow up</span></td></tr>
               </tbody>
             </table>
-            <p class="small" id="b2bTierNote" style="margin-top:10px;color:var(--ink-soft)">Add quantities to preview live tiered pricing.</p>
+            <p class="small" id="b2bRunMoq" style="margin-top:10px;color:var(--ink-soft)">Pick a design, then add quantities to preview live tiered pricing.</p>
             <div class="r"><span>Total units</span><b id="b2bRunQty">0</b></div>
             <div class="r"><span>Subtotal (list)</span><b id="b2bRunSub">S$0.00</b></div>
             <div class="r"><span>Decoration add-on</span><b id="b2bRunDeco">S$0.00</b></div>
@@ -258,46 +326,89 @@
         </div>
 
         <div style="margin-top:22px;display:flex;gap:12px;flex-wrap:wrap">
-          <button type="button" class="btn btn--ghost js-b2b-next" data-goto="3">Back</button>
-          <button type="button" class="btn btn--coral js-b2b-next" data-goto="5">Artwork &amp; review — next</button>
+          <button type="button" class="btn btn--ghost js-b2b-next" data-goto="1">Back</button>
+          <button type="button" class="btn btn--coral js-b2b-next" data-goto="3">Artwork &amp; shipping — next</button>
         </div>
       </div>
 
-      <!-- step 5 — artwork upload, shipping & quote summary -->
-      <div class="step-pane js-b2b-step" data-step="5">
-        <div class="b2b-grid" style="display:grid;gap:26px;grid-template-columns:1fr .9fr;align-items:start">
+      <!-- step 3 — artwork & shipping -->
+      <div class="step-pane js-b2b-step" data-step="3">
+        <span class="kicker" style="margin-bottom:12px">Artwork &amp; shipping</span>
+        <p class="small muted" style="margin-bottom:18px;max-width:64ch">Only needed if a line has decoration or you'd like to send us your logo. For standard (undecorated) stock, skip straight to your details.</p>
+
+        <label class="file-drop" for="artFile" style="margin-bottom:22px;max-width:560px;display:flex">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M8 8l4-4 4 4"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+          <span style="flex:1"><b>Upload artwork / logo</b><span>PNG, AI, SVG or PDF — 300dpi preferred. Demo only: the file never leaves your device.</span></span>
+          <input type="file" id="artFile" accept=".png,.ai,.svg,.pdf,.eps" hidden>
+        </label>
+        <p class="small muted" id="artName" style="margin:-14px 0 22px;max-width:560px">No file chosen.</p>
+
+        <span class="kicker" style="margin-bottom:12px">How should we ship?</span>
+        <div class="fopts" role="radiogroup" aria-label="Shipping option" style="max-width:560px">
           <div>
-            <span class="kicker" style="margin-bottom:12px">Artwork &amp; shipping</span>
-
-            <label class="file-drop" for="artFile" style="margin-bottom:22px;display:flex">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M8 8l4-4 4 4"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
-              <span style="flex:1"><b>Upload artwork / logo</b><span>PNG, AI, SVG or PDF — 300dpi preferred. Demo only: the file never leaves your device.</span></span>
-              <input type="file" id="artFile" accept=".png,.ai,.svg,.pdf,.eps" hidden>
+            <label class="fopt is-on js-ship-opt">
+              <input type="radio" name="shipOpt" value="single" checked>
+              <span style="flex:1"><b>One bulk shipment to a single address</b><span>Most corporate &amp; event orders — one pallet/box to your venue or office.</span></span>
             </label>
-            <p class="small muted" id="artName" style="margin:-14px 0 22px">No file chosen.</p>
-
-            <span class="kicker" style="margin-bottom:12px">How should we ship?</span>
-            <div class="fopts" role="radiogroup" aria-label="Shipping option">
-              <div>
-                <label class="fopt is-on js-ship-opt">
-                  <input type="radio" name="shipOpt" value="single" checked>
-                  <span style="flex:1"><b>One bulk shipment to a single address</b><span>Most corporate &amp; event orders — one pallet/box to your venue or office.</span></span>
-                </label>
-              </div>
-              <div>
-                <label class="fopt js-ship-opt">
-                  <input type="radio" name="shipOpt" value="split">
-                  <span style="flex:1"><b>Split shipping to multiple locations</b><span>Send portions to different addresses — e.g. one per event guest list or store.</span></span>
-                </label>
-                <div class="collapse" id="shipSplit" style="padding:0 6px">
-                  <div class="form-grid" style="margin-top:14px">
-                    <div class="field" style="max-width:220px">
-                      <label for="splitN">Number of locations</label>
-                      <select id="splitN"><option>2</option><option>3</option><option>4</option><option>5+</option></select>
-                    </div>
-                  </div>
-                  <p class="small muted" style="margin-top:10px">Add each delivery address in the quote notes — our team confirms split-shipment cost with your quote.</p>
+          </div>
+          <div>
+            <label class="fopt js-ship-opt">
+              <input type="radio" name="shipOpt" value="split">
+              <span style="flex:1"><b>Split shipping to multiple locations</b><span>Send portions to different addresses — e.g. one per event guest list or store.</span></span>
+            </label>
+            <div class="collapse" id="shipSplit" style="padding:0 6px">
+              <div class="form-grid" style="margin-top:14px">
+                <div class="field" style="max-width:220px">
+                  <label for="splitN">Number of locations</label>
+                  <select id="splitN"><option>2</option><option>3</option><option>4</option><option>5+</option></select>
                 </div>
+              </div>
+              <p class="small muted" style="margin-top:10px">Add each delivery address in your quote notes — our team confirms split-shipment cost with your quote.</p>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:22px;display:flex;gap:12px;flex-wrap:wrap">
+          <button type="button" class="btn btn--ghost js-b2b-next" data-goto="2">Back</button>
+          <button type="button" class="btn btn--coral js-b2b-next" data-goto="4">Your details — next</button>
+        </div>
+      </div>
+
+      <!-- step 4 — your details & review -->
+      <div class="step-pane js-b2b-step" data-step="4">
+        <div class="b2b-grid" style="display:grid;gap:26px;grid-template-columns:1fr .85fr;align-items:start">
+          <div>
+            <span class="kicker" style="margin-bottom:12px">Your details</span>
+            <p class="small muted" style="margin-bottom:18px;max-width:56ch">Where should the confirmed quote go? Everything stays on your device — demo only, nothing is sent.</p>
+
+            <div class="form-grid" style="max-width:540px">
+              <div class="field">
+                <label for="b2bName">Full name <b>*</b></label>
+                <input id="b2bName" type="text" autocomplete="name">
+              </div>
+              <div class="field">
+                <label for="b2bEmail">Work email <b>*</b></label>
+                <input id="b2bEmail" type="email" autocomplete="email" placeholder="you@company.com">
+              </div>
+              <div class="field">
+                <label for="b2bPhone">Phone / WhatsApp</label>
+                <input id="b2bPhone" type="tel" autocomplete="tel" placeholder="+65 ...">
+              </div>
+              <div class="field">
+                <label for="b2bCompany">Company <span class="muted" style="font-weight:400">(required for wholesale)</span></label>
+                <input id="b2bCompany" type="text" autocomplete="organization">
+              </div>
+              <div class="field">
+                <label for="b2bUen">UEN / business reg no. <span class="muted" style="font-weight:400">(optional)</span></label>
+                <input id="b2bUen" type="text">
+              </div>
+              <div class="field">
+                <label for="b2bPo">PO number <span class="muted" style="font-weight:400">(optional)</span></label>
+                <input id="b2bPo" type="text">
+              </div>
+              <div class="field full">
+                <label for="b2bNotes">Quote notes</label>
+                <textarea id="b2bNotes" rows="4" placeholder="Split-shipment addresses, per-group names for personalisation, deadlines, anything else our team should know…"></textarea>
               </div>
             </div>
           </div>
@@ -311,19 +422,30 @@
               <div class="r"><span>Subtotal (list price)</span><b id="b2bSub">S$0.00</b></div>
               <div class="r"><span>Tier discount</span><b class="disc" id="b2bSave">S$0.00</b></div>
               <div class="r total"><span>Estimated total</span><span class="price" id="b2bTotal">S$0.00</span></div>
-              <p class="small muted" style="margin-top:4px">Avg. unit: <span id="b2bUnit">—</span> · tiers reset below 10 units.</p>
-              <div class="quote-actions" style="display:flex;gap:12px;flex-wrap:wrap;margin-top:20px">
-                <button type="button" class="btn btn--dark" id="b2bRequest">Request quote · demo</button>
-                <button type="button" class="btn btn--ghost js-b2b-download">Download quote (demo)</button>
-              </div>
-              <p class="small muted" style="margin-top:14px">Two-stage flow (PRD §10): this is an <b>instant estimate, not a payment</b>. Our team reviews feasibility, then emails a confirmed checkout link — card, bank transfer or Net terms if available. Live invoicing/ERP is out of scope for this prototype (PRD §9).</p>
+              <p class="small" id="b2bMoqLine" style="margin-top:4px;color:var(--ink-soft)">Avg. unit: <span id="b2bUnit">—</span></p>
+              <p class="small muted" style="margin-top:16px">Looks right? The next step shows your full details for one final check before you request the quote or download it.</p>
             </div>
           </div>
         </div>
 
         <div style="margin-top:22px;display:flex;gap:12px;flex-wrap:wrap">
-          <button type="button" class="btn btn--ghost js-b2b-next" data-goto="4">Back</button>
+          <button type="button" class="btn btn--ghost js-b2b-next" data-goto="3">Back to artwork</button>
+          <button type="button" class="btn btn--coral js-b2b-review">Review &amp; confirm — next</button>
         </div>
+      </div>
+
+      <!-- step 5 — review & confirm: details frozen here; Request/Download live on this step -->
+      <div class="step-pane js-b2b-step" data-step="5">
+        <span class="kicker">Review &amp; confirm</span>
+        <h2 style="font-size:24px;margin:6px 0 10px">One last check before we prepare your quote</h2>
+        <p class="small muted" style="margin-bottom:22px;max-width:64ch">This is exactly what appears on your quote request and what our team will review. Need to change something? Go <b>Back to details</b> and confirm again.</p>
+        <div id="b2bReview"></div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:26px">
+          <button type="button" class="btn btn--ghost js-b2b-next" data-goto="4">Back to details</button>
+          <button type="button" class="btn btn--dark" id="b2bRequest">Request quote · demo</button>
+          <button type="button" class="btn btn--ghost js-b2b-download">Download quote (demo)</button>
+        </div>
+        <p class="small muted" style="margin-top:18px">Two-stage flow (PRD §10): this is an <b>instant estimate, not a payment</b>. Our team reviews feasibility within ~2 working days, then emails a confirmed checkout link — card, bank transfer or Net terms if available. Demo only — nothing is sent.</p>
       </div>
 
       <!-- confirmation — two-stage quote close-out -->
@@ -331,17 +453,19 @@
         <div style="max-width:680px">
           <span class="kicker">Quote request received · demo</span>
           <h2 style="font-size:28px;margin:6px 0 10px">Our team is on it — here's what happens next</h2>
-          <p class="small muted" style="margin-bottom:24px">Reference <b id="b2bRef">ELQ-DEMO-0001</b> · submitted as a <b>demo</b> — no live order was placed.</p>
+          <p class="small muted" style="margin-bottom:24px">Reference <b id="b2bRef">ELQ-2026-0000</b> · we'll email the confirmed quote to <b id="b2bEmailTo">—</b> · submitted as a <b>demo</b> — no live order was placed.</p>
 
           <ul class="tl">
-            <li class="is-done"><b>Instant estimate captured</b><span>Items, sizes, decoration and shipping specs were captured on-site — no clarifying-email cycle needed.</span></li>
-            <li><b>Team review &amp; feasibility</b><span>Our production team checks artwork, decoration and lead time — anything flagged (rush dates, custom placement, 300+ units) is reviewed manually.</span></li>
-            <li><b>Confirmed checkout link emailed</b><span>Within 2 working days you receive a formal quote with a checkout link — pay by card, bank transfer or Net terms where available.</span></li>
+            <li class="is-done"><b>Instant estimate captured</b><span>Items, per-line decoration, sizes, shipping specs and artwork were captured on-site — no clarifying-email cycle needed.</span></li>
+            <li><b>Team review &amp; feasibility</b><span>Our production team checks artwork, decoration and lead time — anything flagged (rush dates, 300+ units) is reviewed manually.</span></li>
+            <li><b>Confirmed checkout link emailed</b><span>Within ~2 working days you receive a formal quote with a checkout link — pay by card, bank transfer or Net terms where available. Production of ready-stock items with personalisation takes up to 14 working days after you confirm.</span></li>
           </ul>
 
-          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:28px">
+          <p class="small muted" style="margin-top:18px">Questions or changes? Call or WhatsApp <a href="tel:+6596281037">+65 9628 1037</a>.</p>
+
+          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:24px">
             <button type="button" class="btn btn--coral js-b2b-reset">Start another quote</button>
-            <button type="button" class="btn btn--ghost js-b2b-next" data-goto="5">Back to summary</button>
+            <button type="button" class="btn btn--ghost js-b2b-next" data-goto="5">Back to review</button>
           </div>
         </div>
       </div>
@@ -349,6 +473,7 @@
   </section>
 
 </main>
+<div id="printQuote" aria-hidden="true"></div>
 <script src="assets/components.js"></script>
 <script src="assets/products.js"></script>
 <script src="assets/app.js"></script>
