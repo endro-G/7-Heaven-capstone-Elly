@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" role="img" aria-label="Pet raincoat — Colourful Puppies concept artwork">
+  <rect width="640" height="640" fill="#fdf3e0"/>
+  <ellipse cx="320" cy="552" rx="185" ry="20" fill="#c98d2d" opacity="0.1"/>
+  <!-- raincoat silhouette (long body + hood + sleeves) -->
+  <path d="M306 132 a26 26 0 0 1 52 0 q18 6 30 20 l96 60 q10 8 10 20 v18 q0 10 -10 10 l-44 -12 v300 q0 22 -22 22 h-196 q-22 0 -22 -22 v-300 l-44 12 q-10 2 -10 -10 v-18 q0 -12 10 -20 l96 -60 q12 -14 30 -20 z"
+        fill="#f2c14e" stroke="#c98d2d" stroke-width="7" stroke-linejoin="round"/>
+  <!-- hood opening -->
+  <path d="M258 206 q62 -34 124 0 q16 10 0 22 q-62 30 -124 0 q-16 -12 0 -22 z" fill="#ffe9b0" stroke="#c98d2d" stroke-width="6"/>
+  <!-- buttons -->
+  <circle cx="320" cy="318" r="8" fill="#c98d2d"/>
+  <circle cx="320" cy="392" r="8" fill="#c98d2d"/>
+  <!-- colourful spot accents -->
+  <g fill="#ff7a8a"><circle cx="240" cy="330" r="9"/><circle cx="408" cy="300" r="7"/><circle cx="250" cy="460" r="6"/></g>
+  <g fill="#7aa2e8"><circle cx="392" cy="352" r="9"/><circle cx="238" cy="268" r="6"/><circle cx="404" cy="452" r="6"/></g>
+  <g fill="#8fbf9f"><circle cx="420" cy="410" r="7"/><circle cx="252" cy="392" r="5"/><circle cx="360" cy="470" r="5"/></g>
+  <!-- small pocket -->
+  <path d="M260 344 h44 v30 q0 14 -22 14 q-22 0 -22 -14 z" fill="none" stroke="#c98d2d" stroke-width="5"/>
+</svg>

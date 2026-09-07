@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" role="img" aria-label="Pet mat — Meadow Horses concept artwork">
+  <defs>
+    <g id="shoe">
+      <path d="M0 8 a26 26 0 0 0 52 0 l-5 -8 l-8 8 l-8 -10 l-8 10 l-8 -8 z" fill="currentColor"/>
+      <circle cx="11" cy="14" r="3" fill="#f2efe7"/>
+      <circle cx="26" cy="18" r="3" fill="#f2efe7"/>
+      <circle cx="41" cy="14" r="3" fill="#f2efe7"/>
+    </g>
+  </defs>
+  <rect width="640" height="640" fill="#eef3ea"/>
+  <ellipse cx="320" cy="548" rx="210" ry="22" fill="#5c7a5e" opacity="0.08"/>
+  <!-- cushioned mat -->
+  <rect x="120" y="150" width="400" height="370" rx="70" fill="#fcfaf3" stroke="#a9c3a4" stroke-width="6"/>
+  <rect x="146" y="176" width="348" height="318" rx="50" fill="none" stroke="#cfe0ca" stroke-width="5" stroke-dasharray="2 16" stroke-linecap="round"/>
+  <!-- meadow tufts -->
+  <g stroke="#a9c3a4" stroke-width="5" stroke-linecap="round" fill="none">
+    <path d="M220 240 l0 -26 M212 236 l8 -14 M228 236 l-8 -14"/>
+    <path d="M430 300 l0 -26 M422 296 l8 -14 M438 296 l-8 -14"/>
+    <path d="M196 400 l0 -22 M189 396 l7 -12 M203 396 l-7 -12"/>
+  </g>
+  <circle cx="470" cy="220" r="7" fill="#d9a441"/>
+  <circle cx="452" cy="242" r="5" fill="#c982a0"/>
+  <circle cx="486" cy="246" r="4" fill="#7a9e6e"/>
+  <!-- horseshoe print row -->
+  <g transform="translate(168 470)" color="#d9a441"><use href="#shoe" transform="scale(1.35)"/></g>
+  <g transform="translate(268 470)" color="#c982a0"><use href="#shoe" transform="scale(1.35)"/></g>
+  <g transform="translate(368 470)" color="#7a9e6e"><use href="#shoe" transform="scale(1.35)"/></g>
+</svg>

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Your Bag | The Elly Store</title>
-<meta name="description" content="Shopping bag — structure preview.">
+<meta name="description" content="Your bag — demo cart that syncs with the header badge and the live catalog.">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -22,7 +22,7 @@
         <div>
           <span class="kicker">Your bag</span>
           <h1 class="sec" style="font-size:clamp(28px,3.4vw,40px)">Shopping bag</h1>
-          <p class="small muted" style="margin-top:8px">Sample lines below are <b>layout placeholders</b> — quantities, subtotals and the free-shipping meter are live demos of the cart UI. Real items arrive with product data.</p>
+          <p class="small muted" style="margin-top:8px">Lines below sync with the items you add — quantities, subtotals and the free-shipping meter update live (demo, session-scoped).</p>
         </div>
       </div>
 
@@ -31,50 +31,8 @@
           <!-- bag lines: rebuilt by app.js from the shared elly-bag counter so the
                header badge and these lines always show the same number of items -->
           <div id="cartLines">
-          <div class="js-cart-line" data-price="68" style="border-top:1px solid var(--line)">
-            <div class="cart-line">
-              <div class="cart-line__img" style="--m-a:#e3ecfb;--m-b:#c2d6f2">
-                <span class="badge badge--demo tag">Sample</span>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M7 5.5h10l1.5 5.2a6.7 6.7 0 0 1-3.7 2l-.3 4.3H9.5l-.3-4.3a6.7 6.7 0 0 1-3.7-2z"/></svg>
-              </div>
-              <div>
-                <h4>Sample item · Disney | elly placeholder</h4>
-                <div class="meta"><span>Size: 12M · Colour: Cream</span><span>SKU line layout — name, options, price</span></div>
-                <div class="qty-row" data-min="1" data-max="10">
-                  <button type="button" data-step="-1" aria-label="Decrease">−</button>
-                  <output>1</output>
-                  <button type="button" data-step="1" aria-label="Increase">+</button>
-                </div>
-              </div>
-              <div class="cart-line__right">
-                <span class="line-price">S$68.00</span>
-                <a href="#" class="small muted" style="display:block;text-align:right;margin-top:10px" onclick="event.preventDefault();EL.toast('Remove works once items are real (demo)')">Remove</a>
-              </div>
-            </div>
-          </div>
-
-          <div class="js-cart-line" data-price="39">
-            <div class="cart-line">
-              <div class="cart-line__img" style="--m-a:#f6efe3;--m-b:#e9dcc6">
-                <span class="badge badge--demo tag">Sample</span>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M7 5.5h10l1.5 5.2a6.7 6.7 0 0 1-3.7 2l-.3 4.3H9.5l-.3-4.3a6.7 6.7 0 0 1-3.7-2z"/></svg>
-              </div>
-              <div>
-                <h4>Sample item · Elly Label placeholder</h4>
-                <div class="meta"><span>Size: 3M · Personalised: name in coral</span><span><a href="pdp.html?p=Personalised%20Kids%20Beanie%20-%20Cream&personalise=1" class="link-arrow" style="font-size:12px">Add a name to this</a> — opens the configurator on the PDP (PRD §5.3 cross-sell)</span></div>
-                <div class="qty-row" data-min="1" data-max="10">
-                  <button type="button" data-step="-1" aria-label="Decrease">−</button>
-                  <output>1</output>
-                  <button type="button" data-step="1" aria-label="Increase">+</button>
-                </div>
-              </div>
-              <div class="cart-line__right">
-                <span class="line-price">S$39.00</span>
-                <a href="#" class="small muted" style="display:block;text-align:right;margin-top:10px" onclick="event.preventDefault();EL.toast('Remove works once items are real (demo)')">Remove</a>
-              </div>
-            </div>
-          </div>
-
+          <!-- bag lines are rebuilt by app.js from the shared elly-bag-items source, so the
+               header badge and these lines always show the same items (empty state if none) -->
           </div>
           <div class="empty-slot" id="cartEmpty" style="margin-top:22px;display:none">
             <strong>Your bag is empty</strong>
@@ -93,10 +51,10 @@
             <p class="lbl" id="shipMeterLabel">S$— away from free standard shipping</p>
             <div class="meter"><i id="shipMeter"></i></div>
           </div>
-          <div class="s-row"><span>Subtotal</span><b id="cartSubtotal">S$107.00</b></div>
+          <div class="s-row"><span>Subtotal</span><b id="cartSubtotal">S$0.00</b></div>
           <div class="s-row"><span>Shipping (SG standard)</span><b id="cartShip">S$0.00</b></div>
           <div class="s-row"><span>Estimated taxes</span><b>Included</b></div>
-          <div class="s-row s-row--total"><span>Total</span><span class="price" id="cartTotal">S$107.00</span></div>
+          <div class="s-row s-row--total"><span>Total</span><span class="price" id="cartTotal">S$0.00</span></div>
           <button type="button" class="btn btn--coral btn--block js-go-checkout" style="margin-top:18px">Checkout — 3 fulfilment options</button>
           <p class="small muted center" style="margin-top:12px;font-size:11.5px">Demo checkout · no live payments · Klaviyo + Smile + Judge.me hooks reserved</p>
         </aside>

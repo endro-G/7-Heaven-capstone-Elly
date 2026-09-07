@@ -704,10 +704,11 @@ section.block--tight { padding-block: clamp(40px, 4.5vw, 60px); }
 
 /* page hero for listings */
 .page-hero { background: var(--hero-bg, var(--cream)); border-bottom: 1px solid var(--line); }
-.page-hero__in { padding-block: clamp(38px, 5vw, 60px); display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
-.page-hero h1 { font-size: clamp(30px, 4vw, 46px); }
-.page-hero p { max-width: 60ch; color: var(--ink-soft); }
-.hero-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.page-hero__in { padding-block: clamp(38px, 5vw, 60px); display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }  .page-hero h1 { font-size: clamp(30px, 4vw, 46px); }
+  .page-hero p { max-width: 60ch; color: var(--ink-soft); }
+  .hero-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+
+
 
 /* ---------- PDP ---------- */
 .pdp { display: grid; grid-template-columns: 1.05fr .95fr; gap: clamp(28px, 4.5vw, 64px); align-items: start; }

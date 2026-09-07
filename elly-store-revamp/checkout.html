@@ -126,22 +126,13 @@
 
         <aside class="summary-card">
           <h3>Your bag</h3>
-          <!-- checkout lines: rebuilt by app.js from the same elly-bag counter as the header badge -->
+          <!-- checkout lines: rebuilt by app.js from the same elly-bag-items source as the header badge -->
           <div id="ckLines">
-          <div class="js-cart-line" data-price="68" style="border-bottom:1px solid var(--line-soft);padding:10px 0;display:flex;gap:12px;align-items:center">
-            <div style="width:46px;height:46px;border-radius:var(--radius);background:linear-gradient(150deg,#e3ecfb,#c2d6f2);flex:none;border:1px dashed var(--line)"></div>
-            <div style="flex:1;font-size:12.5px"><b>Sample · Disney item</b><br><span class="muted">12M · qty <span class="ck-qty">1</span></span></div>
-            <span style="font-weight:700;font-size:13px">S$68.00</span>
+          <!-- compact lines per bag item render here (empty state if none) -->
           </div>
-          <div style="border-bottom:1px solid var(--line-soft);padding:10px 0;display:flex;gap:12px;align-items:center;margin-bottom:12px">
-            <div style="width:46px;height:46px;border-radius:var(--radius);background:linear-gradient(150deg,#f6efe3,#e9dcc6);flex:none;border:1px dashed var(--line)"></div>
-            <div style="flex:1;font-size:12.5px"><b>Sample · Elly item</b><br><span class="muted">3M · personalised · qty 1</span></div>
-            <span style="font-weight:700;font-size:13px">S$39.00</span>
-          </div>
-          </div>
-          <div class="s-row"><span>Subtotal</span><b id="cartSubtotal">S$107.00</b></div>
+          <div class="s-row"><span>Subtotal</span><b id="cartSubtotal">S$0.00</b></div>
           <div class="s-row"><span>Shipping</span><b class="ship-est">S$0.00</b></div>
-          <div class="s-row s-row--total"><span>Total</span><span class="price" id="cartTotal">S$107.00</span></div>
+          <div class="s-row s-row--total"><span>Total</span><span class="price" id="cartTotal">S$0.00</span></div>
           <button type="button" class="btn btn--coral btn--block" style="margin-top:18px" onclick="EL.toast('Order placed \u2014 <b>demo only</b>. No live order or payment was created.', true)">Place order · demo</button>
           <p class="small muted center" style="margin-top:12px;font-size:11.5px">Post-purchase: Klaviyo flow &amp; Judge.me review invite reserved (PRD §5.4).</p>
         </aside>

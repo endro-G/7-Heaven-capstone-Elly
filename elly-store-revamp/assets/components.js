@@ -195,7 +195,6 @@
       '<div class="grid-head"><div><span class="chips-label" style="margin:0">Results</span></div>' +
       '<span class="grid-count" id="resultCount"></span></div>' +
       '<div class="product-grid" id="resultGrid"></div>' +
-      '<div class="empty-slot" style="margin-top:14px"><strong>No products yet</strong><span>Grid fills with matching products in the next build step.</span></div>' +
       '</div>' +
       '</div></div></div>';
   }
@@ -299,7 +298,7 @@
       '<p class="small" style="color:rgba(255,255,255,.6);margin-top:12px">Mon\u2013Fri 9am\u20135pm SGT \u00b7 WhatsApp (65) 9628 1037</p>' +
       '</div>' +
       '</div>' +
-      '<div class="foot-sub"><div class="foot-sub__in"><span>\u00a9 2026 The Elly Store \u00b7 Prototype UI structure \u2014 no products or live pricing</span>' +
+      '<div class="foot-sub"><div class="foot-sub__in"><span>\u00a9 2026 The Elly Store \u00b7 Prototype demo \u2014 catalog populated from theellystore.com \u00b7 not a live store</span>' +
       '<ul><li><a href="#">Terms</a></li><li><a href="#">Privacy</a></li><li><a href="#">Accessibility</a></li><li><a href="admin.html" style="opacity:.7">Demo admin</a></li></ul></div></div>' +
       '</div></footer>';
   }

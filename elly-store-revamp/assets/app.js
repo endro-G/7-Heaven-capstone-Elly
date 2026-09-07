@@ -1,8 +1,8 @@
 /* ============================================================
    THE ELLY STORE — revamp prototype · interactions
-   Demo shell: visitor toggle, search overlay, ghost product
-   grids (structure placeholders), facets, tabs, B2B tiering,
-   checkout fulfilment options, admin MOQ/demand demo.
+   Demo shell: visitor toggle, search overlay, catalog-populated
+   product grids (with ghost-card fallback), facets (UI only),
+   tabs, B2B tiering, checkout fulfilment options, admin MOQ/demand demo.
    ============================================================ */
 (function () {
   'use strict';
@@ -129,13 +129,6 @@
     $$('[data-ghost-grid]').forEach(function (grid) {
       var n = parseInt(grid.getAttribute('data-ghost-grid'), 10) || 8;
       var kind = grid.getAttribute('data-kind') || 'elly';
-      /* Elly FurKids stays as structure placeholders (concept line, not live products) */
-      if (kind === 'furkids') {
-        var ghost = '';
-        for (var g = 0; g < n; g++) ghost += ghostCard('furkids');
-        grid.innerHTML = ghost;
-        return;
-      }
       var intent = grid.getAttribute('data-intent') || '';
       var occ = occasionFromUrl();
       if (occ && OCCASION_INTENT[occ]) intent = OCCASION_INTENT[occ];
@@ -457,7 +450,7 @@
       if (banner) {
         banner.hidden = false;
         var t = $('#occBannerText');
-        if (t) t.textContent = 'Browsing occasion: ' + occ + ' (demo) \u2014 this collection will be curated from products tagged with this occasion.';
+        if (t) t.textContent = 'Browsing occasion: ' + occ + ' \u2014 the grid below is curated from products tagged with this occasion (demo).';
       }
     }
   });
@@ -489,7 +482,9 @@
     }
     var count = $('.result-line');
     if (count) {
-      if (vals.length) count.innerHTML = '<b>0 products</b> match your ' + vals.length + ' filter' + (vals.length > 1 ? 's' : '') + ' \u2014 live catalog (demo) once filters connect.';
+      var isFurkids = (document.body && document.body.getAttribute('data-page')) === 'furkids';
+      if (vals.length) count.innerHTML = '<b>Demo</b> \u2014 facet filtering is structure-only here; clear the filters to see the live catalog.';
+      else if (isFurkids) count.innerHTML = '<b>Populated demo</b> \u2014 live elly pet accessories (bow ties &amp; bandana) beside FurKids concept pieces \u2014 not sold online yet. Concept only \u2014 no Disney licence applied for.';
       else count.innerHTML = '<b>Live demo catalog</b> \u2014 products populated from theellystore.com feed.';
     }
     var grid = $('[data-ghost-grid]');
@@ -499,9 +494,9 @@
       grid.style.display = showGhosts ? '' : 'none';
       empty.style.display = showGhosts ? 'none' : '';
       var emT = $('strong', empty);
-      if (emT) emT.textContent = vals.length ? 'No products yet' : 'Grid empty';
+      if (emT) emT.textContent = vals.length ? 'Filters not connected yet' : 'Grid ready';
       var emS = $('span', empty);
-      if (emS) emS.textContent = vals.length ? 'Filters will query the catalog once product data is loaded in the next step.' : 'Product cards appear here.';
+      if (emS) emS.textContent = vals.length ? 'Facet filtering is structure-only in this demo \u2014 clear the filters to see the live catalog.' : 'Product cards appear here.';
     }
   }
 
@@ -557,10 +552,10 @@
     }
   });
 
-  /* ---------- Sort (demo only) ---------- */
+  /* ---------- Sort (UI only — ordering not connected yet) ---------- */
   document.addEventListener('change', function (e) {
     if (e.target.matches('.sort select')) {
-      toast('Sorted by ' + e.target.value + ' \u2014 ordering applies once product data loads (demo)');
+      toast('Sorted by ' + e.target.value + ' \u2014 ordering is structure-only in this demo (the catalog is already loaded)');
     }
   });
 
@@ -2139,6 +2134,7 @@
     if (!prod) prod = productByName('Beary Personalisable Baby Gift Set') || PRODUCTS[0];
     CURRENT_PDP = prod;
     var pillar = ({ elly: 'Elly Label', disney: 'Disney | elly', shoe: 'Shoes', gift: 'Gifting', custom: 'Customization' })[prod.k] || 'Elly Label';
+    if (document.title) document.title = prod.n + ' | The Elly Store';
     var t = $('#pdpTitle'); if (t) t.textContent = prod.n;
     var k = $('#pdpKicker'); if (k) k.textContent = pillar + ' \u00b7 ' + (prod.int || []).join(' / ');
     var pr = $('#pdpPrice'); if (pr) pr.textContent = prod.p;

@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" role="img" aria-label="Pet blanket — Colourful Puppies concept artwork">
+  <defs>
+    <g id="bone">
+      <rect x="-26" y="-8" width="52" height="16" rx="8" fill="currentColor"/>
+      <circle cx="-22" cy="-8" r="11" fill="currentColor"/>
+      <circle cx="-22" cy="8" r="11" fill="currentColor"/>
+      <circle cx="22" cy="-8" r="11" fill="currentColor"/>
+      <circle cx="22" cy="8" r="11" fill="currentColor"/>
+    </g>
+  </defs>
+  <rect width="640" height="640" fill="#fdf3ec"/>
+  <ellipse cx="320" cy="540" rx="190" ry="24" fill="#c98a6e" opacity="0.08"/>
+  <!-- blanket with scalloped hem -->
+  <rect x="140" y="150" width="360" height="330" rx="26" fill="#fdfcf8" stroke="#d9a494" stroke-width="6"/>
+  <path d="M140 414 h60 a20 20 0 0 1 40 0 h60 a20 20 0 0 1 40 0 h60 a20 20 0 0 1 40 0 h60 a20 20 0 0 1 40 0 h60 a20 20 0 0 1 40 0 h0 v54 a26 26 0 0 1 -26 26 h-328 a26 26 0 0 1 -26 -26 z" fill="#fdfcf8" stroke="#d9a494" stroke-width="6"/>
+  <!-- colourful puppy spots -->
+  <circle cx="225" cy="250" r="20" fill="#ff7a8a"/>
+  <circle cx="320" cy="230" r="15" fill="#7aa2e8"/>
+  <circle cx="415" cy="252" r="22" fill="#8fbf9f"/>
+  <circle cx="252" cy="322" r="13" fill="#e8b54a"/>
+  <circle cx="368" cy="320" r="18" fill="#7aa2e8"/>
+  <circle cx="320" cy="300" r="8" fill="#d9829a"/>
+  <!-- bone + paw accents -->
+  <g transform="translate(196 470)" color="#ff7a8a"><use href="#bone" transform="scale(1.4)"/></g>
+  <g transform="translate(290 470)" color="#7aa2e8"><use href="#bone" transform="scale(1.4)"/></g>
+  <g transform="translate(384 470)" color="#8fbf9f"><use href="#bone" transform="scale(1.4)"/></g>
+</svg>

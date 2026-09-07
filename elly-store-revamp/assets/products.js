@@ -1,4 +1,7 @@
-/* Generated from the live theellystore.com feed (products.json) — 94 curated products.
+/* Generated from the live theellystore.com feed (products.json) — 94 curated products
+   plus 11 Elly FurKids entries (5 real pet accessories from the store's Pet Accessories
+   collection + 6 clearly-labelled concept pieces whose artwork is the Elly FurKids
+   concept renders shipped under assets/furkids/).
    Images hotlink the Shopify CDN at width=640. Demo catalog for the revamp prototype. */
 window.EL_PRODUCTS = [
   {"n":"Deluxe Beginnings Keepsake Baby Gift Set","p":"S$340","k":"gift","int":["newborn","gift"],"stars":"4.9 (126)","img":"https://cdn.shopify.com/s/files/1/1705/4833/files/beginning_box.webp?v=1781850355&width=640","badge":"Keepsake gift set","badgeCls":"badge--blue","imgs":["https://cdn.shopify.com/s/files/1/1705/4833/files/beginning_box.webp?v=1781850355&width=640","https://cdn.shopify.com/s/files/1/1705/4833/files/beginning_close_up.webp?v=1781850567&width=640","https://cdn.shopify.com/s/files/1/1705/4833/files/deluxe-beginnings-gift-set-lifestyle-flatlay.webp?v=1777872556&width=640","https://cdn.shopify.com/s/files/1/1705/4833/files/the_collection_deluxe_beginning.webp?v=1781754621&width=640"],"custom":{"methods":["embroidered"],"placements":["keepsake box lid","front"]}},
@@ -95,4 +98,19 @@ window.EL_PRODUCTS = [
   {"n":"Catch Mary Janes - Mint (Kids)","p":"S$79","k":"shoe","int":["everyday"],"stars":"4.7 (158)","img":"https://cdn.shopify.com/s/files/1/1705/4833/files/86.webp?v=1777448072&width=640"},
   {"n":"Flower Baby Shoes - Nacardo Dalia","p":"S$47.90","k":"shoe","int":["newborn"],"stars":"4.9 (212)","img":"https://cdn.shopify.com/s/files/1/1705/4833/files/25_c48cbb85-84c1-46e4-adf3-e27812adc0f1.png?v=1752467088&width=640"},
   {"n":"Biogateo Pink Puff Glitter Shoes","p":"S$89.90","k":"shoe","int":["photoshoot"],"stars":"4.8 (41)","img":"https://cdn.shopify.com/s/files/1/1705/4833/files/BiogateoPinkPuffGlitterShoes1.jpg?v=1715767448&width=640"},
+
+  /* ---- Elly FurKids: 5 real items from the store's Pet Accessories collection ---- */
+  {"n":"Pet Bandana - Navy Terrier Plaids / Paw Stripes","p":"S$16.90","k":"furkids","int":["pets","gift"],"img":"https://cdn.shopify.com/s/files/1/1705/4833/files/PetBandanaBluePlaid2.jpg?v=1752471343&width=640","imgs":["https://cdn.shopify.com/s/files/1/1705/4833/files/PetBandanaBluePlaid2.jpg?v=1752471343&width=640","https://cdn.shopify.com/s/files/1/1705/4833/files/DSC_3132.jpg?v=1752471251&width=640","https://cdn.shopify.com/s/files/1/1705/4833/files/PetBandanaBluePlaid3.jpg?v=1752471328&width=640","https://cdn.shopify.com/s/files/1/1705/4833/files/PetBandanaBlueStripes2.jpg?v=1752471310&width=640"]},
+  {"n":"Pet Bow-Tie - Colourful Puppies","p":"S$14.90","k":"furkids","int":["pets","gift"],"img":"https://cdn.shopify.com/s/files/1/1705/4833/files/BowTieColourfulPuppies1.jpg?v=1752471703&width=640","imgs":["https://cdn.shopify.com/s/files/1/1705/4833/files/BowTieColourfulPuppies1.jpg?v=1752471703&width=640","https://cdn.shopify.com/s/files/1/1705/4833/files/DSC_3133.jpg?v=1752471686&width=640","https://cdn.shopify.com/s/files/1/1705/4833/files/DSC_3134.jpg?v=1752471670&width=640","https://cdn.shopify.com/s/files/1/1705/4833/files/DSC_3135.jpg?v=1752471643&width=640"]},
+  {"n":"Pet Bow-Tie - Navy Terrier Plaids","p":"S$14.90","k":"furkids","int":["pets","gift"],"img":"https://cdn.shopify.com/s/files/1/1705/4833/files/BowTieBluePlaid2.jpg?v=1752471025&width=640","imgs":["https://cdn.shopify.com/s/files/1/1705/4833/files/BowTieBluePlaid2.jpg?v=1752471025&width=640","https://cdn.shopify.com/s/files/1/1705/4833/files/BowTieBluePlaid1.jpg?v=1752471010&width=640","https://cdn.shopify.com/s/files/1/1705/4833/files/BowTieBluePlaid5.jpg?v=1752470986&width=640"]},
+  {"n":"Pet Bow-Tie - Pink Terrier Plaids","p":"S$14.90","k":"furkids","int":["pets","gift"],"img":"https://cdn.shopify.com/s/files/1/1705/4833/files/BowTiePinkPlaids1.jpg?v=1752471088&width=640"},
+  {"n":"Pet Bow-Tie - Paw Stripes","p":"S$14.90","k":"furkids","int":["pets","gift"],"img":"https://cdn.shopify.com/s/files/1/1705/4833/files/BowTieBlueStripes3.jpg?v=1752470923&width=640","imgs":["https://cdn.shopify.com/s/files/1/1705/4833/files/BowTieBlueStripes3.jpg?v=1752470923&width=640","https://cdn.shopify.com/s/files/1/1705/4833/files/BowTieBlueStripes1.jpg?v=1752470906&width=640","https://cdn.shopify.com/s/files/1/1705/4833/files/BowTieBlueStripes5.jpg?v=1752470888&width=640"]},
+
+  /* ---- Elly FurKids concept pieces (not sold online yet) — artwork: Elly FurKids concept renders ---- */
+  {"n":"Pet Blanket - Paw Stripes (concept)","p":"S$49.90","k":"furkids","int":["pets"],"img":"assets/furkids/pet-blanket-paw-stripes.jpg","badge":"Concept","badgeCls":"badge--ink"},
+  {"n":"Pet Blanket - Colourful Puppies (concept)","p":"S$49.90","k":"furkids","int":["pets"],"img":"assets/furkids/pet-blanket-colourful-puppies.jpg","badge":"Concept","badgeCls":"badge--ink"},
+  {"n":"Pet Sleeping Mat - Meadow Horses (concept)","p":"S$39.90","k":"furkids","int":["pets"],"img":"assets/furkids/pet-mat-meadow-horses.jpg","badge":"Concept","badgeCls":"badge--ink"},
+  {"n":"Pet Hoodie - Terrier Plaids (concept)","p":"S$44.90","k":"furkids","int":["pets"],"img":"assets/furkids/pet-hoodie-terrier-plaids.jpg","badge":"Concept","badgeCls":"badge--ink"},
+  {"n":"Pet Tee - Paw Stripes (concept)","p":"S$29.90","k":"furkids","int":["pets"],"img":"assets/furkids/pet-tee-paw-stripes.jpg","badge":"Concept","badgeCls":"badge--ink"},
+  {"n":"Pet Raincoat - Colourful Puppies (concept)","p":"S$46.90","k":"furkids","int":["pets"],"img":"assets/furkids/pet-raincoat-colourful-puppies.jpg","badge":"Concept","badgeCls":"badge--ink"}
 ];

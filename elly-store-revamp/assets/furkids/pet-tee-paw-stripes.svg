@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" role="img" aria-label="Pet tee — Paw Stripes concept artwork">
+  <defs>
+    <g id="paw">
+      <ellipse cx="0" cy="4" rx="11" ry="8.5" fill="#2f3a66"/>
+      <circle cx="-12" cy="-9" r="4.4" fill="#2f3a66"/>
+      <circle cx="-4" cy="-14" r="4.4" fill="#2f3a66"/>
+      <circle cx="5" cy="-14" r="4.4" fill="#2f3a66"/>
+      <circle cx="13" cy="-9" r="4.4" fill="#2f3a66"/>
+    </g>
+  </defs>
+  <rect width="640" height="640" fill="#f4f1ea"/>
+  <ellipse cx="320" cy="540" rx="185" ry="22" fill="#2f3a66" opacity="0.07"/>
+  <!-- tee silhouette -->
+  <path d="M300 130 L252 156 L150 214 Q142 218 142 228 L142 312 Q142 320 150 320 L212 320 L212 470 Q320 502 428 470 L428 320 L490 320 Q498 320 498 312 L498 228 Q498 218 490 214 L388 156 L340 130 Z"
+        fill="#fdfcf8" stroke="#2f3a66" stroke-width="7" stroke-linejoin="round"/>
+  <!-- neck binding -->
+  <path d="M302 136 Q320 168 338 136" fill="none" stroke="#2f3a66" stroke-width="7" stroke-linecap="round"/>
+  <!-- navy stripes on hem + sleeves -->
+  <g stroke="#2f3a66" stroke-width="7">
+    <path d="M216 462 h208"/>
+    <path d="M216 480 h208"/>
+    <path d="M156 246 h52 M432 246 h52"/>
+    <path d="M156 268 h52 M432 268 h52"/>
+  </g>
+  <!-- chest paw -->
+  <g transform="translate(320 340)"><use href="#paw" transform="scale(2.4)"/></g>
+</svg>
