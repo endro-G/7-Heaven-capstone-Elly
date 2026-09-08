@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Search | The Elly Store</title>
+<meta name="description" content="Search results across The Elly Store demo catalog — outfits, occasions, gifts and Disney, filterable by the facets on the left.">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Ovo&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body data-page="search">
+<main id="content">
+
+  <div class="wrap"><nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">Home</a><span class="sep">/</span><span aria-current="page">Search</span></nav></div>
+
+  <section class="page-hero hero-p-blue">
+    <div class="wrap page-hero__in">
+      <span class="kicker">Search the store</span>
+      <h1>Search results for <span id="searchQueryTitle"></span></h1>
+      <p>Every match comes from the product database — outfits, occasions, gifting, Disney and more. Use the filters on the left to narrow the results further.</p>
+      <div class="hero-tags">
+        <span class="badge badge--ink">Search by keyword</span>
+        <span class="badge badge--ink">Search by occasion</span>
+        <span class="badge badge--ink">Filter results</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="block block--tight" data-bump>
+    <div class="wrap">
+      <p class="section-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>Live demo catalog — results are matched from the product database (theellystore.com feed) and can be refined with the facets below.</p>
+    </div>
+    <div class="wrap shop">
+      <aside class="facet-panel" id="facetPanel" aria-label="Product filters">
+        <div class="facet-panel-head"><h4>Filters</h4><button type="button" class="icon-btn js-close-overlay" aria-label="Close filters"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+
+        <div class="facet-group">
+          <h4>Character / franchise <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 16L5 9h14z"/></svg></h4>
+          <div class="facet-opts">
+            <label class="f-check"><input type="checkbox" data-f="Character" value="Mickey &amp; Friends"><span>Mickey &amp; Friends</span></label>
+            <label class="f-check"><input type="checkbox" data-f="Character" value="Disney Princess"><span>Disney Princess</span></label>
+            <label class="f-check"><input type="checkbox" data-f="Character" value="Frozen"><span>Frozen</span></label>
+            <label class="f-check"><input type="checkbox" data-f="Character" value="Winnie the Pooh"><span>Winnie the Pooh</span></label>
+            <label class="f-check"><input type="checkbox" data-f="Character" value="Stitch"><span>Stitch</span></label>
+            <label class="f-check"><input type="checkbox" data-f="Character" value="Zootopia"><span>Zootopia</span></label>
+          </div>
+        </div>
+        <div class="facet-group">
+          <h4>Age <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 16L5 9h14z"/></svg></h4>
+          <div class="facet-opts">
+            <label class="f-check"><input type="checkbox" data-f="Age" value="Newborn (0–12M)"><span>Newborn (0–12M)</span></label>
+            <label class="f-check"><input type="checkbox" data-f="Age" value="Baby (0–2Y)"><span>Baby (0–2Y)</span></label>
+            <label class="f-check"><input type="checkbox" data-f="Age" value="Kids (1–14Y)"><span>Kids (1–14Y)</span></label>
+            <label class="f-check"><input type="checkbox" data-f="Age" value="Adults"><span>Adults</span></label>
+          </div>
+        </div>
+        <div class="facet-group">
+          <h4>Type <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 16L5 9h14z"/></svg></h4>
+          <div class="facet-opts">
+            <label class="f-check"><input type="checkbox" data-f="Type" value="In stock now"><span>In stock now</span></label>
+            <label class="f-check"><input type="checkbox" data-f="Type" value="Pre-order design"><span>Pre-order design</span></label>
+            <label class="f-check"><input type="checkbox" data-f="Type" value="Concept design"><span>Concept design</span></label>
+            <label class="f-check"><input type="checkbox" data-f="Type" value="Dresses &amp; cheongsams"><span>Dresses &amp; cheongsams</span></label>
+            <label class="f-check"><input type="checkbox" data-f="Type" value="Tees &amp; separates"><span>Tees &amp; separates</span></label>
+            <label class="f-check"><input type="checkbox" data-f="Type" value="Onesies &amp; rompers"><span>Onesies &amp; rompers</span></label>
+            <label class="f-check"><input type="checkbox" data-f="Type" value="Sleepwear"><span>Sleepwear</span></label>
+            <label class="f-check"><input type="checkbox" data-f="Type" value="Swimwear"><span>Swimwear</span></label>
+            <label class="f-check"><input type="checkbox" data-f="Type" value="Gift set"><span>Gift set</span></label>
+            <label class="f-check"><input type="checkbox" data-f="Type" value="Blankets &amp; swaddles"><span>Blankets &amp; swaddles</span></label>
+            <label class="f-check"><input type="checkbox" data-f="Type" value="Pet apparel"><span>Pet apparel</span></label>
+          </div>
+        </div>
+        <div class="facet-group">
+          <h4>Occasion <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 16L5 9h14z"/></svg></h4>
+          <div class="facet-opts">
+            <label class="f-check"><input type="checkbox" data-f="Occasion" value="Newborn &amp; baby shower"><span>Newborn &amp; baby shower</span></label>
+            <label class="f-check"><input type="checkbox" data-f="Occasion" value="Birthday"><span>Birthday</span></label>
+            <label class="f-check"><input type="checkbox" data-f="Occasion" value="Twinning &amp; matching"><span>Twinning &amp; matching</span></label>
+            <label class="f-check"><input type="checkbox" data-f="Occasion" value="Theme park vacation"><span>Theme park vacation</span></label>
+            <label class="f-check"><input type="checkbox" data-f="Occasion" value="Family photoshoot"><span>Family photoshoot</span></label>
+            <label class="f-check"><input type="checkbox" data-f="Occasion" value="Pajama party / sleepover"><span>Pajama party / sleepover</span></label>
+            <label class="f-check"><input type="checkbox" data-f="Occasion" value="Gifting"><span>Gifting</span></label>
+            <label class="f-check"><input type="checkbox" data-f="Occasion" value="Chinese New Year"><span>Chinese New Year</span></label>
+            <label class="f-check"><input type="checkbox" data-f="Occasion" value="Singapore souvenirs"><span>Singapore souvenirs</span></label>
+            <label class="f-check"><input type="checkbox" data-f="Occasion" value="FurKids / pets"><span>FurKids / pets</span></label>
+          </div>
+        </div>
+        <div class="facet-group">
+          <h4>Colour <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 16L5 9h14z"/></svg></h4>
+          <div class="facet-opts">
+            <div class="f-color">
+              <button type="button" class="c-swatch" data-c="Cream" style="background:#ebdfcf" aria-label="Cream"></button>
+              <button type="button" class="c-swatch" data-c="White" style="background:#fff" aria-label="White"></button>
+              <button type="button" class="c-swatch" data-c="Pink" style="background:#f7c8d8" aria-label="Pink"></button>
+              <button type="button" class="c-swatch" data-c="Red" style="background:#a81818" aria-label="Red"></button>
+              <button type="button" class="c-swatch" data-c="Navy" style="background:#30346f" aria-label="Navy"></button>
+              <button type="button" class="c-swatch" data-c="Aqua" style="background:#8dd8e8" aria-label="Aqua"></button>
+              <button type="button" class="c-swatch" data-c="Multi" style="background:conic-gradient(#ff6070,#f4c531,#8dd8e8,#b2a4e8,#ff6070)" aria-label="Multi"></button>
+            </div>
+          </div>
+        </div>
+        <div class="facet-group">
+          <h4>Price <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 16L5 9h14z"/></svg></h4>
+          <div class="facet-opts">
+            <label class="f-check"><input type="checkbox" data-f="Price" value="Under $40"><span>Under $40</span></label>
+            <label class="f-check"><input type="checkbox" data-f="Price" value="$40–$80"><span>$40–$80</span></label>
+            <label class="f-check"><input type="checkbox" data-f="Price" value="$80+"><span>$80+</span></label>
+          </div>
+        </div>
+        <button type="button" class="btn btn--ghost btn--sm m-clear js-clear-filters">Clear all filters</button>
+      </aside>
+
+      <div>
+        <div class="shop-toolbar">
+          <button type="button" class="facet-toggle" data-facet-toggle>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M7 12h10M10 18h4"/></svg> Filters
+          </button>
+          <p class="result-line"><b>Search the store</b> — results matched from the product database.</p>
+          <label class="sort">Sort
+            <select aria-label="Sort by">
+              <option>Featured</option><option>Best selling</option><option>Price: low to high</option><option>Price: high to low</option><option>Newest</option>
+            </select>
+          </label>
+        </div>
+        <div class="active-filters"></div>
+        <div class="product-grid" data-ghost-grid="12" data-kind="search"></div>
+        <div class="empty-slot" style="display:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+          <strong>No products found</strong>
+          <span>Try a different keyword, or refine your search in the field above.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+<script src="assets/components.js"></script>
+<script src="assets/products.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>

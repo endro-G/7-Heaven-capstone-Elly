@@ -2,10 +2,64 @@
 
 A responsive, modernised prototype of the revamped theellystore.com, built from the PRD
 (`elly-store-growth-engine-prd.md`) with brand fidelity to the live site (logo, palette,
-typography). The demo catalog in `assets/products.js` is populated from the live
-theellystore.com feed (real names, prices, Shopify-CDN photos) and drives the grids,
-PDP, search, recommender rails and B2B item rows. Facets/sort and the third-party hooks
-(Smile, Klaviyo, Judge.me, payments) remain clearly-labelled structure/demo.
+typography). The catalog lives in a **product database** (`assets/products.js`,
+`window.EL_PRODUCTS`) populated from the live theellystore.com feed (real names, prices,
+Shopify-CDN photos) and drives the grids, PDP, search, recommender rails, facet filtering
+and the B2B item rows. Third-party hooks (Smile, Klaviyo, Judge.me, payments) remain
+clearly-labelled structure/demo.
+
+## Product database
+
+`assets/products.js` is the single source of truth for the whole site. Every record carries
+metadata + tags so the catalog can be filtered and searched:
+
+- **Pillars** — `k` (primary) + `kinds` (extra memberships, e.g. a Disney tee that is also customisable).
+- **Facets** — `type` (product type), `age`, `characters` (Disney franchise), `colours`, `price` (numeric),
+  `occasion`/`recipient`/`giftStyle` (gifting), `petSize` (FurKids), `shoeStage`/`shoeType`/`brand`/`shoeSizes`,
+  and customization `method`/`custom` (embroidered vs iron-on patches, placements).
+- **Availability** — `in-stock` · `concept` (FurKids concepts + Pre-Order art, flagged `concept` with a
+  `conceptNote` disclosure) · `pre-order` (the 3 Singapore Pre-Order designs) · `b2b-only` (varsity tee —
+  never surfaces in consumer browsing). Adult family-matching tees are real in-stock consumer items
+  AND quotable in B2B (their `b2b.available` flag keeps them in the quote flow).
+- **B2B** — `b2b: { available, unit, sizes, meta }` on B2B-applicable items. The B2B quote wizard
+  derives its item dropdown from this flag, so it always quotes from the same catalog, limited to the
+  items applicable to wholesale/corporate/event orders.
+- **Intent-led categories** — `window.EL_INTENTS` defines the occasion/collection lenses
+  (Newborn & Baby Shower, Holiday Gift Boxes, Big Brother/Little Sister, Theme Park
+  Vacation, Pajama Party/Sleepover, Family Photoshoot, Birthday, CNY, Singapore,
+  Personalisation, FurKids, **Twinning & Matching Sets**). Each product's `int`/`occasion`
+  tags can put it in ANY number of them, so one item surfaces from every relevant
+  entry point. **Twinning & Matching** (24 items) covers matching sets for the WHOLE
+  family — twin gift sets, "Twin it" Mickey tees, sibling/CNY-family outfits (e.g. the
+  Blue Cranes Tang Shirt + Cheongsam pair) — plus mums' & dads' versions of the kids'
+  prints (Ladies Doodle Minnie, Adult Mickey Polaroid / Pastel Mickey Crew / Lion City,
+  Ladies Nautical Polo Dress + Men's Nautical Polo Tee, Adult SG Checklist, sized
+  XS–XXL) so the whole family can twin. Items keep their other intent tags too (a
+  cheongsam is `twin` + `cny` + `photoshoot`).
+- **Search** — the header search works in two modes: **intent** (a query or popular
+  alias like "birthday present", "baby shower", "sleepover PJs", "sg", "pjs" resolves
+  to an intent-led category and returns everything tagged with it — longest phrase
+  wins when aliases overlap) or **keywords** (every token must appear across the
+  product's name, `tags`, characters, type, collection or colours). No matches falls
+  back to popular picks. Suggestion chips (per visitor segment) all resolve through
+  this same engine.
+- **Popularity in the search panel** — opening the search shows the **most searched
+  keywords** (highest-frequency searchable terms computed from the catalog, e.g.
+  "mickey", "dress", "cheongsam", each with a match count) and the **most popular
+  intent-led categories** (every `EL_INTENTS` category ranked by catalog size, with
+  icon + product count). Clicking either chip runs the real search for that
+  keyword/category — counts are derived live from the product database.
+- **Search results page** (`search.html?q=…`) — pressing **Enter** (or the submit
+  arrow) in the header search, or clicking any suggestion chip, opens a dedicated
+  results page laid out exactly like a pillar listing: every match rendered in the
+  grid with the **facet panel on the left** (Character / Age / Type incl. availability
+  &amp; Concept / Occasion / Colour / Price) plus sort — the facets narrow the searched
+  results live, exactly like a category page. The header field stays prefilled so
+  the query can be refined, and zero-match / no-query states show real empty states.
+  Typing in the header still shows instant live results inside the overlay.
+
+The facet panels and sort controls on the 6 listing pages filter this database live
+(no more structure-only placeholders).
 
 ## Run it
 
@@ -58,16 +112,16 @@ node server.js
   visitor demo toggle, search chips, catalog-populated grids, facets (UI only), tabs, qty
   steppers, B2B tiers, fulfilment options, admin MOQ demo).
 - **Catalog grids**: `data-ghost-grid` containers are filled from `assets/products.js` with
-  real product cards; facet filtering and sorting are UI-only for now (wired, not yet
-  connected to the catalog).
+  real product cards; the facet panels (age · type · character · colour · price · method ·
+  placement · pet size · shoe stage/brand/size · occasion · recipient · style · budget) and
+  sort controls on the 6 listing pages filter the product database live, with active-filter
+  pills, result counts and real empty states.
 - **Demo disclosure**: badge/ribbon pattern `Concept only — not a Disney-licensed product` marks
   FurKids; `Concept design — prototype illustration only` marks Pre-Order art (per PRD §§5.3, 8, 11).
 - All prices/discounts/tiers/points are **illustrative placeholders** (PRD §12 open items).
 
 ## Next step
 
-- Connect the facet filters and sort controls on the 6 listing pages to the live catalog
-  (UI is wired and grid-ready).
 - Build the guided-gifting flow on `gifting-hub.html` (currently structure-only).
 - Wire the reserved third-party hooks: Smile loyalty + POS sync, Klaviyo flows, Judge.me
   reviews, live payments, and fill Pre-Order PDP pricing.

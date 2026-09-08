@@ -34,7 +34,10 @@
   /* ---------- Real product catalog (populated from the live theellystore.com feed) ----------
      assets/products.js exposes window.EL_PRODUCTS; each item carries real name, price,
      Shopify-CDN image, pillar kind and the intent tags that drive occasion-led rails. */
-  var PRODUCTS = (window.EL_PRODUCTS) || [];
+  var ALL_PRODUCTS = (window.EL_PRODUCTS) || [];
+  /* Consumer catalog: B2B-only items live in the same database but never surface in
+     browsing/search/PDP pools \u2014 they only appear in the B2B quote flow (PRD \u00a710). */
+  var PRODUCTS = ALL_PRODUCTS.filter(function (p) { return p.availability !== 'b2b-only'; });
 
   /* occasion tile / URL param -> catalog intent tag */
   var OCCASION_INTENT = {
@@ -44,7 +47,8 @@
     'Family Photoshoot': 'photoshoot',
     'Pajama Party / Sleepover': 'sleepover',
     'Holiday Gift Boxes': 'gift',
-    'Birthday': 'birthday'
+    'Birthday': 'birthday',
+    'Twinning & Matching Sets': 'twin'
   };
 
   /* visitor segment -> product pool keys (used by the recommender grid + "rec" rails) */
@@ -127,6 +131,11 @@
   function fillGrids() {
     var seed = 0;
     $$('[data-ghost-grid]').forEach(function (grid) {
+      /* listing pages: the facet panel owns the grid — updateFacetUI renders the
+         FULL category pool, so a filter can only ever narrow what's on screen
+         (never reveal items that weren't already shown). Curated rails (home,
+         PDP cross-sell) still get the capped, rotating fill below. */
+      if ($('#facetPanel')) return;
       var n = parseInt(grid.getAttribute('data-ghost-grid'), 10) || 8;
       var kind = grid.getAttribute('data-kind') || 'elly';
       var intent = grid.getAttribute('data-intent') || '';
@@ -256,14 +265,35 @@
   var RECENT_KEY = 'elly-recent';
   var searchOpen = false;
 
+  /* run a search on the results page: remember the query, then navigate to
+     search.html?q=… (or reload when it's the same query — assigning an identical
+     URL does nothing, so the second search would appear dead) */
+  function goSearch(q) {
+    q = String(q || '').trim();
+    if (!q) { openSearch(); return; }
+    rememberRecent(q);
+    if (searchQueryFromUrl() === q) { window.location.reload(); return; }
+    window.location.href = 'search.html?q=' + encodeURIComponent(q);
+  }
+
   function openSearch() {
     var layer = $('#searchLayer');
     if (!layer) return;
     layer.classList.add('show'); searchOpen = true;
     renderSearchChips();
-    resetSearchResults();
+    /* keep whatever was typed: if there is a query (typed live, or Enter / the
+       submit arrow pressed), run it and show results — never wipe the input */
     var input = $('#bigSearch');
-    if (input && document.activeElement !== input) input.focus();
+    var q = input ? String(input.value).trim() : '';
+    if (q) runSearch(q);
+    else resetSearchResults();
+    if (input) {
+      if (document.activeElement !== input) input.focus();
+      /* select the (prefilled) query so typing a new search REPLACES it instead
+         of appending to it — otherwise a second search on the results page
+         becomes "mickeydress"-style garbage */
+      input.select();
+    }
   }
   function closeSearch() {
     var layer = $('#searchLayer');
@@ -282,10 +312,26 @@
   document.addEventListener('click', function (e) {
     var t = e.target;
     if (searchOpen && !t.closest('.search-layer') && !t.closest('.search-field')) closeSearch();
-    if (t.closest('.js-open-search')) { e.preventDefault(); if (!searchOpen) openSearch(); }
+    if (t.closest('.js-open-search')) {
+      e.preventDefault();
+      if (t.closest('.sf-go')) {
+        /* clicking the arrow button: run the search — WITHOUT this branch the
+           preventDefault above cancels the button's form submission entirely,
+           so the arrow silently did nothing */
+        var input = $('#bigSearch');
+        goSearch(input ? input.value : '');
+      } else if (!searchOpen) openSearch();
+    }
   });
+  /* Enter / submit arrow: run the search on the results page (search.html) where
+     the full match list is shown with the facet panel on the left. Typing alone
+     still shows live results inside the overlay (runSearch on input). */
   document.addEventListener('submit', function (e) {
-    if (e.target.closest('.search-field')) { e.preventDefault(); openSearch(); }
+    if (e.target.closest('.search-field')) {
+      e.preventDefault();
+      var input = $('#bigSearch');
+      goSearch(input ? input.value : '');
+    }
   });
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') {
@@ -314,24 +360,32 @@
   }
 
   var SUGGEST = {
-    'tourist-first': ['Disney Cruise outfits', 'Family photoshoot looks', 'Mickey Go Local tee', 'Shop now, ship home', 'Theme Park Vacation set'],
-    'local-first': ['Birthday present', 'Newborn & baby shower gift', 'Full month set', 'Sibling matching set', 'Sleepover PJs'],
+    'tourist-first': ['Disney Cruise outfits', 'Family photoshoot looks', 'Mickey Go Local tee', 'Twinning tees for the park', 'Shop now, ship home', 'Theme Park Vacation set'],
+    'local-first': ['Birthday present', 'Newborn & baby shower gift', 'Full month set', 'Twinning & matching outfits', 'Sleepover PJs'],
     'tourist-return': ['Back in your size: Nautical Mickey', 'New: Marina Bay night designs', 'Restock your holiday edit', 'Stitch \u2014 you viewed this'],
     'local-return': ['Refill your favourites', 'Newborn gift \u2014 you bought this', 'Birthday edit for your 5yo', 'Points balance: 1,240 \u00b7 redeem S$5']
   };
 
-  var OCCASION_CHIPS = [
-    ['Newborn & Baby Shower', '\ud83d\udc76', 'gifting-hub.html'],
-    ['Big Brother / Little Sister', '\ud83d\udc66', 'elly-label.html'],
-    ['Theme Park Vacation', '\ud83c\udf04', 'disney-elly.html'],
-    ['Family Photoshoot', '\ud83d\udcf8', 'elly-label.html'],
-    ['Pajama Party / Sleepover', '\ud83d\udcad', 'elly-label.html'],
-    ['Holiday Gift Boxes', '\ud83c\udf81', 'gifting-hub.html']
-  ];
+  /* icons for the intent-led category chips (shown ranked by catalog size) */
+  var INTENT_ICONS = {
+    newborn: '\ud83d\udc76', gift: '\ud83c\udf81', sibling: '\ud83d\udc66', twin: '\ud83d\udc6f',
+    park: '\ud83c\udff0', sleepover: '\ud83d\udcad', photoshoot: '\ud83d\udcf8', birthday: '\ud83c\udf82',
+    cny: '\ud83e\udde7', singapore: '\ud83c\udfdd\ufe0f', custom: '\u2728', pets: '\ud83d\udc3e'
+  };
+  /* words too generic to surface as a "most searched" keyword chip (structure
+     words, generic product words, and colour/facet noise) */
+  var POPULAR_STOP = {};
+  ['the','and','for','with','your','from','tee','tees','set','sets','kids','adult','adults',
+   'new','concept','order','pre','personalised','personalisable','print','prints','style',
+   'tops','classics','occasionwear','multi','white','cream','blue','pink','red','navy','green',
+   'aqua','yellow','grey','gray','lilac','brown','black','blush','royal']
+    .forEach(function (w) { POPULAR_STOP[w] = 1; });
 
   function segSuggestionKey() {
     var s = demoSeg();
-    return s.geo + '-' + s.guest;
+    /* normalise "returning" (demoSeg default + demo-bar value) to "return",
+       matching the SUGGEST / SEG_PICKS / REC_TILES keys */
+    return s.geo + '-' + (s.guest === 'returning' ? 'return' : s.guest);
   }
 
   function renderSearchChips() {
@@ -345,7 +399,7 @@
     }
     var wrap = $('#suggestChips');
     if (wrap) {
-      wrap.innerHTML = SUGGEST[key].map(function (c) {
+      wrap.innerHTML = (SUGGEST[key] || SUGGEST['local-first']).map(function (c) {
         return '<button type="button" class="chip js-search-chip">' + c + '</button>';
       }).join('');
     }
@@ -360,10 +414,19 @@
         }).join('');
       } else rw.hidden = true;
     }
+    /* most searched keywords — chips run a real keyword search */
+    var kw = $('#popularKeywords');
+    if (kw) {
+      kw.innerHTML = popularKeywords(8).map(function (o) {
+        return '<button type="button" class="chip js-search-chip" data-q="' + esc(o.k) + '">' + esc(o.k) + '<small class="chip-count">' + o.n + '</small></button>';
+      }).join('');
+    }
+    /* most popular intent-led categories — ranked by catalog size, chips run the
+       intent search (e.g. "Twinning & Matching Sets" resolves via EL_INTENTS) */
     var ow = $('#occasionChips');
     if (ow) {
-      ow.innerHTML = OCCASION_CHIPS.map(function (o) {
-        return '<a class="chip" href="' + o[2] + '?occasion=' + encodeURIComponent(o[0]) + '">' + o[1] + ' ' + o[0] + '</a>';
+      ow.innerHTML = popularIntents(7).map(function (o) {
+        return '<button type="button" class="chip js-search-chip" data-q="' + esc(o.label) + '">' + (INTENT_ICONS[o.key] || '') + ' ' + esc(o.label) + '<small class="chip-count">' + o.count + '</small></button>';
       }).join('');
     }
   }
@@ -388,12 +451,17 @@
   document.addEventListener('input', function (e) {
     if (e.target && e.target.id === 'bigSearch') runSearch(e.target.value);
   });
+  /* clicking any suggestion chip (recent / keyword / intent) opens the results
+     page for that query — data-q carries the clean query (chips may display an
+     icon / count label), and the full match list + facets show there */
   document.addEventListener('click', function (e) {
     var chip = e.target.closest('.js-search-chip');
     if (!chip) return;
-    var q = chip.textContent.trim();
-    var input = $('#bigSearch');
-    if (input) { input.value = q; runSearch(q); }
+    var q = (chip.getAttribute('data-q') || chip.textContent.trim());
+    if (q) {
+      rememberRecent(q);
+      window.location.href = 'search.html?q=' + encodeURIComponent(q);
+    }
   });
 
   /* ---------- Hero visitor demo (index) ----------
@@ -405,9 +473,12 @@
     var rail = $('#occRail');
     if (!rail) return;
     var cards = $$('.occ-card', rail);
+    /* Twinning & Matching shows for both segments, re-ranked: tourists see it
+       right after the travel cluster (park-ready twinning), locals get it
+       beside sibling sets (family matching is a core local occasion). */
     var order = geo === 'tourist'
-      ? ['occ-theme-park', 'occ-photoshoot', 'occ-sleepover', 'occ-newborn', 'occ-sibling', 'occ-gift']
-      : ['occ-newborn', 'occ-sibling', 'occ-sleepover', 'occ-theme-park', 'occ-photoshoot', 'occ-gift'];
+      ? ['occ-theme-park', 'occ-photoshoot', 'occ-twin', 'occ-sleepover', 'occ-newborn', 'occ-sibling', 'occ-gift']
+      : ['occ-newborn', 'occ-sibling', 'occ-twin', 'occ-sleepover', 'occ-theme-park', 'occ-photoshoot', 'occ-gift'];
     order.forEach(function (id) {
       var el = document.getElementById(id);
       if (el) rail.appendChild(el);
@@ -443,6 +514,14 @@
       return p.get('occasion');
     } catch (e) { return null; }
   }
+  /* search results page: the ?q= param is the query the grid + facets operate on */
+  function searchQueryFromUrl() {
+    try {
+      var p = new URLSearchParams(window.location.search);
+      var q = p.get('q');
+      return q ? String(q).trim() : '';
+    } catch (e) { return ''; }
+  }
   document.addEventListener('DOMContentLoaded', function () {
     var occ = occasionFromUrl();
     if (occ) {
@@ -455,7 +534,129 @@
     }
   });
 
-  /* ---------- Facets (listing pages) ---------- */
+  /* ---------- Facets (listing pages) — wired to the product database ----------
+     Facet values on each listing page map onto the metadata tags in products.js
+     (age, type, characters, colours, price, customization method/placement,
+     pet size, shoe stage/brand/size, occasion/recipient/style/budget). */
+  var SORT_STATE = ''; /* '' = Featured (database order) */
+
+  var CHAR_GROUPS = {
+    'Mickey & Friends': ['Mickey', 'Minnie', 'Donald', 'Daisy', 'Goofy', 'Pluto'],
+    'Disney Princess': ['Princess', 'Rapunzel', 'Ariel', 'Little Mermaid', 'Cinderella', 'Belle', 'Aurora'],
+    'Frozen': ['Frozen', 'Elsa', 'Anna', 'Olaf'],
+    'Winnie the Pooh': ['Pooh', 'Piglet', 'Eeyore', 'Tigger', 'Hundred Acre'],
+    'Stitch': ['Stitch'],
+    'Zootopia': ['Zootopia']
+  };
+  var AGE_ALIAS = {
+    'Baby Disney (0–2Y)': ['Newborn (0–12M)', 'Baby (0–2Y)'],
+    'Girls (1–14Y)': ['Kids (1–14Y)'],
+    'Boys (1–14Y)': ['Kids (1–14Y)']
+  };
+  var TYPE_ALIAS = {
+    'Dresses & cheongsams': ['Dresses'],
+    'Tees & separates': ['Tops & tees']
+  };
+  var OCC_FACET = {
+    'Newborn & baby shower': ['newborn'],
+    'Full month': ['fullmonth'],
+    'Birthday': ['birthday'],
+    'Festive / Christmas': ['christmas'],
+    'Thank you / hostess': ['hostess'],
+    'Twinning & matching': ['twin'],
+    'Theme park vacation': ['park'],
+    'Family photoshoot': ['photoshoot'],
+    'Pajama party / sleepover': ['sleepover'],
+    'Gifting': ['gift'],
+    'Chinese New Year': ['cny'],
+    'Singapore souvenirs': ['singapore'],
+    'FurKids / pets': ['pets']
+  };
+  var PLACE_FACET = {
+    'Chest / pocket': ['left chest', 'front'],
+    'Back / yoke': ['full back'],
+    'Sleeve / cuff': ['sleeve / cuff'],
+    'Keepsake box lid': ['keepsake box lid']
+  };
+
+  function hasMethod(p, m) { return (p.custom && p.custom.methods || []).indexOf(m) >= 0; }
+  function matchList(p, field, v) {
+    var list = p[field] || [];
+    v = String(v).toLowerCase();
+    return list.some(function (x) {
+      x = String(x).toLowerCase();
+      return x === v || x.indexOf(v) >= 0 || v.indexOf(x) >= 0;
+    });
+  }
+  function matchChars(p, v) {
+    var group = CHAR_GROUPS[v] || [v];
+    return group.some(function (c) {
+      return matchList(p, 'characters', c);
+    });
+  }
+  function priceMatch(price, v) {
+    if (v === 'Under $40') return price < 40;
+    if (v === '$40–$80') return price >= 40 && price < 80;
+    if (v === '$80+') return price >= 80;
+    if (v === 'Under $80') return price < 80;
+    if (v === '$80–$150') return price >= 80 && price < 150;
+    if (v === '$150–$300') return price >= 150 && price < 300;
+    if (v === '$300+') return price >= 300;
+    return false;
+  }
+  function occMatch(p, v) {
+    var keys = OCC_FACET[v] || [String(v).toLowerCase()];
+    var all = (p.int || []).concat(p.occasion || []).map(function (t) { return String(t).toLowerCase(); });
+    return keys.some(function (k) { return all.indexOf(String(k).toLowerCase()) >= 0; });
+  }
+  function styleMatch(p, v) {
+    if (v === 'Gift set (ready to give)') return (p.giftStyle || []).indexOf(v) >= 0 || p.type === 'Gift set';
+    if (v === 'Keepsake box') return (p.giftStyle || []).indexOf(v) >= 0 || p.type === 'Keepsake box';
+    if (v === 'Personalisable') return cfgEligible(p);
+    return false; /* digital gift card: no product carries it in the database */
+  }
+  /* one facet value → does this product match? (name = data-f, v = checkbox/swatch value) */
+  function facetMatch(p, name, v) {
+    var page = (document.body && document.body.getAttribute('data-page')) || '';
+    switch (name) {
+      case 'Price': case 'Budget': return priceMatch(p.price || 0, v);
+      case 'Colour':
+        /* customization page thread-colour swatches end in ' thread' */
+        if (/ thread$/i.test(String(v))) return hasMethod(p, 'embroidered');
+        return matchList(p, 'colours', v);
+      case 'Character': return matchChars(p, v);
+      case 'Age': {
+        var keys = AGE_ALIAS[v] || [v];
+        return keys.some(function (k) { return (p.age || []).indexOf(k) >= 0; });
+      }
+      case 'Type':
+        /* "In stock now" = everything that is not concept / pre-order / B2B-only
+           (regular catalog items simply carry no availability flag) */
+        if (v === 'In stock now') return p.availability !== 'concept' && p.availability !== 'pre-order' && p.availability !== 'b2b-only';
+        if (v === 'Pre-order design') return p.availability === 'pre-order';
+        if (v === 'Concept design') return p.availability === 'concept';
+        if (page === 'shoe-boutique') return matchList(p, 'shoeType', v);
+        return (TYPE_ALIAS[v] || [v]).indexOf(p.type) >= 0;
+      case 'Method': return v === 'Embroidered' ? hasMethod(p, 'embroidered') : hasMethod(p, 'patches');
+      case 'Thread colour': return hasMethod(p, 'embroidered');
+      case 'Detail': return hasMethod(p, 'embroidered'); /* Name / Initials / Number are embroidered */
+      case 'Placement': {
+        var pl = PLACE_FACET[v] || [String(v).toLowerCase()];
+        return (p.custom && p.custom.placements || []).some(function (x) {
+          return pl.some(function (k) { return String(x).toLowerCase() === k; });
+        });
+      }
+      case 'Pet size': return matchList(p, 'petSize', v);
+      case 'Stage': return matchList(p, 'shoeStage', v);
+      case 'Brand': return matchList(p, 'brand', v);
+      case 'Size': return matchList(p, 'shoeSizes', v);
+      case 'Occasion': return occMatch(p, v);
+      case 'Recipient': return matchList(p, 'recipient', v);
+      case 'Style': return styleMatch(p, v);
+    }
+    return false;
+  }
+
   function activeFacets(panel) {
     var vals = [];
     $$('input[type="checkbox"]:checked', panel).forEach(function (i) {
@@ -467,36 +668,117 @@
     return vals;
   }
 
+  /* the full category pool behind the page's grid (union of its pillar kinds) */
+  function pagePool() {
+    var grid = $('[data-ghost-grid]');
+    if (!grid) return [];
+    /* search results page: the pool IS the query's hits (intent-led or keyword),
+       so the facets on the left narrow the searched results */
+    if ((document.body && document.body.getAttribute('data-page')) === 'search') {
+      var sq = searchQueryFromUrl();
+      return sq ? searchProducts(sq).hits : [];
+    }
+    var kind = grid.getAttribute('data-kind') || 'elly';
+    var intent = grid.getAttribute('data-intent') || '';
+    var occ = occasionFromUrl();
+    var occIntent = occ && OCCASION_INTENT[occ] ? OCCASION_INTENT[occ] : '';
+    if (occIntent) intent = occIntent;
+    var kinds = kind.split(' ');
+    var keys;
+    if (intent === 'rec') keys = SEG_PICKS[segSuggestionKey()] || SEG_PICKS['local-first'];
+    else if (occIntent) {
+      /* intent-led browsing (occasion tile / URL): every consumer product tagged
+         with that intent, across ALL pillars — e.g. Twinning & Matching spans
+         elly + disney + gift items, so any host page shows the full intent edit. */
+      keys = [{ int: [occIntent] }];
+    }
+    else if (kinds.length > 1) keys = kinds.map(function (k) { return { k: k }; });
+    else {
+      keys = [{ k: kinds[0] }];
+      if (intent) keys = [{ k: kinds[0], int: [intent] }, { k: kinds[0] }];
+    }
+    return pickPool(keys);
+  }
+
+  function revCount(p) {
+    var m = /\((\d+)\)/.exec(p.stars || '');
+    return m ? parseInt(m[1], 10) : 0;
+  }
+  function sortProducts(list) {
+    var s = SORT_STATE || '';
+    var arr = list.slice();
+    if (!s || s === 'Featured' || s === 'Newest') return arr;
+    if (s === 'Best selling') {
+      return arr.sort(function (a, b) { return revCount(b) - revCount(a); });
+    }
+    if (s.indexOf('Price: low to high') >= 0) return arr.sort(function (a, b) { return (a.price || 0) - (b.price || 0); });
+    if (s.indexOf('Price: high to low') >= 0) return arr.sort(function (a, b) { return (b.price || 0) - (a.price || 0); });
+    return arr;
+  }
+
   function updateFacetUI() {
     var panel = $('#facetPanel');
     if (!panel) return;
-    var facetHead = $('.facet-title');
     var vals = activeFacets(panel);
     var pillWrap = $('.active-filters');
     if (pillWrap) {
       pillWrap.innerHTML = vals.map(function (v) {
         return '<span class="f-pill">' + v.val + '<button type="button" data-remove="' + v.val.replace(/"/g, '&quot;') + '" aria-label="Remove ' + v.val + '">' + icon('close') + '</button></span>';
       }).join('');
-      var clear = $('.js-clear-filters', pillWrap);
-      if (clear) pillWrap.appendChild(clear);
-    }
-    var count = $('.result-line');
-    if (count) {
-      var isFurkids = (document.body && document.body.getAttribute('data-page')) === 'furkids';
-      if (vals.length) count.innerHTML = '<b>Demo</b> \u2014 facet filtering is structure-only here; clear the filters to see the live catalog.';
-      else if (isFurkids) count.innerHTML = '<b>Populated demo</b> \u2014 live elly pet accessories (bow ties &amp; bandana) beside FurKids concept pieces \u2014 not sold online yet. Concept only \u2014 no Disney licence applied for.';
-      else count.innerHTML = '<b>Live demo catalog</b> \u2014 products populated from theellystore.com feed.';
     }
     var grid = $('[data-ghost-grid]');
     var empty = $('.empty-slot');
-    if (grid && empty) {
-      var showGhosts = vals.length === 0;
-      grid.style.display = showGhosts ? '' : 'none';
-      empty.style.display = showGhosts ? 'none' : '';
-      var emT = $('strong', empty);
-      if (emT) emT.textContent = vals.length ? 'Filters not connected yet' : 'Grid ready';
-      var emS = $('span', empty);
-      if (emS) emS.textContent = vals.length ? 'Facet filtering is structure-only in this demo \u2014 clear the filters to see the live catalog.' : 'Product cards appear here.';
+    var count = $('.result-line');
+    if (!grid) return;
+    var pool = pagePool();
+    var pageName = (document.body && document.body.getAttribute('data-page')) || '';
+    var isFurkids = pageName === 'furkids';
+    var isSearch = pageName === 'search';
+    var sq = isSearch ? searchQueryFromUrl() : '';
+    /* always render the full (filtered + sorted) category pool — the initial view
+       and every filtered view come from the same renderer, so filtering never
+       changes the item count the wrong way (e.g. revealing items that weren't
+       shown before clicking a filter). */
+    var filtered = vals.length
+      ? pool.filter(function (p) { return vals.every(function (f) { return facetMatch(p, f.name, f.val); }); })
+      : pool;
+    var sorted = sortProducts(filtered);
+    if (sorted.length) {
+      grid.style.display = '';
+      grid.innerHTML = sorted.map(productCard).join('');
+      if (empty) empty.style.display = 'none';
+      if (count) {
+        count.innerHTML = isSearch
+          ? vals.length
+            ? '<b>' + sorted.length + '</b> of <b>' + pool.length + '</b> matches for \u201c' + esc(sq) + '\u201d also match your filters.'
+            : '<b>' + sorted.length + '</b> product' + (sorted.length === 1 ? '' : 's') + ' match \u201c' + esc(sq) + '\u201d \u2014 refine with the filters on the left (keywords, intents &amp; tags from the product database).'
+          : vals.length
+            ? '<b>' + sorted.length + '</b> product' + (sorted.length === 1 ? '' : 's') + ' match your filters \u2014 tagged from the product database.'
+            : isFurkids
+              ? '<b>' + pool.length + ' FurKids items</b> \u2014 live pet accessories beside concept pieces \u00b7 Concept only \u2014 no Disney licence applied for.'
+              : '<b>' + pool.length + ' products</b> in this category \u2014 filtered &amp; sorted from the product database (theellystore.com feed).';
+      }
+    } else {
+      grid.style.display = 'none';
+      if (empty) {
+        empty.style.display = '';
+        var emT = $('strong', empty);
+        var emS = $('span', empty);
+        if (isSearch && !pool.length) {
+          if (emT) emT.textContent = sq ? 'No products match \u201c' + sq + '\u201d' : 'Enter a search to get started';
+          if (emS) emS.textContent = sq
+            ? 'Try a different keyword, or an occasion like \u201cbirthday\u201d, \u201ctwinning\u201d or \u201cdisney\u201d.'
+            : 'Type a keyword or occasion in the search field above \u2014 matches are shown here with filters on the left.';
+        } else {
+          if (emT) emT.textContent = 'No products match these filters';
+          if (emS) emS.textContent = 'Try clearing a filter \u2014 every product carries tags &amp; metadata from the same database.';
+        }
+      }
+      if (count) {
+        count.innerHTML = isSearch
+          ? '<b>0 products</b> match \u201c' + esc(sq) + '\u201d' + (vals.length ? ' with these filters' : '') + ' \u2014 try a different search.'
+          : '<b>0 products</b> match these filters \u2014 try clearing one.';
+      }
     }
   }
 
@@ -528,6 +810,9 @@
         $$('input[type="checkbox"]', p2).forEach(function (i) { i.checked = false; });
         $$('.c-swatch', p2).forEach(function (s) { s.classList.remove('is-on'); });
       }
+      SORT_STATE = '';
+      var sortSel = $('.sort select');
+      if (sortSel) sortSel.value = 'Featured';
       updateFacetUI();
       toast('All filters cleared');
     }
@@ -552,10 +837,11 @@
     }
   });
 
-  /* ---------- Sort (UI only — ordering not connected yet) ---------- */
+  /* ---------- Sort (wired — re-orders the filtered pool from the database) ---------- */
   document.addEventListener('change', function (e) {
     if (e.target.matches('.sort select')) {
-      toast('Sorted by ' + e.target.value + ' \u2014 ordering is structure-only in this demo (the catalog is already loaded)');
+      SORT_STATE = e.target.value;
+      updateFacetUI();
     }
   });
 
@@ -716,18 +1002,24 @@
     { min: 300, max: Infinity, disc: null }
   ];
 
-  /* Real catalogue rows for the B2B RFQ demo (PRD §10) — actual items from theellystore.com,
-     with their store photos. kind drives the step-2 type filter: elly (Elly Label) ·
-     disney (Disney | elly) · custom (Customization). img is the product photo; the SVG
-     art below is only a fallback for items that don't carry a photo yet. */
-  var B2B_KIND_LABEL = { elly: 'Elly Label', disney: 'Disney | elly', custom: 'Customization' };
-  var B2B_ITEMS = [
-    { kind: 'disney', name: 'Kids Tee - Doodle Mickey', meta: 'Disney | elly \u00b7 kids', unit: 49.9, img: 'https://cdn.shopify.com/s/files/1/1705/4833/files/KidsTeeDoodleMickey2.jpg?v=1787821772', glyph: 'tee', grad: 'linear-gradient(150deg,#e3ecfb,#c2d6f2)', tint: '#c6d8f4', ink: '#8aa7dd', sizes: ['12M', '2Y', '3Y', '4Y', '5Y', '6Y', '8Y', '10Y', '12Y', '14Y'] },
-    { kind: 'disney', name: 'Adult Tee - Doodle Mickey', meta: 'Disney | elly \u00b7 adults', unit: 59.9, img: 'https://cdn.shopify.com/s/files/1/1705/4833/files/Doodle_Mickey_Front.jpg?v=1787823640', glyph: 'tee', grad: 'linear-gradient(150deg,#e3ecfb,#c2d6f2)', tint: '#c6d8f4', ink: '#8aa7dd', sizes: ['XS', 'S', 'M', 'L', 'XL', 'XXL'] },
-    { kind: 'elly', name: 'Kids Tee - SG Checklist', meta: 'Elly Label \u00b7 kids', unit: 45.9, img: 'https://cdn.shopify.com/s/files/1/1705/4833/files/kidsTeeSGChecklistpair.webp?v=1783858489', glyph: 'tee', grad: 'linear-gradient(150deg,#fdf1f0,#f7d9d4)', tint: '#f3c9c2', ink: '#c98a80', sizes: ['12M', '2Y', '3Y', '4Y', '5Y', '6Y', '8Y', '10Y', '12Y', '14Y'] },
-    { kind: 'elly', name: 'Adult Tee - SG Checklist', meta: 'Elly Label \u00b7 adults', unit: 55.9, img: 'https://cdn.shopify.com/s/files/1/1705/4833/files/AdultTeeSGChecklistfulllength.webp?v=1783858489', glyph: 'tee', grad: 'linear-gradient(150deg,#fdf1f0,#f7d9d4)', tint: '#f3c9c2', ink: '#c98a80', sizes: ['XS', 'S', 'M', 'L', 'XL', 'XXL'] },
-    { kind: 'custom', name: 'Varsity Tee - Team Angel', meta: 'Customization \u00b7 add a name & number', unit: 49.9, img: 'https://cdn.shopify.com/s/files/1/1705/4833/files/Stitch-tee-39.jpg?v=1762748329', glyph: 'tee', grad: 'linear-gradient(150deg,#efeafb,#dcd2f5)', tint: '#e0d2f5', ink: '#a78bd6', sizes: ['12M', '2Y', '3Y', '4Y', '5Y', '6Y', '8Y', '10Y', '12Y', '14Y'] }
-  ];
+  /* B2B catalogue — DERIVED from the shared product database (products.js).
+     Every product tagged b2b.available surfaces here with its unit price and size
+     run; B2B-only items (adult/varsity tees) live in the same database but are
+     excluded from consumer browsing (PRD §10: same catalog, B2B-eligible subset). */
+  var B2B_KIND_LABEL = { elly: 'Elly Label', disney: 'Disney | elly', custom: 'Customization', gift: 'Gifting Hub' };
+  var B2B_ITEMS = [];
+  ALL_PRODUCTS.forEach(function (p) {
+    if (!p.b2b || !p.b2b.available) return;
+    B2B_ITEMS.push({
+      kind: p.k,
+      name: p.n,
+      meta: p.b2b.meta || (B2B_KIND_LABEL[p.k] || 'Elly Label') + ' \u00b7 ' + ((p.age || []).join('/')),
+      unit: (p.b2b.unit != null ? p.b2b.unit : (p.price || 0)),
+      img: p.img,
+      sizes: (p.b2b.sizes && p.b2b.sizes.length) ? p.b2b.sizes : ((p.sizes && p.sizes.length) ? p.sizes : ['Set']),
+      glyph: 'tee'
+    });
+  });
 
   /* SVG artwork — fallback only; B2B_ITEMS[].img (real store photo) is used when present */
   var B2B_THREADS = [['Coral', '#FF6070'], ['Blue', '#4D6EB5'], ['Ink', '#1a1a1a'], ['White', '#ffffff'], ['Gold', '#C9A227'], ['Forest', '#2F6B4F']];
@@ -832,7 +1124,7 @@
   /* ---- step-2 dropdown rows: one item per row, options appear under the selected item ---- */
   function b2bSelectOptionsHTML() {
     var out = '<option value="">Choose an item…</option>';
-    ['elly', 'disney', 'custom'].forEach(function (kind) {
+    ['elly', 'disney', 'custom', 'gift'].forEach(function (kind) {
       var group = [];
       B2B_ITEMS.forEach(function (it, i) {
         if (it.kind !== kind) return;
@@ -1608,7 +1900,7 @@
   /* --- recommender tiles under the hero (occasion rail) --- */
   var REC_TILES = {
     'tourist-first': { kicker: 'Recommended for your visit · demo', title: 'What tourists search first', sub: 'Theme-park looks, family photoshoots and gifting lead the list for visitors planning a Singapore trip.' },
-    'local-first': { kicker: 'Popular this week · demo', title: 'What Singapore families are shopping', sub: 'Newborn & baby-shower edits, sibling sets and sleepover favourites lead for local families.' },
+    'local-first': { kicker: 'Popular this week · demo', title: 'What Singapore families are shopping', sub: 'Newborn & baby-shower edits, sibling & twinning sets and sleepover favourites lead for local families.' },
     'tourist-return': { kicker: 'Recommender · based on your last trip', title: 'Recommended for you', sub: 'Your purchase & browse history re-ranks these occasions — travel edits first, events second.' },
     'local-return': { kicker: 'Recommender · from your history', title: 'Recommended for you', sub: 'Occasions ranked from your purchase & browse history (incl. in-store records), events second.' }
   };
@@ -1801,7 +2093,7 @@
     var s = demoSeg();
     var txt = {
       'tourist-first': 'Hero: 4 rotating slides (event \u2192 trending \u2192 pre-order \u2192 customization) \u00b7 rail weighted to travel, photoshoot & gifting. Search = trending intents.',
-      'local-first': 'Hero: 4 rotating slides (event \u2192 trending \u2192 pre-order \u2192 customization) \u00b7 rail weighted to newborn, sleepover & siblings. Search = trending intents.',
+      'local-first': 'Hero: 4 rotating slides (event \u2192 trending \u2192 pre-order \u2192 customization) \u00b7 rail weighted to newborn, twinning, sleepover & siblings. Search = trending intents.',
       'tourist-return': 'Hero: 4 rotating slides (recommender \u2192 event \u2192 pre-order \u2192 customization) \u00b7 rail weighted to travel. Search = your cross-sell suggestions.',
       'local-return': 'Hero: 4 rotating slides (recommender \u2192 event \u2192 pre-order \u2192 customization) \u00b7 rail weighted to local occasions. Search = your cross-sell suggestions.'
     }[s.geo + '-' + s.guest];
@@ -1831,7 +2123,117 @@
     if (e.key === 'Escape') { var u = $('#hdrUtil'); if (u) u.classList.remove('searching'); }
   });
 
-  /* search results now match against recommender data (overrides earlier demo) */
+  /* ---------- Search (wired): resolve intent-led phrases first, then keywords ----------
+     Two modes against the product database (products.js):
+     1) INTENT — the query (or a popular alias of it, e.g. "birthday present",
+        "baby shower", "theme park vacation", "sleepover PJs") matches one of the
+        intent-led categories in window.EL_INTENTS → every product tagged with that
+        category is returned. Items live in multiple intents, so a category search
+        surfaces the whole intent-led edit.
+     2) KEYWORD — otherwise the query is tokenised and a product matches when EVERY
+        token appears across its name, tags, characters, type, collection or colours. */
+  function itemTagged(p, tag) {
+    tag = String(tag).toLowerCase();
+    var ints = (p.int || []).concat(p.occasion || []);
+    for (var i = 0; i < ints.length; i++) {
+      if (String(ints[i]).toLowerCase() === tag) return true;
+    }
+    return (p.tags || []).some(function (t) { return String(t).toLowerCase() === tag; });
+  }
+  /* longest matched phrase wins, so overlapping aliases resolve to the most
+     specific intent ("birthday present" → Birthday, not Gifting's "present") */
+  function searchProducts(q) {
+    q = String(q).toLowerCase();
+    var intents = (window.EL_INTENTS) || [];
+    var matched = null, bestLen = 0;
+    for (var i = 0; i < intents.length; i++) {
+      var it = intents[i];
+      var names = [String(it.label).toLowerCase()].concat((it.aliases || []).map(function (a) { return String(a).toLowerCase(); }));
+      for (var j = 0; j < names.length; j++) {
+        var n = names[j], len = -1;
+        /* query contains the phrase — only for specific aliases (>= 4 chars) so
+           short ones like "cat"/"dog"/"sg" don't fire inside unrelated words
+           ("jellycat" is Jellycat plush, not the FurKids intent); short aliases
+           still resolve via the reverse rule or keyword tags */
+        if (q.indexOf(n) >= 0 && n.length >= 4) len = n.length;
+        /* short query matching a whole word inside a phrase ("sg", "pjs", "cat")
+           — word-boundary only, so "cat" never fires inside "va-cat-ion" */
+        else if (q.length >= 2 && q.indexOf(' ') < 0 && (' ' + n + ' ').indexOf(' ' + q + ' ') >= 0) len = q.length;
+        if (len > bestLen) { bestLen = len; matched = it; }
+      }
+    }
+    if (matched) {
+      var tags = matched.tags || [];
+      var seen = {}, out = [];
+      PRODUCTS.forEach(function (p) {
+        var ok = tags.some(function (t) { return itemTagged(p, t); });
+        if (ok && !seen[p.n]) { seen[p.n] = true; out.push(p); }
+      });
+      return { hits: out, intent: matched.label };
+    }
+    var tokens = q.split(/[^a-z0-9]+/).filter(Boolean);
+    var hits = tokens.length ? PRODUCTS.filter(function (p) {
+      return tokens.every(function (t) { return searchHaystack(p).indexOf(t) >= 0; });
+    }) : [];
+    return { hits: hits, intent: null };
+  }
+
+  /* every searchable token for a product (name + tags + characters + type +
+     collection + colours) — used by keyword matching */
+  function searchHaystack(p) {
+    return ((p.n || '') + ' ' + (p.tags || []).join(' ') + ' ' +
+      (p.characters || []).join(' ') + ' ' + (p.type || '') + ' ' +
+      (p.collection || []).join(' ') + ' ' + (p.colours || []).join(' ')).toLowerCase();
+  }
+
+  /* high-signal fields for popularity ranking (names, tags, characters — skips
+     facet noise like colours/type/collection labels) */
+  function popularityHaystack(p) {
+    return ((p.n || '') + ' ' + (p.tags || []).join(' ') + ' ' + (p.characters || []).join(' ')).toLowerCase();
+  }
+
+  /* "most searched" keywords: the highest-frequency searchable terms across the
+     live catalog (how many products each keyword matches). Cached after first run. */
+  var _popularKeywords = null;
+  function popularKeywords(n) {
+    n = n || 8;
+    if (!_popularKeywords) {
+      var counts = {};
+      PRODUCTS.forEach(function (p) {
+        var seen = {};
+        popularityHaystack(p).split(/[^a-z0-9]+/).filter(Boolean).forEach(function (t) {
+          if (t.length < 3 || POPULAR_STOP[t] || seen[t]) return;
+          seen[t] = true;
+          counts[t] = (counts[t] || 0) + 1;
+        });
+      });
+      _popularKeywords = Object.keys(counts)
+        .map(function (k) { return { k: k, n: counts[k] }; })
+        .filter(function (o) { return o.n >= 3; })
+        .sort(function (a, b) { return b.n - a.n || (a.k < b.k ? -1 : 1); });
+    }
+    return _popularKeywords.slice(0, n);
+  }
+
+  /* "most popular intent-led categories": every EL_INTENTS category ranked by how
+     many products it returns (catalog size), with a small popularity bonus so the
+     top picks read naturally. */
+  var _popularIntents = null;
+  function popularIntents(n) {
+    n = n || 7;
+    if (!_popularIntents) {
+      _popularIntents = ((window.EL_INTENTS) || []).map(function (it) {
+        var c = 0, seen = {};
+        PRODUCTS.forEach(function (p) {
+          var ok = (it.tags || []).some(function (t) { return itemTagged(p, t); });
+          if (ok && !seen[p.n]) { seen[p.n] = true; c++; }
+        });
+        return { key: it.key, label: it.label, count: c };
+      }).sort(function (a, b) { return b.count - a.count || (a.key < b.key ? -1 : 1); });
+    }
+    return _popularIntents.slice(0, n);
+  }
+
   function runSearch(q) {
     q = String(q).trim();
     if (!q) { resetSearchResults(); return; }
@@ -1839,10 +2241,12 @@
     var idle = $('.search-idle'), res = $('#searchResults');
     if (idle) idle.style.display = 'none';
     if (res) {
-      res.style.display = '';
+      /* explicit 'grid' — the stylesheet default for .search-results is
+         display:none, so clearing the inline style would keep it hidden */
+      res.style.display = 'grid';
       var grid = $('#resultGrid');
-      var ql = q.toLowerCase();
-      var hits = PRODUCTS.filter(function (p) { return p.n.toLowerCase().indexOf(ql) >= 0; });
+      var r = searchProducts(q);
+      var hits = r.hits;
       if (grid) {
         grid.innerHTML = hits.length
           ? hits.slice(0, 8).map(productCard).join('')
@@ -1850,9 +2254,11 @@
       }
       var count = $('#resultCount');
       if (count) {
-        count.textContent = hits.length
-          ? 'Showing ' + hits.length + ' match' + (hits.length > 1 ? 'es' : '') + ' \u2014 \u201c' + q + '\u201d (from the live catalog)'
-          : '0 products match \u201c' + q + '\u201d \u2014 showing popular picks instead';
+        if (hits.length) {
+          count.textContent = (r.intent ? r.intent + ' \u00b7 ' : '') + hits.length + ' match' + (hits.length > 1 ? 'es' : '') + ' for \u201c' + q + '\u201d \u2014 ' + (r.intent ? 'intent-led' : 'keywords & tags') + ' from the product database';
+        } else {
+          count.textContent = '0 products match \u201c' + q + '\u201d \u2014 showing popular picks instead';
+        }
       }
     }
   }
@@ -2233,6 +2639,19 @@
     refreshBag();
     initQuickShop();
     applyHeroState();
+    /* search results page: reflect the query in the hero + document title, and
+       prefill the header search field so it can be refined */
+    if ((document.body && document.body.getAttribute('data-page')) === 'search') {
+      var sq = searchQueryFromUrl();
+      var st = $('#searchQueryTitle');
+      if (st) st.textContent = sq ? '\u201c' + sq + '\u201d' : '';
+      if (sq) {
+        var bar = document.title.indexOf('|');
+        if (bar > 0) document.title = sq + ' \u2014 ' + document.title.slice(bar + 2);
+      }
+      var big = $('#bigSearch');
+      if (big) big.value = sq;
+    }
     updateFacetUI();
     if ($('.js-cart-line')) cartTotals();
     buildB2BLines();
@@ -2283,6 +2702,9 @@
   window.EL.cfgSummaryText = cfgSummaryText;
   window.EL.inKind = inKind;
   window.EL.pickPool = pickPool;
+  window.EL.pagePool = pagePool;
+  window.EL.updateFacetUI = updateFacetUI;
+  window.EL.searchProducts = searchProducts;
   window.EL.bagCount = bagCount;
   window.EL.setBag = setBag;
   window.EL.refreshBag = refreshBag;

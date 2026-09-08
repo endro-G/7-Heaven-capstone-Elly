@@ -435,6 +435,8 @@ section.block--tight { padding-block: clamp(40px, 4.5vw, 60px); }
 .chip.is-active { background: var(--ink); color: #fff; border-color: var(--ink); }
 .chip--coral:hover { border-color: var(--coral); color: var(--coral); }
 .chip svg { width: 13px; height: 13px; opacity: .55; }
+.chip .chip-count { font-size: 10.5px; font-weight: 700; color: var(--ink-light); opacity: .7; border: 1px solid var(--line); border-radius: 999px; padding: 2px 7px; margin-left: 2px; }
+.chip:hover .chip-count { border-color: var(--ink-light); }
 .chips-label { font-size: 11.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-light); display: block; margin: 0 0 12px; }
 .chips-group { margin-bottom: 30px; }
 .search-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 16px; }
@@ -567,6 +569,7 @@ section.block--tight { padding-block: clamp(40px, 4.5vw, 60px); }
 /* ---------- Occasion rail ---------- */
 .occ-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 26px; flex-wrap: wrap; }
 .occ-rail { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; }
+.occ-rail--7 { grid-template-columns: repeat(7, 1fr); } /* landing rail with Twinning & Matching (7 intent tiles) */
 .occ-card {
   display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px;
   border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper);
