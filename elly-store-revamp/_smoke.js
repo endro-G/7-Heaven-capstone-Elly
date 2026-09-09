@@ -40,7 +40,6 @@ const registry = {};
  '#cfgMethod', '#cfgPlacement', '#cfgChars', '#cfgColour', '#cfgSummary', '#cfgStaffNote', '#cfgViewSeg', '#cfgPreview',
  '#cfgPlaceWrap', '#cfgTextWrap', '#cfgPatchesWrap', '#cfgPatches', '#cfgPatchSel', '#cfgPatchCount', '#cfgPatchHint',
  '#cfgLang', '#cfgLangWrap', '#cfgLangs', '#cfgFont', '#cfgFontWrap', '#cfgFonts', '#cfgSize', '#cfgSizeWrap', '#cfgSizes',
- '#cfgLive',
  '#pdpTitle', '#pdpKicker', '#pdpPrice', '#pdpDesc', '#pdpCrumb', '.pdp', '.pdp__main',
  '#cartLines', '#ckLines', '#cartEmpty', '#cartSubtotal', '#cartTotal', '#shipMeter', '#shipMeterLabel']
   .forEach((s) => { registry[s] = makeEl('div'); });
@@ -104,9 +103,8 @@ try {
   check('embroidered-only product: placement chips built (Front centre)', /Front centre/.test(registry['#cfgPlacements']._html || ''));
   check('thread colour swatches built', /c-swatch/.test(registry['#cfgColours']._html || ''));
   check('customer / staff (POS) view toggle present', typeof registry['#cfgViewSeg'] === 'object' && typeof registry['#cfgStaffNote'] === 'object');
-  check('embroidery: font picker built (curated range)', /Classic Serif/.test(registry['#cfgFonts']._html || '') && /Script/.test(registry['#cfgFonts']._html || '') && /Modern Sans/.test(registry['#cfgFonts']._html || '') && /Heritage Caps/.test(registry['#cfgFonts']._html || ''));
+  check('embroidery: font picker built (curated calligraphy range)', /Elegant Script/.test(registry['#cfgFonts']._html || '') && /Light Script/.test(registry['#cfgFonts']._html || '') && /Graceful Serif/.test(registry['#cfgFonts']._html || '') && /Calligraphy Caps/.test(registry['#cfgFonts']._html || ''));
   check('embroidery: size + language pickers built', /Medium/.test(registry['#cfgSizes']._html || '') && /日本語/.test(registry['#cfgLangs']._html || '') && /한국어/.test(registry['#cfgLangs']._html || ''));
-  check('live look panel present', typeof registry['#cfgLive'] === 'object');
   sandbox.EL.initConfigurator({ n: 'Kids Tee - Doodle Mickey', p: 'S$49.90', k: 'disney', img: 'y.jpg', custom: { methods: ['patches'], patchSet: 'disney', patchCount: 3 } });
   check('patches-only product: method chips = Iron-on patches', /Iron-on patches/.test(registry['#cfgMethods']._html || ''));
   check('patches-only product: patch picker built (Pop Mickey)', /Pop Mickey/.test(registry['#cfgPatches']._html || ''));

@@ -2290,19 +2290,21 @@
     { name: 'Cream', hex: '#f2e8d5' }, { name: 'Coral', hex: '#ff6070' }, { name: 'Navy', hex: '#30346f' },
     { name: 'Gold', hex: '#c9a227' }, { name: 'White', hex: '#ffffff' }, { name: 'Black', hex: '#1d1d1d' }
   ];
-  /* embroidery: a curated set of fonts, sizes and languages (PRD §5.3 — embroidered
-     service for baby & kids clothing: initials + thread + font + size + language) */
+  /* embroidery: a curated set of calligraphy fonts — cursive scripts and
+     non-cursive display faces chosen to look like a gift tag / keepsake
+     (PRD §5.3 — embroidered service for baby & kids clothing: initials +
+     thread + font + size + language). The default stays on 'serif'. */
   var CUSTOM_FONTS = [
-    { id: 'serif',  label: 'Classic Serif', family: "'Ovo', serif" },
-    { id: 'script', label: 'Script',        family: "'Dancing Script', cursive" },
-    { id: 'sans',   label: 'Modern Sans',   family: "'Poppins', sans-serif" },
-    { id: 'heritage', label: 'Heritage Caps', family: "'Cinzel', serif" }
+    { id: 'script',  label: 'Elegant Script',   family: "'Great Vibes', cursive" },
+    { id: 'script2', label: 'Light Script',     family: "'Parisienne', cursive" },
+    { id: 'serif',   label: 'Graceful Serif',   family: "'Cormorant Garamond', serif" },
+    { id: 'caps',    label: 'Calligraphy Caps', family: "'Cinzel', serif" }
   ];
   var CUSTOM_FONT_SIZES = [
     { id: 'sm', label: 'Small' }, { id: 'md', label: 'Medium' }, { id: 'lg', label: 'Large' }
   ];
   var CUSTOM_LANGS = [
-    { id: 'en', label: 'English', placeholder: 'e.g. AMELIA' },
+    { id: 'en', label: 'English', placeholder: 'e.g. Amelia' },
     { id: 'jp', label: '日本語',   placeholder: '例： あみ' },
     { id: 'kr', label: '한국어',   placeholder: '예: 미나' }
   ];
@@ -2328,13 +2330,15 @@
     disney: {
       label: 'Disney vinyls',
       note: 'Disney-only iron-on vinyl patches in pre-set spots on the tee (chest, sleeves, hem)',
+      /* real patch artwork (from the Baseball Tee - Pop Mickey product page) so the
+         chosen character renders as the actual vinyl patch on the Live Look */
       patches: [
-        { id: 'mickey', name: 'Pop Mickey', hex: '#e14b3b', spot: 0 },
-        { id: 'minnie', name: 'Pop Minnie', hex: '#ff6f91', spot: 2 },
-        { id: 'donald', name: 'Pop Donald', hex: '#3f7fbf', spot: 3 },
-        { id: 'daisy',  name: 'Pop Daisy',  hex: '#c9a227', spot: 4 },
-        { id: 'pluto',  name: 'Pop Pluto',  hex: '#8a6d3b', spot: 8 },
-        { id: 'goofy',  name: 'Pop Goofy',  hex: '#7a9e4d', spot: 5 }
+        { id: 'mickey', name: 'Pop Mickey', hex: '#e14b3b', spot: 0, img: 'assets/images/patches/pop-mickey.webp' },
+        { id: 'minnie', name: 'Pop Minnie', hex: '#ff6f91', spot: 2, img: 'assets/images/patches/pop-minnie.webp' },
+        { id: 'donald', name: 'Pop Donald', hex: '#3f7fbf', spot: 3, img: 'assets/images/patches/pop-donald.webp' },
+        { id: 'daisy',  name: 'Pop Daisy',  hex: '#c9a227', spot: 4, img: 'assets/images/patches/pop-daisy.webp' },
+        { id: 'pluto',  name: 'Pop Pluto',  hex: '#8a6d3b', spot: 8, img: 'assets/images/patches/pop-pluto.webp' },
+        { id: 'goofy',  name: 'Pop Goofy',  hex: '#7a9e4d', spot: 5, img: 'assets/images/patches/pop-goofy.webp' }
       ]
     }
   };
@@ -2352,6 +2356,197 @@
     { x: '64%', y: '70%', loc: 'lower right' },
     { x: '50%', y: '80%', loc: 'hem' }
   ];
+
+  /* ---------- Live Look stage (PRD §5.3) ----------
+     The real product photos are often shot at an angle or as lifestyle shots, so
+     text overlaid on them can't look truly embroidered. For customisable items the
+     PDP therefore renders a SECOND, larger image below the main one: a flat,
+     horizontally-aligned front / top view of the item, drawn in the item's own
+     colours and design hints, with the personalisation (initials / patches) laid
+     onto that flat surface — so type comes out level, never slanted.
+
+     Each blueprint: art(viewBox 400×400) + placements (x/y/w in % of the art box,
+     where the embroidery lands for that product's placement options) + label. */
+  var LIVELOOK_DATA = {
+    /* ---------- tees (front view, flat-lay) ---------- */
+    tee: {
+      label: 'Front view \u00b7 flat lay',
+      placements: { 'left chest': { x: 33, y: 30, w: 24 }, 'front': { x: 50, y: 34, w: 42 }, 'sleeve / cuff': { x: 24, y: 33, w: 13 } },
+      art: {
+        bg: '#f6efe3', fill: '#ffffff', shade: '#e9e2d4', trim: '#e5dccb',
+        body: 'M138 74 L78 100 88 156 104 162 104 330 a10 10 0 0 0 10 10 L286 340 a10 10 0 0 0 10 -10 L296 162 312 156 322 100 262 74 Z',
+        neck: 'M138 74 C138 100 158 116 200 116 C242 116 262 100 262 74',
+        sleeves: ['M138 74 L78 100 88 156 120 148 120 108 Z', 'M262 74 L322 100 312 156 280 148 280 108 Z'],
+        decor: function (p) { return p && p.characters && p.characters.indexOf('Mickey') >= 0
+          ? '<circle cx="200" cy="196" r="15" fill="none" stroke="#d9cfc0" stroke-width="5"/><circle cx="188" cy="182" r="6" fill="#d9cfc0"/><circle cx="212" cy="182" r="6" fill="#d9cfc0"/>'
+          : '<rect x="168" y="176" width="64" height="44" rx="6" fill="none" stroke="#d9cfc0" stroke-width="4"/>'; }
+      }
+    },
+    /* ---------- overalls (front view) ---------- */
+    overalls: {
+      label: 'Front view \u00b7 flat lay',
+      placements: { 'left chest': { x: 40, y: 26, w: 22 }, 'sleeve / cuff': { x: 30, y: 55, w: 14 } },
+      art: {
+        bg: '#f2ece0', fill: '#bfe0e6', shade: '#a8cfd6', trim: '#8fb9c2',
+        body: 'M148 62 L138 118 130 332 a10 10 0 0 0 10 10 L260 342 a10 10 0 0 0 10 -10 L262 118 252 62 Z',
+        neck: 'M148 62 L188 96 L200 84 L212 96 L252 62',
+        sleeves: ['M138 70 L112 240 128 244 146 128 Z', 'M262 70 L288 240 272 244 254 128 Z'],
+        buttons: [[166, 130], [234, 130]],
+        pocket: 'M176 210 L224 210 L224 252 L176 252 Z'
+      }
+    },
+    /* ---------- blankets / swaddles (top view, flat) ---------- */
+    blanket: {
+      label: 'Top view \u00b7 laid flat',
+      placements: { 'corner': { x: 22, y: 78, w: 40 }, 'front': { x: 50, y: 52, w: 40 } },
+      art: {
+        bg: '#f6efe3', fill: '#f3ecdf', shade: '#e7dcc7', trim: '#d9cdb5', scallop: true,
+        body: 'M62 70 L338 70 L338 330 L62 330 Z',
+        decor: function (p) {
+          var dots = '';
+          for (var r = 0; r < 3; r++) for (var c = 0; c < 5; c++) {
+            dots += '<circle cx="' + (130 + c * 36) + '" cy="' + (140 + r * 44) + '" r="5" fill="#d9cdb5" opacity=".7"/>';
+          }
+          return dots;
+        }
+      }
+    },
+    /* ---------- keepsake / gift boxes (top view, lid facing up) ---------- */
+    box: {
+      label: 'Top view \u00b7 lid facing up',
+      placements: { 'keepsake box lid': { x: 50, y: 50, w: 52 }, 'front': { x: 50, y: 55, w: 44 } },
+      art: {
+        bg: '#f2ece0', fill: '#f7f1e5', shade: '#e4d8c2', trim: '#c9a227',
+        body: 'M78 92 L322 92 L322 308 L78 308 Z',
+        inner: 'M96 110 L304 110 L304 290 L96 290 Z',
+        ribbonH: 'M78 186 L322 186', ribbonV: 'M200 92 L200 308'
+      }
+    },
+    /* ---------- hooded robe (front view, hood up) ---------- */
+    robe: {
+      label: 'Front view \u00b7 hood up',
+      placements: { 'hood': { x: 50, y: 16, w: 30 }, 'front': { x: 50, y: 42, w: 38 } },
+      art: {
+        bg: '#f6efe3', fill: '#dceaf7', shade: '#c7daee', trim: '#aec6de',
+        body: 'M150 118 L96 146 102 200 122 204 122 330 a10 10 0 0 0 10 10 L268 340 a10 10 0 0 0 10 -10 L278 204 298 200 304 146 250 118 Z',
+        neck: 'M150 118 C150 150 168 172 200 172 C232 172 250 150 250 118',
+        hood: 'M150 118 C128 62 156 34 200 34 C244 34 272 62 250 118 C238 136 226 146 200 146 C174 146 162 136 150 118 Z',
+        belt: 'M122 236 L278 236'
+      }
+    },
+    /* ---------- beanie (front view, cuff up) ---------- */
+    beanie: {
+      label: 'Front view',
+      placements: { 'front': { x: 50, y: 46, w: 40 } },
+      art: {
+        bg: '#f2ece0', fill: '#f1e6d6', shade: '#e0d2bd', trim: '#e8dccb',
+        body: 'M110 250 C110 130 150 84 200 84 C250 84 290 130 290 250 Z',
+        cuff: 'M104 250 L296 250 L296 306 a10 10 0 0 1 -10 10 L114 316 a10 10 0 0 1 -10 -10 Z',
+        pompom: true
+      }
+    }
+  };
+  /* real product photos used as the Live Look stage (instead of the schematic
+     flat view) for items where the studio shot is a straight-on front / top
+     view. src is the local copy; aspect is the photo's intrinsic ratio so the
+     wrap matches it and the overlay % coords map onto the real item. */
+  var LIVELOOK_PHOTOS = {
+    'gift-10':   { src: 'assets/images/livelook-gift-10.jpg',    aspect: '1 / 1', label: 'Product photo \u00b7 top view', placements: { 'keepsake box lid': { x: 50, y: 50, w: 52 } } },
+    /* -v2: the user's updated studio shot (replaced in place earlier, which stale-cached
+       the old photo — a fresh filename forces the new image through caches) */
+    'gift-3':    { src: 'assets/images/livelook-gift-3-v2.jpg',  aspect: '2 / 3', label: 'Product photo \u00b7 front view', placements: { 'front': { x: 50, y: 50, w: 36 } } },
+    'disney-1':  {
+      /* default surface is the Left chest studio shot; only choosing the
+         sleeve / cuff placement swaps to the sleeve photo */
+      src: 'assets/images/livelook-disney-1-leftchest.png', aspect: '1664 / 928', label: 'Product photo \u00b7 left chest',
+      placements: {
+        'left chest':   { src: 'assets/images/livelook-disney-1-leftchest.png', aspect: '1664 / 928', label: 'Product photo \u00b7 left chest', x: 45, y: 25, w: 15 },
+        'sleeve / cuff': { src: 'assets/images/livelook-disney-1-sleeve.png',    aspect: '1664 / 928', label: 'Product photo \u00b7 sleeve',      x: 70, y: 43, w: 11 }
+      }
+    }
+  };
+  /* item id -> Live Look blueprint (personalisable items only; default by product type) */
+  var LIVELOOK_BY_ID = {
+    'disney-1': 'tee', 'elly-16': 'tee', 'adult-4': 'tee',
+    'elly-21': 'overalls',
+    'elly-4': 'blanket', 'elly-5': 'blanket',
+    'gift-1': 'box', 'gift-10': 'box',
+    'disney-9': 'robe',
+    'custom-1': 'beanie', 'custom-2': 'beanie', 'custom-3': 'beanie', 'custom-4': 'beanie'
+  };
+  function cfgLivelookKey(prod) {
+    if (!prod) return '';
+    if (LIVELOOK_BY_ID[prod.id]) return LIVELOOK_BY_ID[prod.id];
+    return ({ 'Tops & tees': 'tee', 'Bottoms & shorts': 'overalls', 'Blankets & swaddles': 'blanket', 'Keepsake box': 'box', 'Gift set': 'box', 'Swimwear': 'robe', 'Accessories': 'beanie' })[prod.type] || '';
+  }
+  /* colours / decor overrides for specific variants so the flat view matches the
+     real item's colourway (pink beanie, navy beanie, grey beanie, aqua box…) */
+  var LIVELOOK_VARIANTS = {
+    'custom-1': { art: { fill: '#f1e6d6', shade: '#e0d2bd' } },
+    'custom-2': { art: { fill: '#2f3a68', shade: '#26305a' } },
+    'custom-3': { art: { fill: '#9b9b9b', shade: '#878787' } },
+    'custom-4': { art: { fill: '#f6c7cf', shade: '#e9b0bc' } },
+    'gift-10':  { art: { fill: '#bfe0e6', shade: '#a8cfd6', trim: '#7fa8b2' } },
+    'elly-16':  { art: { fill: '#fdf6f0', shade: '#f0e4d8', decor: null } }
+  };
+  function cfgLivelookArt(prod, key) {
+    var bp = LIVELOOK_DATA[key];
+    if (!bp) return null;
+    var base = {};
+    Object.keys(bp.art).forEach(function (k) { base[k] = bp.art[k]; });
+    var v = LIVELOOK_VARIANTS[prod && prod.id];
+    if (v && v.art) Object.keys(v.art).forEach(function (k) { base[k] = v.art[k]; });
+    return base;
+  }
+  /* one blueprint covers per-placement spots; pick the coordinate set for a placement.
+     Photo-backed items (LIVELOOK_PHOTOS) carry their own placement coords, tuned to
+     where the embroidery sits on the real photo. */
+  function cfgLivelookSpot(prod, key, placement) {
+    var ph = prod && LIVELOOK_PHOTOS[prod.id];
+    if (ph && ph.placements) return ph.placements[placement] || firstVal(ph.placements);
+    var bp = LIVELOOK_DATA[key];
+    if (!bp) return null;
+    return bp.placements[placement] || bp.placements.front || bp.placements['keepsake box lid'] || firstVal(bp.placements);
+  }
+  function firstVal(o) { for (var k in o) if (o.hasOwnProperty(k)) return o[k]; return { x: 50, y: 50, w: 40 }; }
+  /* PATCH_SPOTS (photo-style tee) translated onto the flat tee drawing */
+  var FLAT_TEE_PATCH_SPOTS = {
+    'left chest': { x: 40, y: 30 }, 'front chest': { x: 50, y: 30 }, 'right chest': { x: 60, y: 30 },
+    'left sleeve': { x: 30, y: 42 }, 'right sleeve': { x: 70, y: 42 },
+    'front centre': { x: 50, y: 55 },
+    'lower left': { x: 35, y: 68 }, 'lower right': { x: 65, y: 68 }, 'hem': { x: 50, y: 92 }
+  };
+  /* every patch renders at the same width (as % of the Live Look), whichever
+     spot is pre-set — consistent patch size across the garment */
+  var PATCH_SPOT_W = 7;
+
+  /* draw the flat front / top view of the item as an inline SVG (400×400) */
+  function cfgLivelookSVG(prod, key) {
+    var bp = LIVELOOK_DATA[key];
+    var art = cfgLivelookArt(prod, key);
+    if (!bp || !art) return '';
+    var s = '<svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="' + esc((prod ? prod.n : 'Item') + ' \u2014 ' + bp.label) + '">';
+    s += '<rect width="400" height="400" rx="14" fill="' + (art.bg || '#f6efe3') + '"/>';
+    /* soft drop shadow under the item */
+    s += '<ellipse cx="200" cy="352" rx="128" ry="16" fill="rgba(0,0,0,.07)"/>';
+    if (art.sleeves) art.sleeves.forEach(function (d) { s += '<path d="' + d + '" fill="' + art.shade + '"/>'; });
+    if (art.hood) s += '<path d="' + art.hood + '" fill="' + art.shade + '" stroke="' + art.trim + '" stroke-width="3"/>';
+    s += '<path d="' + art.body + '" fill="' + art.fill + '" stroke="' + art.trim + '" stroke-width="3.5" stroke-linejoin="round"/>';
+    if (art.neck) s += '<path d="' + art.neck + '" fill="none" stroke="' + art.trim + '" stroke-width="3.5" stroke-linecap="round"/>';
+    if (art.inner) s += '<path d="' + art.inner + '" fill="none" stroke="' + art.shade + '" stroke-width="3"/>';
+    if (art.ribbonH) s += '<path d="' + art.ribbonH + '" stroke="' + art.trim + '" stroke-width="14" opacity=".85"/>';
+    if (art.ribbonV) s += '<path d="' + art.ribbonV + '" stroke="' + art.trim + '" stroke-width="14" opacity=".85"/>';
+    if (art.scallop) {
+      for (var i = 0; i < 11; i++) s += '<circle cx="' + (78 + i * 24.4) + '" cy="330" r="12" fill="none" stroke="' + art.trim + '" stroke-width="2.5" opacity=".8"/>';
+    }
+    if (art.buttons) art.buttons.forEach(function (b) { s += '<circle cx="' + b[0] + '" cy="' + b[1] + '" r="5" fill="' + art.trim + '"/>'; });
+    if (art.pocket) s += '<path d="' + art.pocket + '" fill="none" stroke="' + art.shade + '" stroke-width="3"/>';
+    if (art.belt) s += '<path d="' + art.belt + '" stroke="' + art.trim + '" stroke-width="8" opacity=".9"/>';
+    if (art.pompom) s += '<circle cx="200" cy="72" r="17" fill="' + art.shade + '" stroke="' + art.trim + '" stroke-width="3"/>';
+    if (art.decor) s += (typeof art.decor === 'function' ? art.decor(prod) : art.decor);
+    s += '</svg>';
+    return s;
+  }
 
   function cfgEligible(prod) { return !!(prod && prod.custom && prod.custom.methods && prod.custom.methods.length); }
   function cfgPlacementCfg(key) { return CUSTOM_PLACEMENTS[key] || { label: key, max: 10, x: '50%', y: '50%', w: '40%' }; }
@@ -2394,7 +2589,7 @@
         }).join(' + '));
       }
     } else {
-      if (CFG.text) parts.push("'" + CFG.text.toUpperCase() + "'");
+      if (CFG.text) parts.push("'" + CFG.text + "'");
       if (CFG.placement) parts.push(cfgPlacementCfg(CFG.placement).label);
       if (CFG.colourName) parts.push(CFG.colourName + ' thread');
       parts.push(cfgFontById(CFG.font).label);
@@ -2404,65 +2599,112 @@
     return parts.join(' \u00b7 ');
   }
 
-  function cfgRenderPreview() {
-    var pv = $('.cfg-preview');
-    if (!pv) return;
-    if (CFG.method === 'patches') {
-      if (!CFG.patches.length) { pv.classList.remove('is-on'); return; }
-      pv.classList.add('is-on');
-      pv.style.left = '50%'; pv.style.top = '44%'; pv.style.width = '84%';
-      pv.innerHTML = CFG.patches.map(function (id) {
-        var p = cfgPatchById(id);
-        var spot = cfgPatchSpot(id);
-        return '<span class="cfg-pv-patch" style="left:' + spot.x + ';top:' + spot.y + ';--patchc:' + (p ? p.hex : '#555') + '">' +
-          esc(p ? p.name : id) + '<em class="cfg-pv-pos">' + esc(spot.loc) + '</em></span>';
-      }).join('') + '<span class="cfg-pv-tag">Iron-on patches \u00b7 applied before dispatch</span>';
-      return;
-    }
-    if (!CFG.placement) { pv.classList.remove('is-on'); return; }
-    var pc = cfgPlacementCfg(CFG.placement);
-    pv.style.left = pc.x; pv.style.top = pc.y; pv.style.width = pc.w;
-    pv.classList.add('is-on');
-    if (CFG.text) {
-      var font = cfgFontById(CFG.font);
-      var native = CFG.language !== 'en';
-      var disp = native ? CFG.text : CFG.text.toUpperCase();
-      pv.innerHTML = '<span class="cfg-pv-text cfg-pv-text--' + CFG.fontSize + (native ? ' cfg-pv-text--native' : '') + '" style="font-family:' + font.family + ';color:' + CFG.colourHex + '">' + esc(disp) + '</span>' +
-        '<span class="cfg-pv-tag">' + esc(pc.label) + ' \u00b7 ' + esc(cfgFontById(CFG.font).label) + ' \u00b7 ' + esc(cfgSizeById(CFG.fontSize).label) + (CFG.language !== 'en' ? ' \u00b7 ' + esc(cfgLangById(CFG.language).label) : '') + '</span>';
-    } else {
-      pv.innerHTML = '<span class="cfg-pv-marker"></span><span class="cfg-pv-tag">' + esc(pc.label) + '</span>';
-    }
-    cfgRenderLive();
+  /* ---------- Live Look stage (large, below the main image) ----------
+     For customisable items the PDP shows a second, larger image under the main
+     photo: a flat, horizontally-aligned front / top view of the item drawn in its
+     own colourway, with the chosen personalisation laid onto the flat surface —
+     so initials come out level and realistic instead of warped onto an angled
+     photo. A caption names the view; a corner tag says it's a rendering. */
+  function cfgLivelookStage() {
+    var stage = $('#livelookStage');
+    if (!stage) return;
+    var prod = CFG.prod;
+    var key = cfgLivelookKey(prod);
+    if (!key) { stage.hidden = true; return; }
+    stage.hidden = false;
+    cfgRenderPreview();
   }
 
-  /* in-configurator live look: shows the actual embroidered text in the chosen
-     font / size / colour / script, or the picked patches at their pre-set spots */
-  function cfgRenderLive() {
-    var live = $('#cfgLive');
-    if (!live) return;
-    if (CFG.method === 'patches') {
-      if (!CFG.patches.length) {
-        live.innerHTML = '<span class="cfg-live-label">Live look</span><span class="cfg-live-empty">Pick up to ' + cfgPatchCount() + ' patches \u2014 each lands on its pre-set spot.</span>';
-        return;
+  /* embroidery / patches laid onto the flat Live Look surface */
+  function cfgRenderPreview() {
+    var stage = $('#livelookStage');
+    var wrap = $('#livelookArtWrap');
+    if (!stage || !wrap) return;
+    var key = cfgLivelookKey(CFG.prod);
+    if (!key) return;
+    var method = CFG.method || ((CFG.prod && CFG.prod.custom && CFG.prod.custom.methods || [])[0] || '');
+    var ph = CFG.prod && LIVELOOK_PHOTOS[CFG.prod.id];
+    /* per-placement studio shots: embroidered mode swaps the surface photo to the
+       one for the chosen placement (e.g. Kids Tee - Doodle Mickey); patches and
+       no-placement fall back to the default photo */
+    var phEntry = ph;
+    if (ph && ph.placements && method === 'embroidered' && CFG.placement && ph.placements[CFG.placement]) {
+      var pl = ph.placements[CFG.placement];
+      /* per-placement entries may only carry x/y/w (gift-3, gift-10) — inherit
+         the product photo src/aspect/label so the surface image doesn't vanish;
+         entries with their own src (disney-1 sleeve) keep theirs */
+      phEntry = { src: pl.src || ph.src, aspect: pl.aspect || ph.aspect, label: pl.label || ph.label, x: pl.x, y: pl.y, w: pl.w };
+    }
+    /* caption: view chip names the photo matching the chosen placement + item name */
+    var bp = LIVELOOK_DATA[key];
+    var cap = stage.querySelector('.livelook__caption');
+    if (cap) cap.innerHTML = '<span class="livelook__view">' + esc(phEntry ? phEntry.label : bp.label) + '</span><span class="livelook__name">' + esc(CFG.prod ? CFG.prod.n : '') + '</span>';
+    var art;
+    if (phEntry) {
+      /* real studio photo as the Live Look surface; wrap aspect matches the photo
+         so the overlay % coords land on the actual item in the frame */
+      art = '<img class="livelook__photo" src="' + esc(phEntry.src) + '" alt="' + esc(CFG.prod.n) + '">';
+      wrap.style.aspectRatio = phEntry.aspect;
+    } else {
+      art = cfgLivelookSVG(CFG.prod, key);
+      wrap.style.aspectRatio = '';
+    }
+    if (wrap.dataset.art !== art) {
+      wrap.innerHTML = art + '<div class="livelook__overlay" id="livelookOverlay"></div>';
+      wrap.dataset.art = art;
+    }
+    var ov = $('#livelookOverlay');
+    if (!ov) return;
+    var spots = [];
+    if (method === 'patches') {
+      /* every picked patch lands on its pre-set spot, translated onto the flat tee */
+      CFG.patches.forEach(function (id) {
+        var p = cfgPatchById(id);
+        if (!p) return;
+        var teeSpot = cfgPatchSpot(id);
+        var flat = FLAT_TEE_PATCH_SPOTS[teeSpot.loc] || { x: 50, y: 40 };
+        spots.push({
+          x: flat.x, y: flat.y,
+          label: p.name, sub: teeSpot.loc, hex: p.hex,
+          img: p.img || '', w: PATCH_SPOT_W
+        });
+      });
+    } else if (CFG.placement && CFG.text) {
+      var spot = cfgLivelookSpot(CFG.prod, key, CFG.placement);
+      var font = cfgFontById(CFG.font);
+      var native = CFG.language !== 'en';
+      /* the initials render exactly as typed — the customer decides the case */
+      spots.push({
+        x: spot.x, y: spot.y, w: spot.w,
+        text: CFG.text, family: font.family, colour: CFG.colourHex,
+        size: CFG.fontSize, native: native,
+        sub: cfgPlacementCfg(CFG.placement).label + ' \u00b7 ' + CFG.colourName + ' thread'
+      });
+    }
+    if (!spots.length) {
+      /* nothing personalised yet — show the placement hint on the flat view */
+      var hint = method === 'patches'
+        ? 'Pick up to ' + cfgPatchCount() + ' patches — each lands on its pre-set spot on the flat view.'
+        : (CFG.placement ? cfgPlacementCfg(CFG.placement).label + ' \u2014 type a name or initials to see it here.' : 'Pick a placement, then type a name or initials.');
+      ov.innerHTML = '<span class="livelook__hint">' + esc(hint) + '</span>';
+      return;
+    }
+    ov.innerHTML = spots.map(function (sp) {
+      var inner;
+      if (sp.text) {
+        inner = '<span class="livelook__emb livelook__emb--' + sp.size + (sp.native ? ' livelook__emb--native' : '') + '" style="font-family:' + sp.family + ';color:' + sp.colour + '">' + esc(sp.text) + '</span>';
+      } else if (sp.img) {
+        /* real vinyl patch artwork overlaid at its pre-set spot */
+        inner = '<img class="livelook__patchimg" src="' + esc(sp.img) + '" alt="' + esc(sp.label) + '">';
+      } else {
+        inner = '<span class="livelook__patch" style="--patchc:' + sp.hex + '">' + esc(sp.label) + '<em>' + esc(sp.sub) + '</em></span>';
       }
-      live.innerHTML = '<span class="cfg-live-label">Live look</span><div class="cfg-live-patches">' +
-        CFG.patches.map(function (id) {
-          var p = cfgPatchById(id);
-          var spot = cfgPatchSpot(id);
-          return '<span class="cfg-live-patch" style="--patchc:' + (p ? p.hex : '#555') + '">' + esc(p ? p.name : id) + '<em>' + esc(spot.loc) + '</em></span>';
-        }).join('') + '</div>';
-      return;
-    }
-    if (!CFG.text) {
-      live.innerHTML = '<span class="cfg-live-label">Live look</span><span class="cfg-live-empty">Type a name or initials to see the embroidery sample.</span>';
-      return;
-    }
-    var font = cfgFontById(CFG.font);
-    var native = CFG.language !== 'en';
-    var disp = native ? CFG.text : CFG.text.toUpperCase();
-    live.innerHTML = '<span class="cfg-live-label">Live look</span><div class="cfg-live-sample cfg-live-sample--' + CFG.fontSize + (native ? ' cfg-live-sample--native' : '') + '" style="font-family:' + font.family + ';color:' + CFG.colourHex + '">' + esc(disp) + '</div>' +
-      '<span class="cfg-live-meta">' + esc(cfgPlacementCfg(CFG.placement || 'front').label) + ' \u00b7 ' + esc(CFG.colourName) + ' thread \u00b7 ' + esc(font.label) + ' \u00b7 ' + esc(cfgSizeById(CFG.fontSize).label) + (CFG.language !== 'en' ? ' \u00b7 ' + esc(cfgLangById(CFG.language).label) : '') + '</span>';
+      return '<span class="livelook__spot" style="left:' + sp.x + '%;top:' + sp.y + '%' + ((sp.text || sp.img) ? ';width:' + sp.w + '%' : '') + '">' + inner + '</span>';
+    }).join('');
   }
+
+  /* the embroidery/patches themselves are rendered straight onto the Live Look
+     stage below the gallery — no separate in-panel sample is shown */
 
   function cfgRefresh() {
     var isPatches = CFG.method === 'patches';
@@ -2492,7 +2734,7 @@
     var th = $('#cfgTextHint');
     if (th) th.textContent = isPatches ? '' : (CFG.placement
       ? (CFG.language === 'en'
-        ? (cfgPlacementCfg(CFG.placement).label + ' fits up to ' + max + ' characters \u2014 spaces count.')
+        ? (cfgPlacementCfg(CFG.placement).label + ' \u2014 up to ' + max + ' characters; type the letters exactly as you want them embroidered.')
         : cfgLangById(CFG.language).label + ' fits up to ' + max + ' characters \u2014 native script keeps its shape.')
       : 'Pick a placement first \u2014 the character limit depends on it.');
     var set = cfgPatchSet();
@@ -2508,7 +2750,6 @@
       sum.textContent = s ? 'Personalisation: ' + s + ' \u2014 the preview on the image updates live.' : 'Choose a method, then set the details to preview your personalisation here.';
     }
     cfgRenderPreview();
-    cfgRenderLive();
   }
 
   function cfgPickMethod(name) {
@@ -2586,7 +2827,13 @@
     var pk = $('#cfgPatches');
     if (pk) pk.innerHTML = cfgPatchSet().patches.map(function (pt) {
       var spot = PATCH_SPOTS[(pt.spot != null) ? pt.spot : 0];
-      return '<button type="button" class="cfg-chip cfg-patch" data-v="' + pt.id + '"><span class="cfg-patch-dot" style="background:' + pt.hex + '"></span>' + pt.name + '<em class="cfg-patch-loc">' + esc(spot.loc) + '</em></button>';
+      /* tiles show the real patch artwork so the customer knows what they're
+         picking before it appears on the Live Look; the colour dot is the
+         fallback for sets without artwork */
+      var tile = pt.img
+        ? '<img class="cfg-patch-img" src="' + esc(pt.img) + '" alt="' + esc(pt.name) + '" loading="lazy">'
+        : '<span class="cfg-patch-dot" style="background:' + pt.hex + '"></span>';
+      return '<button type="button" class="cfg-chip cfg-patch" data-v="' + pt.id + '">' + tile + pt.name + '<em class="cfg-patch-loc">' + esc(spot.loc) + '</em></button>';
     }).join('');
     var ff = $('#cfgFonts');
     if (ff) ff.innerHTML = CUSTOM_FONTS.map(function (fo) {
@@ -2602,6 +2849,7 @@
     }).join('');
     if (tog) tog.textContent = cfgToggleLabel();
     var input = $('#cfgText'); if (input) input.value = '';
+    cfgLivelookStage();
     cfgPickMethod(prod.custom.methods.indexOf('embroidered') >= 0 ? 'embroidered' : prod.custom.methods[0]);
     try {
       if (new URLSearchParams(window.location.search).get('personalise') === '1') setPersOpen(true);
@@ -2689,8 +2937,23 @@
       var imgs = prod.imgs && prod.imgs.length ? prod.imgs : [prod.img];
       main.classList.add('is-real');
       main.innerHTML = '<div class="pdp__tags">' + (cfgEligible(prod) ? '<span class="badge badge--coral">Personalisable</span>' : '') + '</div>' +
-        '<img class="pdp-img" src="' + esc(imgs[0]) + '" alt="' + esc(prod.n) + '">' +
-        '<div class="cfg-preview" id="cfgPreview"></div>';
+        '<img class="pdp-img" src="' + esc(imgs[0]) + '" alt="' + esc(prod.n) + '">';
+    }
+    /* Live Look stage: a large, flat front / top view below the main photo — only
+       for customisable items, where the initials/patches need a realistic surface */
+    if (cfgEligible(prod)) {
+      var gal = $('.pdp__gal');
+      if (gal && !$('#livelookStage')) {
+        /* NB: no data-bump here — the scroll-bump observer snapshots its elements
+           at script-load, so a stage injected at DOMContentLoaded would never be
+           observed and would stay at opacity 0. It shows immediately instead. */
+        gal.insertAdjacentHTML('beforeend',
+          '<figure class="livelook" id="livelookStage">' +
+          '<div class="livelook__wrap" id="livelookArtWrap"></div>' +
+          '<span class="livelook__tag">Rendered preview — final embroidery may vary slightly</span>' +
+          '<figcaption class="livelook__caption"></figcaption>' +
+          '</figure>');
+      }
     }
     $$('.pdp__thumb').forEach(function (th, i) {
       var imgs = prod.imgs && prod.imgs.length ? prod.imgs : [prod.img];
