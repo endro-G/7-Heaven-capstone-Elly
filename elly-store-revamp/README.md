@@ -78,9 +78,9 @@ node server.js
 | `elly-label.html` … `furkids.html` | The 6 category listings: grids populated from the live catalog; **facet UI wired** (filters, colour swatches, clear-all, empty states) but filtering/sort connect in a later step |
 | `disney-elly.html` | Disney | elly listing + Pre-Order strip |
 | `furkids.html` | FurKids: 5 **real pet accessories** from the store's Pet Accessories collection (photos/prices from theellystore.com) beside **6 concept pieces** (blankets, mat, apparel — Elly FurKids concept renders shipped under `assets/furkids/`), persistent **“Concept only — not a Disney-licensed product”** disclosure |
-| `customization.html` | Embroidered (initial + placement + thread colour) / iron-on patches (pre-set SG or Disney selection) methods, live PDP configurator with preview |
+| `customization.html` | Embroidered (initial + placement + thread colour + curated **font range, font size, language EN/JP/KR**) / iron-on patches (up to 3 free from the item's range — Disney patches for Disney products, non-Disney otherwise — each on a **pre-selected spot**) methods, live PDP configurator with on-image + in-configurator **live look** preview |
 | `pre-order.html` | Disney Pre-Order PDP: design selector (3 Singapore concepts), full-payment model, 8-week timeline, disclosure tags |
-| `pdp.html` | Product detail with the **personalisation configurator** (embroidered initial / iron-on patches) + sizes, qty, add-to-bag demo, accordions, cross-sell |
+| `pdp.html` | Product detail with the **personalisation configurator** (embroidered initial — font/size/language/thread/placement; iron-on patches — up to 3, pre-set spots) + sizes, qty, add-to-bag demo, accordions, cross-sell |
 | `cart.html` / `checkout.html` | Bag + checkout with **all 3 tourist fulfilment options** (ship to SG/hotel · ship home · buy in-store/pop-up) |
 | `b2b.html` | B2B landing (use-case cards) → 5-step RFQ: order type/date → **item rows with a product dropdown** (sizes + decoration options appear under the selected item; add/remove rows) → artwork/shipping → your details → **review & confirm** (the validated details are frozen and echoed back; Request and printable Download live on this step) → two-stage confirmation + printable quote sheet |
 | `account.html` | Unified profile: in-store + online order history merged, loyalty points (Smile placeholder rules) |

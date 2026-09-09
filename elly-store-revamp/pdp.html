@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Ovo&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;600&family=Poppins:wght@400;500;600&family=Cinzel:wght@500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/styles.css">
 <style>
   details.acc { border: 1px solid var(--line); border-radius: var(--radius); margin-top: 12px; background: var(--paper); }
@@ -121,6 +122,20 @@
             <input type="text" class="cfg-text" id="cfgText" placeholder="e.g. AMELIA" autocomplete="off" spellcheck="false">
             <p class="small muted cfg-hint" id="cfgTextHint"></p>
           </div>
+          <div class="cfg-row" id="cfgLangWrap">
+            <span class="opt-label">Language <b id="cfgLang">—</b></span>
+            <div class="cfg-chips" id="cfgLangs"></div>
+            <p class="small muted cfg-hint">English, 日本語 or 한국어 embroidery — native script keeps its shape.</p>
+          </div>
+          <div class="cfg-row" id="cfgFontWrap">
+            <span class="opt-label">Font type <b id="cfgFont">—</b></span>
+            <div class="cfg-chips cfg-fonts" id="cfgFonts"></div>
+            <p class="small muted cfg-hint">A curated set of embroidery fonts — each chip is set in its own typeface.</p>
+          </div>
+          <div class="cfg-row" id="cfgSizeWrap">
+            <span class="opt-label">Font size <b id="cfgSize">—</b></span>
+            <div class="cfg-chips" id="cfgSizes"></div>
+          </div>
           <div class="cfg-row cfg-colours" id="cfgColoursWrap">
             <span class="opt-label">Thread colour <b id="cfgColour">—</b></span>
             <div class="f-color" id="cfgColours"></div>
@@ -131,6 +146,7 @@
             <p class="small muted cfg-hint" id="cfgPatchHint"></p>
           </div>
           <p class="cfg-summary" id="cfgSummary">Choose a method, placement and text to preview your personalisation here.</p>
+          <div class="cfg-live" id="cfgLive"><span class="cfg-live-label">Live look</span><span class="cfg-live-empty">Type a name or initials to see the embroidery sample.</span></div>
         </div>
 
         <div class="pdp__buy">
@@ -147,7 +163,7 @@
 
         <details class="acc"><summary>Details &amp; care</summary><div class="acc-body">Fabric composition, care instructions and design story land here with product data.</div></details>
         <details class="acc"><summary>Shipping &amp; returns</summary><div class="acc-body">SG standard shipping S$6, free over S$100. 30-day exchange for store credit. Ships to 20+ countries.</div></details>
-        <details class="acc"><summary>Personalisation</summary><div class="acc-body">Embroidered initials or iron-on patches — embroidered offers placement + thread colour, patches are picked from a pre-set selection (SG or Disney-only designs) and applied before dispatch. Live preview on the product image, before you add to bag (PRD §5.3).</div></details>
+        <details class="acc"><summary>Personalisation</summary><div class="acc-body">Embroidered initials for baby &amp; kids clothing — placement, thread colour, a curated font range, size and language (English, 日本語, 한국어) — or iron-on patches picked from the item&rsquo;s range (Disney designs on Disney products, non-Disney designs elsewhere), up to 3 free, each applied to a pre-selected spot. Live look on the product image and in the configurator before you add to bag (PRD §5.3).</div></details>
       </div>
     </div>
   </section>

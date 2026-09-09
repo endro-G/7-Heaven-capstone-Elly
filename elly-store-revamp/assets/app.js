@@ -2271,10 +2271,12 @@
 
   /* ---------- Interactive personalisation configurator (PRD §5.3 · §8 #5) ----------
      Runs on the PDP for products tagged personalisable (prod.custom). Two methods,
-     matching the live store: embroidered (initial + placement + thread colour, e.g.
-     blankets) and iron-on patches (pick from a pre-set selection \u2014 SG designs or
-     Disney-only vinyls). A product may offer both or only one. One interface, two
-     views: customer self-serve and staff/POS (unified per PRD §5.3). */
+     matching the live store: embroidered (initials + placement + thread colour + font
+     type + font size + language — EN / JP / KR, for baby & kids clothing) and iron-on
+     patches (up to 3 free, picked from the product's range — Disney patches for Disney
+     products, non-Disney patches otherwise — each on a pre-selected spot). A product
+     may offer both or only one. One interface, two views: customer self-serve and
+     staff/POS (unified per PRD §5.3). */
   var CUSTOM_PLACEMENTS = {
     'left chest':       { label: 'Left chest',       max: 10, x: '24%', y: '31%', w: '32%' },
     'full back':        { label: 'Full back',        max: 14, x: '50%', y: '42%', w: '46%' },
@@ -2288,60 +2290,116 @@
     { name: 'Cream', hex: '#f2e8d5' }, { name: 'Coral', hex: '#ff6070' }, { name: 'Navy', hex: '#30346f' },
     { name: 'Gold', hex: '#c9a227' }, { name: 'White', hex: '#ffffff' }, { name: 'Black', hex: '#1d1d1d' }
   ];
+  /* embroidery: a curated set of fonts, sizes and languages (PRD §5.3 — embroidered
+     service for baby & kids clothing: initials + thread + font + size + language) */
+  var CUSTOM_FONTS = [
+    { id: 'serif',  label: 'Classic Serif', family: "'Ovo', serif" },
+    { id: 'script', label: 'Script',        family: "'Dancing Script', cursive" },
+    { id: 'sans',   label: 'Modern Sans',   family: "'Poppins', sans-serif" },
+    { id: 'heritage', label: 'Heritage Caps', family: "'Cinzel', serif" }
+  ];
+  var CUSTOM_FONT_SIZES = [
+    { id: 'sm', label: 'Small' }, { id: 'md', label: 'Medium' }, { id: 'lg', label: 'Large' }
+  ];
+  var CUSTOM_LANGS = [
+    { id: 'en', label: 'English', placeholder: 'e.g. AMELIA' },
+    { id: 'jp', label: '日本語',   placeholder: '例： あみ' },
+    { id: 'kr', label: '한국어',   placeholder: '예: 미나' }
+  ];
+  /* iron-on patches: each design carries a pre-selected location (spot) on the
+     garment — pick up to 3 free; Disney ranges for Disney products, non-Disney
+     (SG) ranges for everything else (PRD §5.3) */
   var CUSTOM_PATCH_SETS = {
     sg: {
       label: 'Singapore designs',
-      note: 'pre-set Singapore-inspired patch designs (e.g. Team Kopi, Chilli Crab Hero) applied to the chest and arms',
+      note: 'non-Disney iron-on patches in pre-set spots on the tee (chest, sleeves, hem)',
       patches: [
-        { id: 'kopi',   name: 'Team Kopi',                   hex: '#7b4a2d' },
-        { id: 'teh',    name: 'Team Teh',                    hex: '#c9a227' },
-        { id: 'milo',   name: 'StyloMilo',                   hex: '#6b4423' },
-        { id: 'chilli', name: 'Chilli Crab Hero',            hex: '#e14b3b' },
-        { id: 'break',  name: 'Breakfast Legends',           hex: '#d98a3f' },
-        { id: 'durian', name: 'Durian King',                 hex: '#a67c00' },
-        { id: 'kiasu',  name: 'Kiasu Spirit',                hex: '#3f7fbf' },
-        { id: 'slide',  name: 'Slide First, Homework Later!', hex: '#7a9e4d' },
-        { id: 'tissue', name: 'Tissue Warriors',             hex: '#b56576' }
+        { id: 'kopi',   name: 'Team Kopi',                    hex: '#7b4a2d', spot: 0 },
+        { id: 'teh',    name: 'Team Teh',                     hex: '#c9a227', spot: 2 },
+        { id: 'milo',   name: 'StyloMilo',                    hex: '#6b4423', spot: 3 },
+        { id: 'chilli', name: 'Chilli Crab Hero',             hex: '#e14b3b', spot: 4 },
+        { id: 'break',  name: 'Breakfast Legends',            hex: '#d98a3f', spot: 5 },
+        { id: 'durian', name: 'Durian King',                  hex: '#a67c00', spot: 1 },
+        { id: 'kiasu',  name: 'Kiasu Spirit',                 hex: '#3f7fbf', spot: 6 },
+        { id: 'slide',  name: 'Slide First, Homework Later!',  hex: '#7a9e4d', spot: 7 },
+        { id: 'tissue', name: 'Tissue Warriors',              hex: '#b56576', spot: 8 }
       ]
     },
     disney: {
       label: 'Disney vinyls',
-      note: 'Disney-only iron-on vinyl patches (e.g. Pop Mickey) applied to the front before dispatch',
+      note: 'Disney-only iron-on vinyl patches in pre-set spots on the tee (chest, sleeves, hem)',
       patches: [
-        { id: 'mickey', name: 'Pop Mickey', hex: '#e14b3b' },
-        { id: 'minnie', name: 'Pop Minnie', hex: '#ff6f91' },
-        { id: 'donald', name: 'Pop Donald', hex: '#3f7fbf' },
-        { id: 'daisy',  name: 'Pop Daisy',  hex: '#c9a227' },
-        { id: 'pluto',  name: 'Pop Pluto',  hex: '#8a6d3b' },
-        { id: 'goofy',  name: 'Pop Goofy',  hex: '#7a9e4d' }
+        { id: 'mickey', name: 'Pop Mickey', hex: '#e14b3b', spot: 0 },
+        { id: 'minnie', name: 'Pop Minnie', hex: '#ff6f91', spot: 2 },
+        { id: 'donald', name: 'Pop Donald', hex: '#3f7fbf', spot: 3 },
+        { id: 'daisy',  name: 'Pop Daisy',  hex: '#c9a227', spot: 4 },
+        { id: 'pluto',  name: 'Pop Pluto',  hex: '#8a6d3b', spot: 8 },
+        { id: 'goofy',  name: 'Pop Goofy',  hex: '#7a9e4d', spot: 5 }
       ]
     }
   };
   var CFG_METHOD_LABELS = { embroidered: 'Embroidered', patches: 'Iron-on patches' };
-  var CFG = { prod: null, method: '', placement: '', text: '', colourName: 'Coral', colourHex: '#ff6070', patches: [], open: false };
+  var CFG = { prod: null, method: '', placement: '', text: '', colourName: 'Coral', colourHex: '#ff6070', patches: [], font: 'serif', fontSize: 'md', language: 'en', open: false };
+  /* pre-selected patch locations on a tee-shaped garment */
   var PATCH_SPOTS = [
-    { x: '26%', y: '32%' }, { x: '48%', y: '32%' }, { x: '70%', y: '32%' },
-    { x: '37%', y: '52%' }, { x: '59%', y: '52%' }, { x: '48%', y: '68%' }
+    { x: '24%', y: '32%', loc: 'left chest' },
+    { x: '50%', y: '32%', loc: 'front chest' },
+    { x: '74%', y: '32%', loc: 'right chest' },
+    { x: '10%', y: '58%', loc: 'left sleeve' },
+    { x: '90%', y: '58%', loc: 'right sleeve' },
+    { x: '50%', y: '47%', loc: 'front centre' },
+    { x: '36%', y: '70%', loc: 'lower left' },
+    { x: '64%', y: '70%', loc: 'lower right' },
+    { x: '50%', y: '80%', loc: 'hem' }
   ];
 
   function cfgEligible(prod) { return !!(prod && prod.custom && prod.custom.methods && prod.custom.methods.length); }
   function cfgPlacementCfg(key) { return CUSTOM_PLACEMENTS[key] || { label: key, max: 10, x: '50%', y: '50%', w: '40%' }; }
   function cfgPatchSet() { return CUSTOM_PATCH_SETS[(CFG.prod && CFG.prod.custom && CFG.prod.custom.patchSet) || 'sg'] || CUSTOM_PATCH_SETS.sg; }
-  function cfgPatchCount() { return (CFG.prod && CFG.prod.custom && CFG.prod.custom.patchCount) || 2; }
+  function cfgPatchCount() { return (CFG.prod && CFG.prod.custom && CFG.prod.custom.patchCount) || 3; }
   function cfgPatchById(id) {
     var set = cfgPatchSet();
     for (var i = 0; i < set.patches.length; i++) if (set.patches[i].id === id) return set.patches[i];
     return null;
   }
+  function cfgPatchSpot(id) {
+    var p = cfgPatchById(id);
+    var s = PATCH_SPOTS[(p && p.spot != null) ? p.spot : 0];
+    return s || PATCH_SPOTS[0];
+  }
+  function cfgFontById(id) {
+    for (var i = 0; i < CUSTOM_FONTS.length; i++) if (CUSTOM_FONTS[i].id === id) return CUSTOM_FONTS[i];
+    return CUSTOM_FONTS[0];
+  }
+  function cfgSizeById(id) {
+    for (var i = 0; i < CUSTOM_FONT_SIZES.length; i++) if (CUSTOM_FONT_SIZES[i].id === id) return CUSTOM_FONT_SIZES[i];
+    return CUSTOM_FONT_SIZES[1];
+  }
+  function cfgLangById(id) {
+    for (var i = 0; i < CUSTOM_LANGS.length; i++) if (CUSTOM_LANGS[i].id === id) return CUSTOM_LANGS[i];
+    return CUSTOM_LANGS[0];
+  }
+  /* non-Latin scripts get a tighter limit — native characters are wider in thread */
+  function cfgLangMax(max) {
+    return CFG.language === 'en' ? max : Math.min(max || 8, 8);
+  }
   function cfgSummaryText() {
     var parts = [];
     if (CFG.method) parts.push(CFG_METHOD_LABELS[CFG.method] || CFG.method);
     if (CFG.method === 'patches') {
-      if (CFG.patches.length) parts.push(CFG.patches.map(function (id) { var p = cfgPatchById(id); return p ? p.name : id; }).join(' + '));
+      if (CFG.patches.length) {
+        parts.push(CFG.patches.map(function (id) {
+          var p = cfgPatchById(id);
+          return p ? p.name + ' (' + cfgPatchSpot(id).loc + ')' : id;
+        }).join(' + '));
+      }
     } else {
       if (CFG.text) parts.push("'" + CFG.text.toUpperCase() + "'");
       if (CFG.placement) parts.push(cfgPlacementCfg(CFG.placement).label);
       if (CFG.colourName) parts.push(CFG.colourName + ' thread');
+      parts.push(cfgFontById(CFG.font).label);
+      parts.push(cfgSizeById(CFG.fontSize).label);
+      if (CFG.language !== 'en') parts.push(cfgLangById(CFG.language).label);
     }
     return parts.join(' \u00b7 ');
   }
@@ -2353,10 +2411,11 @@
       if (!CFG.patches.length) { pv.classList.remove('is-on'); return; }
       pv.classList.add('is-on');
       pv.style.left = '50%'; pv.style.top = '44%'; pv.style.width = '84%';
-      pv.innerHTML = CFG.patches.map(function (id, i) {
+      pv.innerHTML = CFG.patches.map(function (id) {
         var p = cfgPatchById(id);
-        var spot = PATCH_SPOTS[i % PATCH_SPOTS.length];
-        return '<span class="cfg-pv-patch" style="left:' + spot.x + ';top:' + spot.y + ';--patchc:' + (p ? p.hex : '#555') + '">' + esc(p ? p.name : id) + '</span>';
+        var spot = cfgPatchSpot(id);
+        return '<span class="cfg-pv-patch" style="left:' + spot.x + ';top:' + spot.y + ';--patchc:' + (p ? p.hex : '#555') + '">' +
+          esc(p ? p.name : id) + '<em class="cfg-pv-pos">' + esc(spot.loc) + '</em></span>';
       }).join('') + '<span class="cfg-pv-tag">Iron-on patches \u00b7 applied before dispatch</span>';
       return;
     }
@@ -2365,33 +2424,76 @@
     pv.style.left = pc.x; pv.style.top = pc.y; pv.style.width = pc.w;
     pv.classList.add('is-on');
     if (CFG.text) {
-      pv.innerHTML = '<span class="cfg-pv-text" style="color:' + CFG.colourHex + '">' + esc(CFG.text.toUpperCase()) + '</span>' +
-        '<span class="cfg-pv-tag">' + esc(pc.label) + ' \u00b7 ' + esc(CFG_METHOD_LABELS[CFG.method] || CFG.method) + '</span>';
+      var font = cfgFontById(CFG.font);
+      var native = CFG.language !== 'en';
+      var disp = native ? CFG.text : CFG.text.toUpperCase();
+      pv.innerHTML = '<span class="cfg-pv-text cfg-pv-text--' + CFG.fontSize + (native ? ' cfg-pv-text--native' : '') + '" style="font-family:' + font.family + ';color:' + CFG.colourHex + '">' + esc(disp) + '</span>' +
+        '<span class="cfg-pv-tag">' + esc(pc.label) + ' \u00b7 ' + esc(cfgFontById(CFG.font).label) + ' \u00b7 ' + esc(cfgSizeById(CFG.fontSize).label) + (CFG.language !== 'en' ? ' \u00b7 ' + esc(cfgLangById(CFG.language).label) : '') + '</span>';
     } else {
       pv.innerHTML = '<span class="cfg-pv-marker"></span><span class="cfg-pv-tag">' + esc(pc.label) + '</span>';
     }
+    cfgRenderLive();
+  }
+
+  /* in-configurator live look: shows the actual embroidered text in the chosen
+     font / size / colour / script, or the picked patches at their pre-set spots */
+  function cfgRenderLive() {
+    var live = $('#cfgLive');
+    if (!live) return;
+    if (CFG.method === 'patches') {
+      if (!CFG.patches.length) {
+        live.innerHTML = '<span class="cfg-live-label">Live look</span><span class="cfg-live-empty">Pick up to ' + cfgPatchCount() + ' patches \u2014 each lands on its pre-set spot.</span>';
+        return;
+      }
+      live.innerHTML = '<span class="cfg-live-label">Live look</span><div class="cfg-live-patches">' +
+        CFG.patches.map(function (id) {
+          var p = cfgPatchById(id);
+          var spot = cfgPatchSpot(id);
+          return '<span class="cfg-live-patch" style="--patchc:' + (p ? p.hex : '#555') + '">' + esc(p ? p.name : id) + '<em>' + esc(spot.loc) + '</em></span>';
+        }).join('') + '</div>';
+      return;
+    }
+    if (!CFG.text) {
+      live.innerHTML = '<span class="cfg-live-label">Live look</span><span class="cfg-live-empty">Type a name or initials to see the embroidery sample.</span>';
+      return;
+    }
+    var font = cfgFontById(CFG.font);
+    var native = CFG.language !== 'en';
+    var disp = native ? CFG.text : CFG.text.toUpperCase();
+    live.innerHTML = '<span class="cfg-live-label">Live look</span><div class="cfg-live-sample cfg-live-sample--' + CFG.fontSize + (native ? ' cfg-live-sample--native' : '') + '" style="font-family:' + font.family + ';color:' + CFG.colourHex + '">' + esc(disp) + '</div>' +
+      '<span class="cfg-live-meta">' + esc(cfgPlacementCfg(CFG.placement || 'front').label) + ' \u00b7 ' + esc(CFG.colourName) + ' thread \u00b7 ' + esc(font.label) + ' \u00b7 ' + esc(cfgSizeById(CFG.fontSize).label) + (CFG.language !== 'en' ? ' \u00b7 ' + esc(cfgLangById(CFG.language).label) : '') + '</span>';
   }
 
   function cfgRefresh() {
     var isPatches = CFG.method === 'patches';
-    var max = CFG.placement ? cfgPlacementCfg(CFG.placement).max : 0;
+    var max = CFG.placement ? cfgLangMax(cfgPlacementCfg(CFG.placement).max) : 0;
     var input = $('#cfgText');
     if (input) {
       input.maxLength = max || 16;
       if (max && CFG.text.length > max) CFG.text = CFG.text.slice(0, max);
       if (input.value !== CFG.text) input.value = CFG.text;
+      var lang = cfgLangById(CFG.language);
+      input.placeholder = lang.placeholder;
     }
     var m = $('#cfgMethod'); if (m) m.textContent = CFG.method ? (CFG_METHOD_LABELS[CFG.method] || CFG.method) : '\u2014';
     var p = $('#cfgPlacement'); if (p) p.textContent = CFG.placement ? cfgPlacementCfg(CFG.placement).label : '\u2014';
     var ch = $('#cfgChars'); if (ch) ch.textContent = CFG.text.length + (max ? ' / ' + max : '');
     var c = $('#cfgColour'); if (c) c.textContent = (CFG.method === 'embroidered' && CFG.colourName) ? CFG.colourName : '\u2014';
+    var f = $('#cfgFont'); if (f) f.textContent = (CFG.method === 'embroidered') ? cfgFontById(CFG.font).label : '\u2014';
+    var sz = $('#cfgSize'); if (sz) sz.textContent = (CFG.method === 'embroidered') ? cfgSizeById(CFG.fontSize).label : '\u2014';
+    var lg = $('#cfgLang'); if (lg) lg.textContent = (CFG.method === 'embroidered') ? cfgLangById(CFG.language).label : '\u2014';
     var placeWrap = $('#cfgPlaceWrap'); if (placeWrap) placeWrap.hidden = isPatches;
     var textWrap = $('#cfgTextWrap'); if (textWrap) textWrap.hidden = isPatches;
+    var langWrap = $('#cfgLangWrap'); if (langWrap) langWrap.hidden = isPatches;
+    var fontWrap = $('#cfgFontWrap'); if (fontWrap) fontWrap.hidden = isPatches;
+    var sizeWrap = $('#cfgSizeWrap'); if (sizeWrap) sizeWrap.hidden = isPatches;
     var colours = $('#cfgColoursWrap'); if (colours) colours.hidden = isPatches;
     var patchWrap = $('#cfgPatchesWrap'); if (patchWrap) patchWrap.hidden = !isPatches;
     var th = $('#cfgTextHint');
     if (th) th.textContent = isPatches ? '' : (CFG.placement
-      ? (cfgPlacementCfg(CFG.placement).label + ' fits up to ' + max + ' characters \u2014 spaces count.')
+      ? (CFG.language === 'en'
+        ? (cfgPlacementCfg(CFG.placement).label + ' fits up to ' + max + ' characters \u2014 spaces count.')
+        : cfgLangById(CFG.language).label + ' fits up to ' + max + ' characters \u2014 native script keeps its shape.')
       : 'Pick a placement first \u2014 the character limit depends on it.');
     var set = cfgPatchSet();
     var pcSel = $('#cfgPatchSel');
@@ -2399,13 +2501,14 @@
     var pcCount = $('#cfgPatchCount');
     if (pcCount) pcCount.textContent = CFG.patches.length + ' of ' + cfgPatchCount() + ' free';
     var ph = $('#cfgPatchHint');
-    if (ph) ph.textContent = set.note + '. Pick up to ' + cfgPatchCount() + ' free.';
+    if (ph) ph.textContent = set.note + ' Pick up to ' + cfgPatchCount() + ' free \u2014 each patch goes to its pre-set spot on the tee.';
     var sum = $('#cfgSummary');
     if (sum) {
       var s = cfgSummaryText();
       sum.textContent = s ? 'Personalisation: ' + s + ' \u2014 the preview on the image updates live.' : 'Choose a method, then set the details to preview your personalisation here.';
     }
     cfgRenderPreview();
+    cfgRenderLive();
   }
 
   function cfgPickMethod(name) {
@@ -2427,8 +2530,23 @@
     var i = CFG.patches.indexOf(id);
     if (i >= 0) CFG.patches.splice(i, 1);
     else if (CFG.patches.length < cfgPatchCount()) CFG.patches.push(id);
-    else { toast('You get ' + cfgPatchCount() + ' free patches \u2014 remove one to swap (demo).'); return; }
+    else { toast('You get up to ' + cfgPatchCount() + ' free patches \u2014 remove one to swap (demo).'); return; }
     $$('#cfgPatches .cfg-chip').forEach(function (b) { b.classList.toggle('is-on', CFG.patches.indexOf(b.getAttribute('data-v')) >= 0); });
+    cfgRefresh();
+  }
+  function cfgPickFont(id) {
+    CFG.font = id;
+    $$('#cfgFonts .cfg-chip').forEach(function (b) { b.classList.toggle('is-on', b.getAttribute('data-v') === id); });
+    cfgRefresh();
+  }
+  function cfgPickSize(id) {
+    CFG.fontSize = id;
+    $$('#cfgSizes .cfg-chip').forEach(function (b) { b.classList.toggle('is-on', b.getAttribute('data-v') === id); });
+    cfgRefresh();
+  }
+  function cfgPickLang(id) {
+    CFG.language = id;
+    $$('#cfgLangs .cfg-chip').forEach(function (b) { b.classList.toggle('is-on', b.getAttribute('data-v') === id); });
     cfgRefresh();
   }
   function cfgToggleLabel() {
@@ -2447,7 +2565,7 @@
   }
 
   function initConfigurator(prod) {
-    CFG.prod = prod; CFG.method = ''; CFG.placement = ''; CFG.text = ''; CFG.colourName = 'Coral'; CFG.colourHex = '#ff6070'; CFG.patches = []; CFG.open = false;
+    CFG.prod = prod; CFG.method = ''; CFG.placement = ''; CFG.text = ''; CFG.colourName = 'Coral'; CFG.colourHex = '#ff6070'; CFG.patches = []; CFG.font = 'serif'; CFG.fontSize = 'md'; CFG.language = 'en'; CFG.open = false;
     var cfg = $('#configurator'), tog = $('#persToggle');
     var eligible = cfgEligible(prod);
     if (tog) tog.hidden = !eligible;
@@ -2467,7 +2585,20 @@
     }).join('');
     var pk = $('#cfgPatches');
     if (pk) pk.innerHTML = cfgPatchSet().patches.map(function (pt) {
-      return '<button type="button" class="cfg-chip cfg-patch" data-v="' + pt.id + '"><span class="cfg-patch-dot" style="background:' + pt.hex + '"></span>' + pt.name + '</button>';
+      var spot = PATCH_SPOTS[(pt.spot != null) ? pt.spot : 0];
+      return '<button type="button" class="cfg-chip cfg-patch" data-v="' + pt.id + '"><span class="cfg-patch-dot" style="background:' + pt.hex + '"></span>' + pt.name + '<em class="cfg-patch-loc">' + esc(spot.loc) + '</em></button>';
+    }).join('');
+    var ff = $('#cfgFonts');
+    if (ff) ff.innerHTML = CUSTOM_FONTS.map(function (fo) {
+      return '<button type="button" class="cfg-chip cfg-chip--font' + (fo.id === 'serif' ? ' is-on' : '') + '" data-v="' + fo.id + '" style="font-family:' + fo.family + '">' + fo.label + '</button>';
+    }).join('');
+    var ss = $('#cfgSizes');
+    if (ss) ss.innerHTML = CUSTOM_FONT_SIZES.map(function (si) {
+      return '<button type="button" class="cfg-chip' + (si.id === 'md' ? ' is-on' : '') + '" data-v="' + si.id + '">' + si.label + '</button>';
+    }).join('');
+    var ll = $('#cfgLangs');
+    if (ll) ll.innerHTML = CUSTOM_LANGS.map(function (la) {
+      return '<button type="button" class="cfg-chip' + (la.id === 'en' ? ' is-on' : '') + '" data-v="' + la.id + '">' + la.label + '</button>';
     }).join('');
     if (tog) tog.textContent = cfgToggleLabel();
     var input = $('#cfgText'); if (input) input.value = '';
@@ -2493,6 +2624,12 @@
     }
     var pch = e.target.closest('#cfgPatches .cfg-chip');
     if (pch) { cfgPickPatch(pch.getAttribute('data-v')); return; }
+    var fo = e.target.closest('#cfgFonts .cfg-chip');
+    if (fo) { cfgPickFont(fo.getAttribute('data-v')); return; }
+    var si = e.target.closest('#cfgSizes .cfg-chip');
+    if (si) { cfgPickSize(si.getAttribute('data-v')); return; }
+    var la = e.target.closest('#cfgLangs .cfg-chip');
+    if (la) { cfgPickLang(la.getAttribute('data-v')); return; }
     var vb = e.target.closest('#cfgViewSeg button[data-cfgview]');
     if (vb) {
       $$('#cfgViewSeg button').forEach(function (x) { x.classList.toggle('is-on', x === vb); });
@@ -2504,7 +2641,7 @@
   });
   document.addEventListener('input', function (e) {
     if (e.target && e.target.id === 'cfgText') {
-      var max = CFG.placement ? cfgPlacementCfg(CFG.placement).max : 16;
+      var max = CFG.placement ? cfgLangMax(cfgPlacementCfg(CFG.placement).max) : 16;
       CFG.text = String(e.target.value).slice(0, max);
       if (e.target.value !== CFG.text) e.target.value = CFG.text;
       cfgRefresh();

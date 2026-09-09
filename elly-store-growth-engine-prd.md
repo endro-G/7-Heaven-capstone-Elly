@@ -18,6 +18,8 @@ The Elly Store is repositioning as **"Singapore's Disney design-house label."** 
 
 Pillar 1 is the largest and most developed pillar in this PRD; Pillars 2 and 3 supplement it to help meet the overall 3x GMV objective through channels and categories the core funnel alone doesn't reach.
 
+**In-Store Staff Assist Interface (§12, new):** a tablet-based interface for retail staff, addressing two specific in-store workflows identified in a business-process review (in-store matching family sets, and the personalisation paper-form loop) where manual, paper-based processes currently break the same recognition and data-capture the rest of this PRD relies on. This is not a fourth growth pillar in its own right — it's the in-store counterpart to Pillar 1's Recognise/Convert stages, closing a gap where today's customer-facing site has no staff-side equivalent at all.
+
 The consumer pillar treats **tourists and locals as one funnel**, not two separate journeys: the same discovery, personalization, and loyalty infrastructure serves both, differentiated by signals (geo/IP, purchase history, browse history) rather than by separate site experiences.
 
 **In scope:** the on-site/in-app experience once a visitor has landed (organic, referral, walk-in, or return visit), across all three pillars. **Out of scope:** upstream acquisition channels themselves (SEO, paid media, hotel partnerships) — the site must be *ready* to convert whoever those channels send, but building those channels is not part of this PRD.
@@ -55,14 +57,16 @@ All four KPI families are weighted equally per stakeholder direction — the pro
 LAND → ACQUIRE (segment) → RECOGNISE (identify) → CONVERT (discover→buy) → RETAIN (loyalty→repeat)
 ```
 
-The visitor enters at any point (first-time tourist, first-time local, or returning customer of either type) and the site adapts:
+The visitor enters at any point (first-time tourist, first-time local, or returning customer of either type) and the site adapts. Local vs. tourist classification uses a different signal depending on whether the visitor is a first-time or returning visitor — see the decision logic in §5.1.
 
 | Visitor type | Signal used | Experience adaptation |
 |---|---|---|
-| First-time, anonymous, SG-located | IP/geo = local | Local-relevant occasion groupings (e.g. Newborn & Baby Shower, Sleepovers) |
-| First-time, anonymous, tourist-located (geo/IP = overseas or roaming) | IP/geo = overseas | Tourist-specific discovery: Theme Park Vacation, Family Photoshoot, "shop now / ship later" messaging |
-| Returning, logged in (loyalty account) | Account + purchase/browse history | Personalized recommendations from history first, event-driven second |
-| In-store / pop-up purchaser, later visits online | Loyalty account matched via phone/email at POS | Recognised online with in-store purchase history pre-loaded |
+| Local, first-time | Live geo/IP = Singapore | Local-relevant occasion groupings (e.g. Newborn & Baby Shower, Sleepovers) |
+| Tourist, first-time | Live geo/IP = overseas/roaming | Tourist-specific discovery: Theme Park Vacation, Family Photoshoot, "shop now / ship later" messaging |
+| Local, returning | Logged in + stored profile (ship-to history/residency) = Singapore | Personalized recommendations from purchase/browse history first, local-relevant events second |
+| Tourist, returning | Logged in + stored profile (ship-to history/residency) = overseas | Personalized recommendations from history, framed as "welcome back" with what's new since their last visit |
+| Anonymous, cookie-recognized repeat visit | No account — treated as first-time for local/tourist purposes (live geo/IP), enriched with session-cached recently-viewed/searched items | Same as first-time above, plus session-based content — not full history-driven personalization, since a cookie can't reliably establish identity or location (cleared cookies, incognito, Safari's 7-day storage cap all reset it) |
+| In-store purchaser (One Holland Village), later visits online | Loyalty account matched via phone/email at POS | Recognised online with in-store purchase history pre-loaded |
 
 ---
 
@@ -73,6 +77,12 @@ The visitor enters at any point (first-time tourist, first-time local, or return
 *Scope note: this stage starts the moment a visitor is already on the site — not upstream channel-building.*
 
 - **Geo/IP-based tourist detection** on landing: identify visitor as likely local vs. tourist by IP location and/or device locale, silently — no forced quiz or toggle that adds friction (a manual "I'm visiting Singapore 🏝️" self-declare option should still be available as an override/fallback for accuracy).
+- **Visitor segmentation logic** — four segments, determined in two steps:
+  1. **Returning check**: does the visitor have an account with purchase/browse history? A visitor recognized only by browser cookie (no account) is treated as first-time for segmentation purposes — a cookie can't reliably establish identity or location — but is enriched with session-cached recently-viewed/searched content (see guest session history cache, below).
+  2. **Local vs. tourist check**, using a different signal depending on the answer to step 1:
+     - **First-time (including anonymous cookie-recognized)**: live geo/IP location.
+     - **Returning (logged in with history)**: the stored profile's ship-to country history and residency field (§5.2) — not live geo/IP, since a local customer traveling abroad would otherwise be misclassified as a tourist by live IP alone.
+  - This produces four segments: **Local first-time, Tourist first-time, Local returning, Tourist returning.**
 - **Dynamic hero banner, ranked by visitor signal** (max 3–4 rotating slides — enough to cover the priority list below without becoming a carousel nobody scrolls through):
   - **First-time visitor (no history)**, in priority order:
     1. Upcoming events relevant to detected segment (e.g. Disney Cruise season, D23 — tourist-geo visitors see Theme Park Vacation / Family Photoshoot-flavoured events; local-geo visitors see Newborn / Sleepover-flavoured events)
@@ -80,7 +90,7 @@ The visitor enters at any point (first-time tourist, first-time local, or return
     3. Available pre-order items currently open for the window
     4. Customization pillar banner
   - **Returning guest/member (has history)**, in priority order:
-    1. Personalized cross-sell via recommender engine, using purchase + browse history and profile data
+    1. Personalized cross-sell via recommender engine, using purchase + browse history and profile data — for the **returning tourist** segment specifically, framed as "welcome back" with what's new since their last visit or purchase, since this is a high-value repeat-visit opportunity distinct from a first-time tourist's introduction to the brand
     2. Upcoming events relevant to detected segment (same logic as above)
     3. Available pre-order items currently open for the window
     4. Customization pillar banner
@@ -96,14 +106,14 @@ The visitor enters at any point (first-time tourist, first-time local, or return
 
 This is the connective tissue of the whole engine — without it, tourists who buy in-store are invisible online, and vice versa.
 
-- **Unified customer profile**: one profile per customer spanning online account, in-store POS purchases, and pop-up purchases, keyed on the Smile loyalty account (matched via phone number or email at checkout/POS).
+- **Unified customer profile**: one profile per customer spanning online account and in-store POS purchases (One Holland Village), keyed on the Smile loyalty account (matched via phone number or email at checkout/POS). Includes **ship-to country history and a residency field**, used to classify returning visitors as local vs. tourist for the segmentation logic in §5.1 (in preference to live geo/IP, which is unreliable for a logged-in visitor who happens to be traveling). Pop-up store purchases are out of scope — pop-up inventory is consigned out and isn't reflected in the centralized system, and pop-up purchases don't currently earn loyalty points in the real Elly Rewards program either (§5.4), so there's no basis to sync them into this profile.
 - **Loyalty capture at every channel**:
   - Online: existing account login/signup.
-  - In-store/pop-up POS: staff prompt to capture phone/email at point of sale, syncing into Smile and back into the unified profile.
+  - In-store POS (One Holland Village): staff prompt to capture phone/email at point of sale, syncing into Smile and back into the unified profile.
 - **Cross-channel recognition on return**: a customer who bought in-store, then visits online later (even from a different device, once logged in) sees their in-store purchase reflected in order history and gets recommendations informed by it.
-- **Recognition logic for personalization**:
-  - Returning/logged-in: purchase + browse history first, event-driven (e.g. "Disney Cruise season") second.
-  - Anonymous first-time visitor: event-driven/occasion-based only (no history to draw on).
+- **Recognition logic for personalization** (see full four-segment decision logic in §5.1):
+  - Returning/logged-in: purchase + browse history first, event-driven (e.g. "Disney Cruise season") second — with "welcome back" framing for the returning-tourist segment specifically.
+  - Anonymous first-time (including cookie-recognized repeat visits): event-driven/occasion-based only, enriched with session-cached content where available — no purchase history to draw on.
 - **Prototype KPI hook**: a visible (admin/demo-only) indicator showing "cross-channel match rate" — % of profiles with both online and in-store purchase records — to demonstrate this metric is trackable.
 
 ### 5.3 CONVERT (Discovery → Purchase)
@@ -118,34 +128,38 @@ This is the connective tissue of the whole engine — without it, tourists who b
   - **Prototype demo artwork**: three Singapore-themed Mickey concept designs (heritage/shophouse, Gardens by the Bay, Marina Bay night skyline — see supplied reference images) are to be used as pre-order PDP artwork in the prototype. These are **illustrative concepts only, not Disney-approved final designs** — the prototype must visibly label them as such (e.g. a "Concept design — for prototype illustration only" tag/watermark on the PDP), so nothing in the demo is mistaken for approved production art.
 - **Customization pillar** (new 5th top-level nav pillar, alongside Elly Label, Disney|elly, Shoe Boutique, Gifting Hub):
   - Consolidates "Customization" and "Personalization" into one pillar.
-  - Top-level type filter: Embroidered vs. Iron-on.
-  - Attribute filters: name, initials, thread colour (embroidered only), placement.
+  - Top-level type filter: Embroidered, Iron-on, or **Patch** — the live site's own copy ("personalised with a name, number or patch") confirms patch as a real option missing from the earlier version of this PRD. *Note: it's not confirmed from the site copy alone whether "patch" is a third application technique (alongside embroidered/iron-on) or a distinct decorative element — worth a quick check with the business before the coding AI builds the filter logic; flagged in Open Items.*
+  - Attribute filters: content type (**name, number, or initials** — "number" added to match live-site copy, relevant for jersey-style personalization), thread colour (embroidered only), placement.
 - **Interactive customization configurator** — improves on the current live-site flow, where personalization is a generic text field chosen at checkout after the item is already in the cart, with no visual feedback on what the customer will actually receive. The configurator moves this to the **product page, before add-to-cart**:
-  1. Type selection: Embroidered vs. Iron-on.
+  1. Type selection: Embroidered, Iron-on, or Patch.
   2. Placement selection, shown against that specific product's image — only placements valid for that product are offered (e.g. left chest, full back, sleeve).
-  3. Text entry (name/initials), with live character-count validation matching what the chosen placement/size can accommodate.
+  3. Text entry (name, number, or initials), with live character-count validation matching what the chosen placement/size can accommodate.
   4. Thread colour selection (embroidered only).
   5. **Live preview**: the product image updates to show an approximate rendering of the chosen text, placement, and colour, so the customer sees what they're ordering rather than guessing from a text field.
   - **Unified for customer and staff use**: the same configurator interface is usable both by a customer self-serve online, and by a sales assistant on a tablet/POS in-store — replacing whatever manual or ad hoc process currently captures in-store customization orders. One interface for both channels means staff don't need a separate system to learn, in-store customization orders are captured with the same structured data as online ones, and — per the unified profile in §5.2 — the resulting order feeds into the customer's cross-channel history regardless of which channel it was placed on.
-- **Tourist-specific fulfillment options at checkout** — all three offered, selectable by the customer:
+- **Tourist-specific fulfillment options at checkout** — all offered, selectable by the customer:
   1. **Ship to SG address/hotel** (e.g. before they fly home)
   2. **Ship to home country** (after they've left Singapore)
-  3. **Buy in-store / pop-up** (no shipping; immediate pickup)
+  3. **Buy in-store, pickup at One Holland Village** (no shipping; immediate pickup) — pop-up pickup is excluded, since pop-up stock isn't centrally tracked and online checkout has no way to verify availability there (§5.2, §12).
 - **AOV-boosting cross-sell**: Gifting Hub and Customization surfaced contextually at cart/PDP (e.g. "add a name to this" on a Disney item, or "complete the gift set").
 
 ### 5.4 RETAIN (Loyalty & Repeat)
 
-- **Unified loyalty view**: points/rewards balance in Smile reflects combined online + in-store spend.
-- **Placeholder loyalty rules for prototype** (no real Smile configuration was available — these are illustrative defaults so the coding AI builds correct *mechanics*, not placeholder-shaped UI; replace with actual Smile rules before production):
-  - Earn rate: 1 point per S$1 spent, same rate online and in-store.
-  - Redemption: 100 points = S$5 off, redeemable at checkout above a S$0 minimum, no partial-point redemption.
-  - Sign-up bonus: 100 points on account creation.
-  - Birthday bonus: 50 points, auto-applied in birthday month.
-  - Review bonus: 20 points per verified review submitted (ties into Judge.me, §5.4).
-  - Referral bonus: 100 points once a referred friend completes their first purchase.
-  - Expiry: points expire after 12 months of account inactivity.
-  - Restriction: points cannot be redeemed against Disney Pre-Order items (full-payment-upfront model, tied to MOQ economics in §5.3).
-  - No membership tiers in this phase — single flat program, kept simple for the prototype.
+- **Unified loyalty view**: points/rewards balance in Smile reflects combined online + One Holland Village store spend (pop-up stores are excluded from loyalty capture — see §12 for why).
+- **Real Elly Rewards rules** (confirmed from the live program at theellystore.com/pages/elly-rewards — replaces the earlier placeholder figures in this PRD):
+  - Earn rate: 1 point per S$1 spent on completed orders.
+  - Account creation: 50 points.
+  - Completing your profile: 30 points.
+  - Referral: 100 points once referred; the referred friend also gets 10% off their first order.
+  - Social follows: 10 points each for following on Facebook and Instagram.
+  - Expiry: points expire after 6 months of inactivity — the clock resets on any shop, redemption, or new points earned.
+  - Redemption: points are exchanged for discounts/promotional items via a coupon code; the code is valid 90 days from redemption. Cannot be combined with other discount codes.
+  - Points can currently only be earned via the online store and the physical store at One Holland Village — not via pop-up stores or stockists (Tangs, Motherswork, Takashimaya). Guest checkout does not earn points.
+  - No membership tiers in the current program.
+- **Recommended additions for the prototype** (not part of the real program today — kept separate so nothing here is mistaken for confirmed behaviour; replace or drop before production as the business decides):
+  - Birthday bonus: e.g. 50 points, auto-applied in birthday month.
+  - Review bonus: e.g. 20 points per verified review submitted (ties into Judge.me).
+  - Restriction: points not redeemable against Disney Pre-Order items (full-payment-upfront model, tied to MOQ economics in §5.3).
 - **Post-purchase Klaviyo flows**, upgraded with segment awareness:
   - Tourist segment: post-trip remarketing flow (e.g. "here's what's new for your next SG trip" or restock/new-design alerts timed to next likely visit).
   - Local segment: standard win-back / replenishment flows.
@@ -171,7 +185,7 @@ The catalog spans Disney and non-Disney items across many attributes (product ty
 - **Product type** (romper, tee, dress, shoes, bag)
 - **Age/size**
 - **Colour**
-- **Customization type** (Embroidered vs. Iron-on, within the Customization pillar)
+- **Customization type** (Embroidered, Iron-on, or Patch, within the Customization pillar)
 
 Every product carries multiple tags across these facets so it can appear correctly regardless of which filter or entry point a customer starts from (e.g. a Frozen-embroidered romper surfaces under Disney|elly, under a "Newborn" occasion collection, and under a Frozen character filter — without being listed three separate times).
 
@@ -204,7 +218,7 @@ Every product carries multiple tags across these facets so it can appear correct
   - Returning member → recognised and shown personalized content → checkout with saved details pre-filled.
   - Tourist → detected → relevant fulfillment options surfaced at checkout without extra steps to "find" them.
 - **Must demonstrate, interactively**:
-  1. Landing page adapting visibly between a simulated "tourist" and "local" visitor (toggle for demo purposes, backed by the geo/IP logic described in §5.1), and between "first-time" and "returning/member" hero priority states.
+  1. Landing page adapting visibly across all four segments from §5.1 (local first-time, tourist first-time, local returning, tourist returning) via a demo toggle — including the "welcome back" framing distinct for returning tourists.
   2. Search bar on focus showing recently-searched chips plus segment-appropriate suggestion chips (trending intents for first-time, recommender-based for returning).
   3. Top nav reflecting the pillar/facet taxonomy model (§6): pillars in nav, facets as in-page filters.
   4. Occasion-based browse groupings, each populated with real products.
@@ -229,6 +243,7 @@ Every product carries multiple tags across these facets so it can appear correct
 - Actual Disney licensing application or negotiation for the Elly FurKids category (§11) — no application has been made or is in progress; this is a legal/business-development workstream for the future, not a prototype deliverable.
 - Live Shopify Draft Order/Admin API integration, invoicing, or ERP/ordering-system integration for B2B quotes (§10) — the prototype demonstrates the self-serve quote *experience*, not the backend Shopify wiring, which is a production-build task.
 - Shopify Plus-exclusive B2B features (native company accounts, self-serve Net terms, multi-location profiles) — not required for the RFQ flow as scoped in §10.
+- Workflows 3 (online order fulfillment/warehouse packing), 4 (stock/restocking and CSV-based stock transfer), and 5 (marketing data consolidation across tools) from the business-process review referenced in §12 — reviewed by the stakeholder but explicitly excluded from this project.
 
 ---
 
@@ -272,13 +287,37 @@ A Disney-branded pet products concept (not a Disney-licensed line) — blankets/
 
 ---
 
-## 12. Open Items / Needs From Stakeholder
+## 12. In-Store Staff Assist Interface (Workflows 1 & 2)
+
+**Source and scope.** A business-process review (client session 28 Aug 2026, client comments 4 Sep 2026) documented five current in-store/operational workflows. **This PRD covers only two of them: Workflow 1 (in-store matching family set) and Workflow 2 (the personalisation paper loop, including the 2b form contents and 2c pay-in-store-ship-elsewhere gifting scenario). Workflows 3 (online order fulfillment), 4 (stock/restocking), and 5 (marketing data consolidation) are explicitly excluded from this project's scope** — noted here so nothing from the source review is silently assumed in-scope.
+
+Both in-scope workflows share the same root problem: today's customer-facing site has no staff-side equivalent at all. A retail associate assisting an in-store customer works entirely on paper and phone calls, disconnected from the systems (Shopify, Smile, Klaviyo) that already capture everything on the online side. This section is the in-store counterpart to Pillar 1's Recognise and Convert stages (§§5.2–5.3) — reusing that architecture rather than inventing a parallel one.
+
+- **Device**: a tablet, carried by staff to the customer (not a fixed kiosk or POS-embedded screen) — mirrors the in-store "greet and build the set" pattern from Workflow 1 rather than requiring the customer to come to a counter.
+- **Occasion/context capture at greet**: replaces the current "asked, never recorded" pattern — occasion and travel date captured on the tablet feed directly into the same unified customer profile the online site personalizes from (§5.2), so an in-store conversation can inform what that customer sees online later, and vice versa.
+- **Unified stock check**: a single multi-item lookup (not one lookup per SKU) that checks **in-store inventory first, falling back to warehouse if an item isn't found in-store** — replacing the current pattern of phoning the warehouse because staff don't trust the one-click Shopify view. When an item must come from warehouse, the interface shows an **estimated wait time**, and the customer chooses to either wait in-store or complete payment at POS and have the item delivered later. **Pop-up store stock is explicitly out of scope for this check** — pop-up inventory is consigned out and not reflected in the centralized warehouse system, so there is no live inventory visibility into it to check against.
+- **Lost-sale logging**: when a desired set can't be completed and gets rebuilt around available stock, the originally-desired unavailable item(s) are logged internally for demand/analytics visibility — not surfaced to the customer as a waitlist or back-in-stock signup in this phase. This replaces the current pattern where a rebuilt set is indistinguishable from a fully-satisfied one, so lost demand is invisible.
+- **Personalization, staff-facing**: reuses the same interactive customization configurator already specified for the customer-facing site (§5.3 — type → placement → text entry → thread colour → live preview), now used by staff on the tablet in place of the paper vinyl/embroidery forms. This directly replaces Workflow 2's paper form, whose fields (item, design, name, letter case, thread/vinyl colour, placement, tee number/swoosh length) currently exist nowhere except on paper, joined to the sale only by a handwritten invoice number.
+- **Wearer profile capture**: the personalisation "wearer" (frequently the buyer's child, not the buyer) is captured as a **structured record saved to the customer's account** — name, approximate age/size, relationship to account — rather than a one-off order field. Kept lightweight for the prototype: a simple list under the account view ("Past personalizations for: [names]"), not a full profile-management screen with editing/merging — that's a reasonable production-phase addition, not a prototype requirement.
+- **Approved-character library**: replaces the current ad hoc process (photographing or messaging an unusual name to whichever specialist is on shift, with no record of past decisions). The prototype includes a **searchable, reusable library of approved characters** (Korean, Chinese, English, and any others confirmed per Open Items) paired with font, size, and colour — so a name approved once doesn't need re-approval from scratch, and any staff member (not just whoever is on shift) can confirm a name is supported.
+- **Order handoff to POS**: the tablet builds a Shopify Draft Order carrying the customer's profile, loyalty context, and full personalization/wearer specs — the same pattern already specified for B2B quotes in §10, reused here rather than inventing a second mechanism. Payment itself stays on the existing Shopify POS terminal; the cashier retrieves the draft order (by customer lookup or order reference) to complete the sale, eliminating re-keying and the paper-to-sale link that currently depends on a handwritten invoice number.
+- **Gift from counter (Workflow 2c)**: buy in-store, ship to someone else. Reuses the **same ship-to/recipient-address logic already built for online checkout** (§5.3's fulfillment options), triggered from the tablet rather than redone by hand on paper — closing the gap where staff currently manually replicate the website's stock check, address capture, and shipping choice.
+- **Order status tracking**: personalization order status (received → in production → ready for pickup/shipped) is tracked in the same system and **visible both to staff and to the customer in their account** — extending the unified purchase history view already specified in §8, rather than a status that's invisible once the item leaves the counter.
+- **Explicitly out of scope for this section** (see also §9): any changes to online order fulfillment/warehouse packing (Workflow 3), restocking/CSV stock-transfer logic (Workflow 4), or cross-tool marketing data consolidation (Workflow 5) — all were covered by the source review but are not part of this project.
+- **Prototype demonstration**: a staff-view flow on tablet-sized viewport covering greet/occasion capture → unified stock check with wait-time indicator → configurator-based personalization with wearer capture → approved-character library lookup → draft order handoff → and the resulting order status visible in a customer account view, alongside the gift-from-counter (2c) flow reusing the online ship-to options.
+
+---
+
+## 13. Open Items / Needs From Stakeholder
 
 - [ ] Typical MOQ figures from approved factories, to reflect realistically in the pre-order demand-vs-MOQ demo logic. *(Resolved for prototype purposes — see §5.3, assumption of 1,000 units.)*
-- [ ] Smile loyalty program's current point-earning/redemption rules. *(Resolved for prototype purposes — see §5.4, placeholder rules to be replaced with real Smile configuration before production.)*
+- [x] Smile loyalty program's current point-earning/redemption rules. *(Resolved — see §5.4; confirmed against the real, published Elly Rewards program rather than a placeholder. The additional bonuses/restriction listed separately in §5.4 are recommendations, not confirmed program rules.)*
+- [ ] Confirm whether "Patch" (§5.3/§6) is a third application technique alongside Embroidered/Iron-on, or a distinct decorative element — the live site's copy doesn't make this unambiguous.
 - [ ] Actual bulk/corporate pricing tiers and discount thresholds for B2B (§10) — prototype uses illustrative placeholder tiers.
 - [ ] Whether the business wants to pursue Disney licensing for the pet-products category for Elly FurKids (§11) at all — this is a real open business question (no application has been made or started), not just a prototype placeholder.
 - [ ] Elly FurKids product range and pricing, if different from placeholder assumptions in §11.
+- [ ] Realistic warehouse-to-store transfer times, to reflect accurately in the wait-time estimate shown in §12 — prototype uses a placeholder estimate.
+- [ ] Full list of scripts/languages the approved-character library (§12) should cover beyond Korean, Chinese, and English, if any.
 
 ---
 
