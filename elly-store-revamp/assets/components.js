@@ -217,7 +217,7 @@
       '<div class="m-drawer__top"><a href="index.html" class="brand"><img src="assets/elly-logo.webp" alt="The Elly Store"></a>' +
       '<button type="button" class="icon-btn js-close-drawer" aria-label="Close menu">' + I.close + '</button></div>' +
       '<nav class="m-drawer__nav">' +
-      '<a class="acc-pill" href="account.html">' + I.user + ' Hi, Chloe \u00b7 1,240 pts</a>' +
+      '<a class="acc-pill" href="account.html">' + I.user + ' <span id="mAcctPill">My account \u00b7 sign in (demo accounts)</span></a>' +
       links +
       '<div class="foot-note"><a class="btn btn--ghost btn--sm" href="cart.html">' + I.bag + ' View bag</a>' +
       '<a class="btn btn--coral btn--sm" href="b2b.html">B2B &amp; bulk quotes</a></div>' +
@@ -264,6 +264,10 @@
       '<a class="tool-link" href="cart.html" aria-label="Shopping bag">' +
       '<span class="tool-ico">' + I.bag + '<span class="count" id="bagCount" hidden>0</span></span>' +
       '<span class="tool-lbl">Bag</span></a>' +
+      /* sign-in panel lives INSIDE the tools cluster → it anchors to the
+         account icon's edge, not the full-width header bar, so it stays
+         aligned at every aspect ratio */
+      signPanelHTML() +
       '</div></div>' +
       searchLayerHTML() +
       '</div>' +
@@ -317,6 +321,117 @@
   }
 
   /* ---------- injection ---------- */
+  /* ---------- demo sign-in (PRD §5.1/§5.2 returning-segment signal) ----------
+     Two seeded accounts (assets/accounts.js) stand in for the future unified
+     customer database: Tom Cook (overseas residency → tourist-return) and
+     Chloe Ng (SG residency → local-return). Selection lives here so every
+     page can sign in; the session flag + resolver live in segment.js. */
+  /* panel body is rebuilt on every open — the accounts script loads async and
+     may land after the shell injected, so cards must not be baked in stale.
+     Signed OUT → account pickers. Signed IN → segment status, switch-to-
+     other-account, profile link and Sign out — sign-out is always reachable. */
+  function signCardsHTML() {
+    var list = (window.EL_ACCOUNTS_DAO ? window.EL_ACCOUNTS_DAO.list() : []);
+    var seg = typeof window.ELSEG === 'object' && window.ELSEG ? window.ELSEG : null;
+    var acc = seg && seg.isSignedIn() ? seg.account() : null;
+    var head, intro, chips;
+    if (acc) {
+      var segName = acc.residency === 'overseas' ? 'tourist-return' : 'local-return';
+      head = 'Signed in as ' + esc(acc.name);
+      intro = 'Serving the <b>' + segName + '</b> segment — content follows this profile\u2019s residency (PRD §5.1/§5.2), not your network.';
+      chips = list.filter(function (a) { return a.id !== acc.id; }).map(function (a) {
+        var tag = a.residency === 'overseas' ? 'overseas residency' : 'SG residency';
+        return '<button type="button" class="chip js-signin" data-acc="' + a.id + '">' + a.emoji + ' Switch to <b>' + esc(a.name) + '</b> \u00b7 ' + tag + '</button>';
+      }).join('');
+      chips += '<a class="chip" href="account.html">View full profile \u2192</a>';
+    } else {
+      head = 'Sign in as a demo account';
+      intro = 'Simulates the unified customer database (PRD §5.2). Your choice sets the returning segment: Tom → tourist-return, Chloe → local-return. Real auth replaces this later.';
+      chips = list.map(function (a) {
+        var tag = a.residency === 'overseas' ? 'visiting Singapore · overseas residency' : 'Singapore · SG residency';
+        return '<button type="button" class="chip js-signin" data-acc="' + a.id + '">' + a.emoji + ' <b>' + esc(a.name) + '</b> \u00b7 ' + tag + '</button>';
+      }).join('');
+    }
+    if (!list.length) chips = '<span class="small muted">Loading demo accounts\u2026</span>';
+    /* the Sign out button carries its display inline: signed out → hidden,
+       signed in → visible. (A stylesheet hide + style.display='' can never
+       reveal it — the empty inline style just falls back to the CSS rule.) */
+    return '<b>' + head + '</b>' +
+      '<p class="small muted">' + intro + '</p>' +
+      '<div class="chip-row">' + chips + '</div>' +
+      '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">' +
+      '<button type="button" class="chip chip--coral js-signout"' + (acc ? '' : ' style="display:none"') + '>Sign out</button>' +
+      '<button type="button" class="chip js-signin-close">Close</button>' +
+      '</div>';
+  }
+
+  function signPanelHTML() {
+    return '<div class="sign-panel" id="signPanel" hidden>' +
+      '<div class="sign-panel__card">' + signCardsHTML() + '</div></div>';
+  }
+
+  function syncSignState() {
+    var signedIn = typeof window.ELSEG === 'object' && window.ELSEG ? window.ELSEG.isSignedIn() : false;
+    var acc = signedIn && window.ELSEG ? window.ELSEG.account() : null;
+    var lbl = document.getElementById('signLbl');
+    if (lbl) lbl.textContent = acc ? 'Hi, ' + acc.name.split(' ')[0] : 'Sign In';
+    var pill = document.getElementById('mAcctPill');
+    if (pill) pill.textContent = acc ? 'Hi, ' + acc.name.split(' ')[0] + ' \u00b7 ' + acc.points.toLocaleString() + ' pts' : 'My account \u00b7 sign in (demo accounts)';
+    /* panel content (incl. Sign out visibility) is rebuilt from live state
+       every time the panel OPENS — see the #signLink click handler */
+  }
+
+  document.addEventListener('click', function (e) {
+    var open = e.target.closest('#signLink');
+    if (open) {
+      /* signed out → account picker; signed in → status + switch + sign out.
+         The profile page stays reachable via the panel's "View full profile". */
+      e.preventDefault();
+      var p = document.getElementById('signPanel');
+      if (p) {
+        var card = p.querySelector ? p.querySelector('.sign-panel__card') : null;
+        if (card) card.innerHTML = signCardsHTML(); /* fresh cards at open time */
+        p.hidden = !p.hidden;
+        syncSignState();
+      }
+      return;
+    }
+    var pick = e.target.closest('.js-signin');
+    if (pick && typeof window.ELSEG === 'object' && window.ELSEG) {
+      window.ELSEG.signIn(pick.getAttribute('data-acc'));
+      var panel = document.getElementById('signPanel');
+      if (panel) panel.hidden = true;
+      return;
+    }
+    if (e.target.closest('.js-signout') && typeof window.ELSEG === 'object' && window.ELSEG) {
+      window.ELSEG.signOut();
+      var panel2 = document.getElementById('signPanel');
+      if (panel2) panel2.hidden = true;
+      return;
+    }
+    if (e.target.closest('.js-signin-close')) {
+      var panel3 = document.getElementById('signPanel');
+      if (panel3) panel3.hidden = true;
+      return;
+    }
+    if (!e.target.closest('.sign-panel') && !e.target.closest('#signLink')) {
+      var panel4 = document.getElementById('signPanel');
+      if (panel4 && !panel4.hidden) panel4.hidden = true;
+    }
+  });
+
+  /* dropdown hygiene: close on Escape and on viewport resize — a fixed-
+     position panel can drift from its anchor across breakpoints, so the
+     standard behaviour is to dismiss rather than fight the reflow */
+  function closeSignPanel() {
+    var p = document.getElementById('signPanel');
+    if (p && !p.hidden) p.hidden = true;
+  }
+  window.addEventListener('resize', closeSignPanel);
+  document.addEventListener('keydown', function (e) {
+    if (e && (e.key === 'Escape' || e.key === 'Esc')) closeSignPanel();
+  });
+
   function injectShell(activeKey) {
     if (document.getElementById('siteHead')) return; /* guard double inject */
     var b = document.body;
@@ -331,6 +446,7 @@
     var footWrap = document.createElement('div');
     footWrap.innerHTML = footerHTML() + drawerHTML(activeKey || '') + '<div class="drawer-scrim js-scrim" data-for="drawer"></div><div class="toast" id="toast" role="status"></div>';
     b.appendChild(footWrap);
+    syncSignState();
 
     var fxWrap = document.createElement('div');
     fxWrap.innerHTML = pageFxHTML();
@@ -353,6 +469,9 @@
 
   /* every same-site navigation fades out → brand flash → new page fades in */
   document.addEventListener('click', function (e) {
+    /* the header account tool ALWAYS opens the sign-in/panel dropdown
+       (sign in, switch account, sign out) — never the page transition */
+    if (e.target.closest && e.target.closest('#signLink')) return;
     var a = e.target.closest('a[href]');
     if (!a) return;
     if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
@@ -375,9 +494,40 @@
     return '';
   }
 
+  /* ---------- visitor geo-location (assets/geo.js) ----------
+     Loaded once, after the shell exists: applies the "Delivering to" chip in
+     the announcement bar and preselects the checkout country. Silent —
+     no permission prompts; chain: override → cache → /api/geo (Vercel) →
+     ipwho.is → timezone hint. See assets/geo.js for the full chain. */
+  function loadGeo() {
+    if (typeof window.ELGEO !== 'undefined') return;
+    var s = document.createElement('script');
+    s.src = 'assets/geo.js';
+    s.defer = true;
+    (document.head || document.body).appendChild(s);
+  }
+
+  /* ---------- visitor segments + demo account DB ----------
+     Order matters: accounts.js (the "database") must exist before
+     segment.js resolves the signed-in account. segment.js re-renders
+     the page via EL.applySegmentState when the session/geo changes. */
+  function loadSegments() {
+    if (typeof window.ELSEG !== 'undefined') return;
+    var acc = document.createElement('script');
+    acc.src = 'assets/accounts.js';
+    acc.async = false; /* dynamic scripts ignore defer — async=false keeps execution order */
+    (document.head || document.body).appendChild(acc);
+    var seg = document.createElement('script');
+    seg.src = 'assets/segment.js';
+    seg.async = false;
+    (document.head || document.body).appendChild(seg);
+  }
+
   function boot() {
     if (!document.body) return;
     injectShell(pageToKey());
+    loadGeo();
+    loadSegments();
     /* expose first-run hook for interactions */
     if (typeof window.__ellyShellReady === 'function') window.__ellyShellReady();
   }
@@ -386,5 +536,5 @@
     document.addEventListener('DOMContentLoaded', boot);
   } else boot();
 
-  window.EL = { PILLARS: PILLARS, icons: I, injectShell: injectShell, megaHTML: megaHTML, pageToKey: pageToKey, pageFxHTML: pageFxHTML };
+  window.EL = { PILLARS: PILLARS, icons: I, injectShell: injectShell, megaHTML: megaHTML, pageToKey: pageToKey, pageFxHTML: pageFxHTML, loadGeo: loadGeo, syncSignState: syncSignState, signCardsHTML: signCardsHTML };
 })();

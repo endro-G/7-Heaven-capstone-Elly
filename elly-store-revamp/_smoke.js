@@ -41,7 +41,8 @@ const registry = {};
  '#cfgPlaceWrap', '#cfgTextWrap', '#cfgPatchesWrap', '#cfgPatches', '#cfgPatchSel', '#cfgPatchCount', '#cfgPatchHint',
  '#cfgLang', '#cfgLangWrap', '#cfgLangs', '#cfgFont', '#cfgFontWrap', '#cfgFonts', '#cfgSize', '#cfgSizeWrap', '#cfgSizes',
  '#pdpTitle', '#pdpKicker', '#pdpPrice', '#pdpDesc', '#pdpCrumb', '.pdp', '.pdp__main',
- '#cartLines', '#ckLines', '#cartEmpty', '#cartSubtotal', '#cartTotal', '#shipMeter', '#shipMeterLabel']
+ '#cartLines', '#ckLines', '#cartEmpty', '#cartSubtotal', '#cartTotal', '#shipMeter', '#shipMeterLabel',
+ '#recRail', '#eventsEyebrow', '#mAcctPill', '#signPanel', '.announce__loc', '#f-country']
   .forEach((s) => { registry[s] = makeEl('div'); });
 
 const listeners = {};
@@ -59,7 +60,10 @@ const sandbox = {
   console, setTimeout, clearTimeout, setInterval, clearInterval, document,
   location: { search: '', href: 'http://localhost:4173/index.html' },
   URLSearchParams, Event: function (t) { this.type = t; },
-  requestAnimationFrame: (f) => setTimeout(f, 0), navigator: { userAgent: 'smoke' }
+  requestAnimationFrame: (f) => setTimeout(f, 0), navigator: { userAgent: 'smoke' },
+  /* real browsers have window.addEventListener — the sign panel closes on
+     resize/Escape, so the sandbox needs the stub too */
+  addEventListener: function () {}, removeEventListener: function () {}
 };
 sandbox.window = sandbox;
 sandbox.globalThis = sandbox;
@@ -77,6 +81,34 @@ try {
     { n: 'Beary Personalisable Baby Gift Set', p: 'S$150', k: 'custom', img: 'x.jpg', custom: { methods: ['embroidered'], placements: ['front'] } },
     { n: 'Kids Tee - Doodle Mickey', p: 'S$49.90', k: 'disney', kinds: ['disney', 'custom'], img: 'y.jpg', custom: { methods: ['patches'], patchSet: 'disney', patchCount: 2 } }
   ];
+  /* demo account database + segment resolver load BEFORE app.js so the
+     engine's first render already serves the right segment */
+  load('assets/accounts.js');
+
+  /* geo + segment stubs: fetch is stubbed to reject, so the only working
+     geo tiers are the ?geo= override and the timezone/locale hint —
+     exactly the two paths that must never hit the network */
+  sandbox.sessionStorage = {
+    _m: {},
+    getItem: function (k) { return k in this._m ? this._m[k] : null; },
+    setItem: function (k, v) { this._m[k] = String(v); },
+    removeItem: function (k) { delete this._m[k]; }
+  };
+  var announceLoc = registry['.announce__loc'];
+  announceLoc._html = '<svg></svg> Singapore \u00b7 ships worldwide';
+  announceLoc.textContent = '';
+  var countrySel = registry['#f-country'];
+  countrySel.tagName = 'SELECT';
+  countrySel.options = [
+    { text: 'Australia' }, { text: 'China' }, { text: 'Indonesia' }, { text: 'Japan' },
+    { text: 'Malaysia' }, { text: 'United Kingdom' }, { text: 'United States' },
+    { text: 'Other (20+ countries)' }
+  ];
+  countrySel.selectedIndex = 0;
+  sandbox.fetch = function () { return Promise.reject(new Error('offline in smoke')); };
+
+  load('assets/geo.js');
+  load('assets/segment.js');
   load('assets/app.js');
   check('scripts evaluate fully', typeof sandbox.EL === 'object' && typeof sandbox.EL.ghostCard === 'function');
   (listeners['DOMContentLoaded'] || []).forEach((fn) => fn());
@@ -85,8 +117,9 @@ try {
   check('shell injected', /site-head/.test(all) && /search-field/.test(all));
   check('header tool says Bag', />Bag<\/span>/.test(all));
   check('no header label says Cart', !/>Cart<\/span>/.test(all));
-  check('default signed-in: sign label = Hi, Chloe', (registry['#signLbl'].textContent || '') === 'Hi, Chloe');
-  check('mode default guest = returning', sandbox.EL && typeof sandbox.EL === 'object');
+  check('anonymous default: header says Sign In (no demo bar)', (registry['#signLbl'].textContent || '') === 'Sign In');
+  check('demo bar removed from landing', !/demo-bar/.test(all) && !/Demo&nbsp;controls/.test(all));
+  check('sign-in panel lives in the header (opens under the account tool)', /sign-panel/.test(all) && /js-signin/.test(all) && /tom-cook/.test(all) && /chloe-ng/.test(all));
   check('B2B banner injected (headline + sub-line + CTA)', /b2b-banner/.test(all) && /Bulk and corporate orders, made simple/.test(all) && /Start your quote/.test(all) && /b2b\.html/.test(all));
   check('mobile drawer has B2B link', /b2b\.html">B2B &amp; bulk quotes<\/a>/.test(all));
   registry['#b2bWizard'].hidden = true;
@@ -143,5 +176,69 @@ try {
   check('badge count matches remaining items after remove', sandbox.EL.bagCount() === 1 && String(registry['#bagCount'].textContent) === '1');
   sandbox.EL.populateCartLines();
   check('cart line removed and remaining item shown', (registry['#cartLines']._html || '').indexOf('Kids Tee - Doodle Mickey') < 0 && (registry['#cartLines']._html || '').indexOf('Beary Personalisable Baby Gift Set') >= 0);
+
+  /* ---------- visitor segments (PRD §5.1) — real signals ---------- */
+  check('ELSEG resolver exported', typeof sandbox.ELSEG === 'object' && typeof sandbox.ELSEG.current === 'function');
+  check('account DB: two seeded profiles', sandbox.EL_ACCOUNTS.length === 2);
+  check('Tom Cook = overseas residency (tourist-return)', sandbox.EL_ACCOUNTS[0].residency === 'overseas' && sandbox.EL_ACCOUNTS[0].id === 'tom-cook' && sandbox.EL_ACCOUNTS[0].history.length >= 3);
+  check('Chloe Ng = SG residency (local-return)', sandbox.EL_ACCOUNTS[1].residency === 'SG' && sandbox.EL_ACCOUNTS[1].id === 'chloe-ng' && sandbox.EL_ACCOUNTS[1].history.length >= 3);
+  check('anonymous default = local-first (SG timezone hint)', sandbox.ELSEG.current().key === 'local-first' && sandbox.ELSEG.current().account === null);
+  check('events eyebrow serves local-geo events', (registry['#eventsEyebrow']._html || '').indexOf('local families') >= 0 && (registry['#eventsEyebrow']._html || '').indexOf('Theme Park Vacation') < 0);
+
+  /* live geo flips to overseas (the VPN test path) */
+  sandbox.ELSEG.__setGeoHint({ country: 'US', countryName: 'United States', city: 'New York' });
+  check('overseas live geo = tourist-first (anonymous)', sandbox.ELSEG.current().key === 'tourist-first');
+  check('events eyebrow re-renders with travel events', (registry['#eventsEyebrow']._html || '').indexOf('Theme Park Vacation') >= 0);
+  check('geo tier recorded as hint source', sandbox.ELGEO && typeof sandbox.ELGEO.flagFor === 'function' && sandbox.ELGEO.flagFor('US').length === 4); /* 🇺🇸 = 2 regional indicators */
+
+  /* returning segments via the demo account DB (the future unified profile) */
+  check('signIn accepts a seeded account', sandbox.ELSEG.signIn('tom-cook') === true);
+  check('Tom Cook resolves tourist-return by PROFILE residency', sandbox.ELSEG.current().key === 'tourist-return' && sandbox.ELSEG.current().account.name === 'Tom Cook');
+  check('header greets the signed-in account', (registry['#signLbl'].textContent || '') === 'Hi, Tom');
+  check('drawer pill shows account + points', (registry['#mAcctPill'].textContent || '').indexOf('Tom') >= 0 && (registry['#mAcctPill'].textContent || '').indexOf('310') >= 0);
+  check('returning-tourist gets PRD welcome-back framing', (registry['#recTilesTitle'].textContent || '').indexOf('Welcome back') >= 0);
+  check('rec rail visible for returning visitors', (registry['#recRail'].style.display || '') === '');
+  check('search chips switch to history suggestions', (registry['#suggestLabel'].textContent || '').indexOf('history') >= 0);
+
+  /* PRD §5.1 misclassification rule: a Singaporean on an overseas VPN
+     (live geo = US here) must STAY local — profile residency wins */
+  sandbox.ELSEG.signIn('chloe-ng');
+  check('Chloe stays local-return despite overseas live geo (PRD rule)', sandbox.ELSEG.current().key === 'local-return' && sandbox.ELSEG.current().geo === 'local');
+  check('rec rail title returns to history framing', (registry['#recTilesTitle'].textContent || '').indexOf('Recommended for you') >= 0);
+
+  sandbox.ELSEG.signOut();
+  check('signOut returns to anonymous first-time on live geo', sandbox.ELSEG.isSignedIn() === false && sandbox.ELSEG.current().key === 'tourist-first');
+  check('header reverts to Sign In', (registry['#signLbl'].textContent || '') === 'Sign In');
+
+  /* ---------- visitor geo-location (assets/geo.js) ----------
+     fetch is stubbed to reject, so the only working tiers are the
+     ?geo= override (tier 1) and the timezone/locale hint (tier 5) —
+     exactly the two paths that must never hit the network. */
+  var geoAsyncDone = false;
+  sandbox.location.search = '?geo=US';
+  load('assets/geo.js'); /* fresh module instance picks up the URL override */
+  check('ELGEO exported', typeof sandbox.ELGEO === 'object' && typeof sandbox.ELGEO.get === 'function');
+  check('flagFor builds regional-indicator emoji flags', sandbox.ELGEO.flagFor('SG') === '\uD83C\uDDF8\uD83C\uDDEC' && sandbox.ELGEO.flagFor('US') === '\uD83C\uDDFA\uD83C\uDDF8');
+  check('nameFor maps ISO codes to display names', sandbox.ELGEO.nameFor('JP') === 'Japan');
+  sandbox.ELGEO.get().then(function (g) {
+    geoAsyncDone = true;
+    check('override ?geo=US resolves before any network call', !!g && g.country === 'US' && g.source === 'override');
+    check('announcement chip shows US flag + country', (announceLoc.textContent || '').indexOf('\uD83C\uDDFA\uD83C\uDDF8') >= 0 && (announceLoc.textContent || '').indexOf('United States') >= 0);
+    check('checkout country preselected to United States', countrySel.options[countrySel.selectedIndex].text === 'United States' && countrySel.getAttribute('data-geo-done') === '1');
+    check('SG visitors keep the default (no country preselect)', sandbox.ELGEO.checkoutTarget({ country: 'SG' }) === null);
+    check('unmapped country falls to the Other option', sandbox.ELGEO.checkoutTarget({ country: 'FR' }) === 'Other (20+ countries)');
+    /* clear override + URL param + cache; fetch still rejects → must land on the hint */
+    sandbox.location.search = '';
+    sandbox.sessionStorage.removeItem('elly-geo-override');
+    sandbox.sessionStorage.removeItem('elly-geo');
+    return sandbox.ELGEO.override(null);
+  }).then(function (g2) {
+    check('no override + both network tiers down \u2192 timezone/locale hint', !!g2 && g2.source === 'locale-hint' && g2.country === 'SG');
+  }).catch(function (e) { console.error('GEO ASYNC FAIL:', e && (e.stack || e.message) || e); failed = true; });
 } catch (err) { console.error('UNCAUGHT:', err && err.stack || err); failed = true; }
-process.exit(failed ? 1 : 0);
+/* the geo checks resolve on the promise microtask queue — give them a beat
+   before exiting, otherwise process.exit would cut them off */
+setTimeout(function () {
+  if (!geoAsyncDone) { console.log('  FAIL geo async checks never completed'); failed = true; }
+  process.exit(failed ? 1 : 0);
+}, 250);

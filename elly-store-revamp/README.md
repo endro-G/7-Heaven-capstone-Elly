@@ -70,6 +70,26 @@ node server.js
 
 (No dependencies, no build step. Works in any modern browser.)
 
+Push to GitHub and Vercel picks it up automatically: static pages are served
+as-is and `api/geo.js` deploys as a serverless function (free Hobby plan).
+On Vercel, geo comes from the edge headers via `/api/geo`; on localhost the
+same frontend falls back to the `ipwho.is` free lookup — nothing to configure
+in either environment.
+
+### Testing geo-location
+
+- **Any country, no VPN:** add `?geo=US` (or any ISO code) to any page URL,
+  or run `ELGEO.override('JP')` / `ELGEO.clearOverride()` in the console.
+  The announcement bar chip and checkout preselect update instantly.
+- **Sanity checks:** `await ELGEO.get()` returns `{ country, countryName, city,
+  lat, lng, source }` — `source` tells you which tier resolved it
+  (`override` · `vercel-edge` · `ip-lookup` · `locale-hint`; cached entries
+  keep the source that originally resolved them).
+- **Offline path:** block `ipwho.is` in DevTools (Network request blocking) and
+  reload — the chip must still appear via the timezone hint, never an error.
+- **CI-style:** `node _smoke.js` also exercises the geo module (override tier,
+  chip injection, checkout preselect, fallback to the timezone hint).
+
 ## Pages
 
 | Page | What it shows |
@@ -107,6 +127,14 @@ node server.js
   flash (elly wordmark) and fades the next page in; in-page anchors smooth-scroll.
 - **Landing quick discovery**: the header search (with the PRD recommender panel) and the
   six-category top navigation work on every page, so shoppers reach any category in one click.
+- **Visitor geo-location**: `assets/geo.js` (loaded site-wide by the shell) resolves the
+  visitor's country/city **silently — no GPS, no permission prompts, session-only storage**.
+  Chain: `?geo=XX` dev override → sessionStorage cache → `/api/geo` (Vercel edge headers,
+  serverless function in `api/geo.js`) → `ipwho.is` free IP lookup (localhost path) →
+  timezone/browser-locale hint (offline-safe). It personalises the announcement bar
+  ("🇸🇬 Singapore · ships worldwide") and preselects the checkout country for
+  non-SG visitors (skipped once the shopper touches the field, and for SG where
+  ship-to-Singapore is already the default).
 - **Interactions**: `assets/app.js` (live-rotating hero with dots/arrows + animated
   progress fill on the active dot, search open/close/typing, recommender engine per segment,
   visitor demo toggle, search chips, catalog-populated grids, facets (UI only), tabs, qty

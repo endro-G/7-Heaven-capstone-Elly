@@ -32,6 +32,11 @@
     </ul>
   </section>
 
+  <!-- ============ Segment-flavoured events strip (PRD §5.1 hero priority #2) ============
+       tourist-geo visitors see Theme Park Vacation / Family Photoshoot events;
+       local-geo visitors see Newborn & Baby Shower / Sleepover events. -->
+  <div class="events-eyebrow" aria-live="polite"><div class="wrap"><p id="eventsEyebrow"></p></div></div>
+
   <!-- ============ Recommender tiles (below banner, re-rank per visitor segment) ============ -->
   <section class="block block--tight" data-bump>
     <div class="wrap">
@@ -151,22 +156,11 @@
   </section>
 
   <!-- Demo controls: visitor simulation (prototype-only, PRD §8) -->
-  <div class="demo-bar" aria-label="Prototype demo controls">
-    <div class="wrap demo-bar__in">
-      <span class="db-label"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a7 7 0 0 1 7 7c0 5-7 13-7 13S5 14 5 9a7 7 0 0 1 7-7zm0 9.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z"/></svg> Demo&nbsp;controls&nbsp;<b>(prototype)</b></span>
-      <span class="seg seg--coral" role="group" aria-label="Visitor location">
-        <button type="button" data-seg="elly-geo" data-val="tourist">Tourist 🏝️</button>
-        <button type="button" data-seg="elly-geo" data-val="local" class="is-on">Local 🇸🇬</button>
-      </span>
-      <span class="seg" role="group" aria-label="Visitor history">
-        <button type="button" data-seg="elly-guest" data-val="first" class="is-on">First-time</button>
-        <button type="button" data-seg="elly-guest" data-val="returning">Returning member</button>
-      </span>
-      <button type="button" class="link-arrow" data-selfdeclare style="border-bottom:0;color:var(--blue-deep);font-size:11.5px">I&rsquo;m visiting Singapore 🏝️ <span style="font-size:10px;opacity:.7">(geo override)</span></button>
-      <span class="demo-hint" style="margin-left:auto">Hero, recommender tiles &amp; search suggestions react.</span>
-    </div>
-    <div class="wrap demo-status-wrap"><p class="demo-status"></p></div>
-  </div>
+  <!-- Visitor segmentation is now REAL (PRD §5.1): anonymous visitors are
+       first-time and classified by live geo (Vercel edge / IP → timezone);
+       signed-in accounts are returning and classified by profile residency.
+       Tester overrides: ?geo=US on any URL · ELSEG.debug.setGeo('tourist').
+       The old simulated demo bar was removed (PRD §8 revision). -->
 
   <!-- ============ Recommended for you (returning member only, PRD §5.2) ============ -->
   <section class="block block--tight" id="recRail" style="display:none;border-block:1px solid var(--line-soft)">

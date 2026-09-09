@@ -21,10 +21,21 @@
       <div class="occ-head">
         <div>
           <span class="kicker">Recognise · unified profile (PRD §5.2)</span>
-          <h1 class="sec" style="font-size:clamp(28px,3.4vw,40px)">Hi, Chloe 👋</h1>
-          <p class="small muted" style="margin-top:8px">One profile across online, in-store and pop-up — keyed to your Smile loyalty account (phone / email matched at POS). Demo data shown; structure is the point.</p>
+          <h1 class="sec" style="font-size:clamp(28px,3.4vw,40px)">Hi, <span id="acctHello">guest</span> 👋</h1>
+          <p class="small muted" style="margin-top:8px" id="acctSub">One profile across online, in-store and pop-up — keyed to your Smile loyalty account (phone / email matched at POS). Demo data shown; structure is the point.</p>
         </div>
         <a class="btn btn--ghost btn--sm" href="index.html">Continue shopping</a>
+      </div>
+
+      <!-- signed-out: pick a demo account (drives the returning segment, PRD §5.1) -->
+      <div class="demo-note" id="acctPick" style="margin-bottom:26px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-3.5 4.5-5 8-5s6.5 1.5 8 5"/></svg>
+        <span><b>You're browsing as a first-time visitor.</b> Sign in as a demo account to preview the returning segments (PRD §5.1): each account's <i>residency</i> — not your network — decides local vs tourist.</span>
+        <div class="chip-row" style="margin-top:12px">
+          <button type="button" class="chip js-signin" data-acc="tom-cook">🇦🇺 <b>Tom Cook</b> · visiting Singapore · overseas residency</button>
+          <button type="button" class="chip js-signin" data-acc="chloe-ng">🇸🇬 <b>Chloe Ng</b> · Singapore · SG residency</button>
+          <button type="button" class="chip chip--coral js-signout">Sign out</button>
+        </div>
       </div>
 
       <div class="acct-grid">
@@ -41,17 +52,17 @@
           <div class="stat-tiles" style="margin-bottom:26px">
             <div class="stat-tile">
               <span class="lab">Points balance</span>
-              <span class="val">1,240</span>
-              <p>= S$62 off at checkout · 100 pts = S$5 (Smile placeholder rules — PRD §5.4)</p>
+              <span class="val" id="acctPoints">—</span>
+              <p id="acctPointsNote">= S$— off at checkout · 100 pts = S$5 (Smile placeholder rules — PRD §5.4)</p>
             </div>
             <div class="stat-tile">
               <span class="lab">Orders (lifetime)</span>
-              <span class="val">12</span>
-              <p>8 online · 4 in-store / pop-up — all merged into this one profile</p>
+              <span class="val" id="acctOrders">—</span>
+              <p id="acctOrdersNote">Online + in-store merged into this one profile</p>
             </div>
             <div class="stat-tile">
               <span class="lab">Cross-channel record</span>
-              <span class="val" style="color:var(--blue-deep)">5</span>
+              <span class="val" style="color:var(--blue-deep)" id="acctCross">—</span>
               <p>Purchases matched between store &amp; online — recognition working (demo)</p>
             </div>
           </div>
@@ -59,7 +70,7 @@
           <!-- recognition note -->
           <div class="demo-note" id="recognition">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-3.5 4.5-5 8-5s6.5 1.5 8 5"/></svg>
-            <span><b>Recognition on return:</b> the Frozen dress you bought in-store on 12 Aug appears below in order history and already feeds your recommendations — no re-entry, no paper receipt. (Illustrative demo row.)</span>
+            <span id="acctRecognition"><b>Recognition on return:</b> sign in as a demo account to see how in-store purchases appear here and feed recommendations. (Illustrative demo row.)</span>
           </div>
 
           <!-- unified order history -->
@@ -72,35 +83,8 @@
               <thead>
                 <tr><th>Date</th><th>Item</th><th>Source</th><th>Amount</th><th>Status</th></tr>
               </thead>
-              <tbody>
-                <tr>
-                  <td>12 Aug 2026</td>
-                  <td>Frozen dress · Elsa <span class="muted">(12M)</span></td>
-                  <td><span class="src-tag src-tag--store">● In-store</span></td>
-                  <td>S$89.00</td>
-                  <td>Completed — POS sync via Smile</td>
-                </tr>
-                <tr>
-                  <td>3 Jul 2026</td>
-                  <td>Nautical Mickey tee set <span class="muted">(3–4Y)</span></td>
-                  <td><span class="src-tag src-tag--online">● Online</span></td>
-                  <td>S$64.00</td>
-                  <td>Delivered</td>
-                </tr>
-                <tr>
-                  <td>18 Jun 2026</td>
-                  <td>Keepsake box · personalised <span class="muted">(gift)</span></td>
-                  <td><span class="src-tag src-tag--online">● Online</span></td>
-                  <td>S$120.00</td>
-                  <td>Delivered</td>
-                </tr>
-                <tr>
-                  <td>2 Jun 2026</td>
-                  <td>Pop-up: Stitch romper <span class="muted">(6M)</span></td>
-                  <td><span class="src-tag src-tag--store">● Pop-up</span></td>
-                  <td>S$42.00</td>
-                  <td>Completed — matched by phone</td>
-                </tr>
+              <tbody id="acctOrdersBody">
+                <tr><td colspan="5" class="muted">Sign in as a demo account to populate order history.</td></tr>
               </tbody>
             </table>
           </div>
@@ -113,8 +97,8 @@
               <span class="badge">Structure preview</span>
             </div>
             <div class="summary-card" style="position:static">
-              <div class="s-row"><span>Name</span><b>—</b></div>
-              <div class="s-row"><span>Email / phone</span><b>—</b></div>
+              <div class="s-row"><span>Name</span><b id="acctName">—</b></div>
+              <div class="s-row"><span>Email / phone</span><b id="acctContact">—</b></div>
               <div class="s-row"><span>Loyalty (Smile) link</span><b>Keyed to phone · email matched at POS</b></div>
               <p class="small muted" style="margin-top:12px">Fields populate from the unified profile once accounts + Smile are connected (PRD §5.2).</p>
             </div>
@@ -124,16 +108,12 @@
           <div style="margin-top:34px" id="addresses">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px">
               <h2 style="font-size:24px">Addresses</h2>
-              <span class="badge badge--blue">Seasonal home + SG hotel</span>
+              <span class="badge badge--blue" id="acctAddrBadge">Residency + trip addresses</span>
             </div>
-            <div class="feat-grid" style="grid-template-columns:1fr 1fr">
+            <div class="feat-grid" style="grid-template-columns:1fr 1fr" id="acctAddresses">
               <div class="summary-card" style="position:static">
-                <h3>Singapore (home)</h3>
-                <p class="small muted" style="margin-top:6px">Default shipping — free over S$100.</p>
-              </div>
-              <div class="summary-card" style="position:static">
-                <h3>Hotel / trip address</h3>
-                <p class="small muted" style="margin-top:6px">Tourist fulfilment option — ship to your hotel, or buy in-store (PRD §5.3).</p>
+                <h3>Sign in to see saved addresses</h3>
+                <p class="small muted" style="margin-top:6px">Residency (home) + hotel/trip addresses, from the unified profile (PRD §5.2).</p>
               </div>
             </div>
           </div>
@@ -172,6 +152,92 @@
 </main>
 <script src="assets/components.js"></script>
 <script src="assets/products.js"></script>
+<script src="assets/accounts.js"></script>
 <script src="assets/app.js"></script>
+<script>
+/* account page: render the signed-in profile from the demo account DB
+   (assets/accounts.js) — order history, details, addresses — and re-render
+   when the session changes (sign in/out from any page or the header). */
+(function () {
+  'use strict';
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  function srcTag(src) {
+    var cls = src === 'online' ? 'src-tag--online' : 'src-tag--store';
+    var lbl = src === 'store' ? 'In-store' : src === 'popup' ? 'Pop-up' : 'Online';
+    return '<span class="src-tag ' + cls + '">● ' + lbl + '</span>';
+  }
+  var bound = false;
+  var PICK_SIGNED_OUT =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-3.5 4.5-5 8-5s6.5 1.5 8 5"/></svg>' +
+    '<span><b>You\u2019re browsing as a first-time visitor.</b> Sign in as a demo account to preview the returning segments (PRD §5.1): each account\u2019s <i>residency</i> \u2014 not your network \u2014 decides local vs tourist.</span>' +
+    '<div class="chip-row" style="margin-top:12px">' +
+    '<button type="button" class="chip js-signin" data-acc="tom-cook">🇦🇺 <b>Tom Cook</b> · visiting Singapore · overseas residency</button>' +
+    '<button type="button" class="chip js-signin" data-acc="chloe-ng">🇸🇬 <b>Chloe Ng</b> · Singapore · SG residency</button>' +
+    '</div>';
+  function render() {
+    var hello = $('acctHello');
+    if (!hello || typeof window.ELSEG !== 'object' || !window.ELSEG) return;
+    var acc = window.ELSEG.isSignedIn() ? window.ELSEG.account() : null;
+    var pick = $('acctPick');
+    if (!acc) {
+      hello.textContent = 'guest';
+      if (pick) { pick.style.display = ''; pick.innerHTML = PICK_SIGNED_OUT; }
+      return;
+    }
+    /* signed in: keep the bar visible — switch to the other account,
+       jump to the segment-driven landing page, or sign out */
+    if (pick) {
+      pick.style.display = '';
+      var other = (window.EL_ACCOUNTS_DAO ? window.EL_ACCOUNTS_DAO.list() : []).filter(function (a) { return a.id !== acc.id; })[0];
+      var segName = acc.residency === 'overseas' ? 'tourist-return' : 'local-return';
+      pick.innerHTML =
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-3.5 4.5-5 8-5s6.5 1.5 8 5"/></svg>' +
+        '<span><b>Signed in as ' + esc(acc.name) + '.</b> Serving the <b>' + segName + '</b> segment — content follows this profile\u2019s residency (PRD §5.1/§5.2), not your network.</span>' +
+        '<div class="chip-row" style="margin-top:12px">' +
+        (other ? '<button type="button" class="chip js-signin" data-acc="' + other.id + '">' + other.emoji + ' Switch to <b>' + esc(other.name) + '</b></button>' : '') +
+        '<a class="chip" href="index.html">See the segment content →</a>' +
+        '<button type="button" class="chip chip--coral js-signout">Sign out</button>' +
+        '</div>';
+    }
+    hello.textContent = acc.name.split(' ')[0];
+    var sub = $('acctSub');
+    if (sub) sub.textContent = acc.kids + (acc.lastVisit ? ' \u00b7 Last visited Singapore: ' + acc.lastVisit + '.' : '') + ' One profile across online, in-store and pop-up — keyed to your Smile loyalty account (demo data).';
+    var pts = $('acctPoints'); if (pts) pts.textContent = acc.points.toLocaleString();
+    var pnote = $('acctPointsNote'); if (pnote) pnote.textContent = acc.pointsLabel;
+    var ord = $('acctOrders'); if (ord) ord.textContent = String(acc.history.length);
+    var onote = $('acctOrdersNote'); if (onote) onote.textContent = acc.ordersNote;
+    var cross = $('acctCross'); if (cross) cross.textContent = String(acc.history.length);
+    var rec = $('acctRecognition');
+    if (rec) {
+      var head = acc.recognition.split(':')[0];
+      rec.innerHTML = '<b>' + esc(head) + ':</b>' + esc(acc.recognition.slice(head.length + 1));
+    }
+    var body = $('acctOrdersBody');
+    if (body) {
+      body.innerHTML = acc.history.map(function (h) {
+        return '<tr><td>' + esc(h.date) + '</td><td>' + esc(h.item) + '</td><td>' + srcTag(h.src) + '</td><td>—</td><td>' + esc(h.status) + '</td></tr>';
+      }).join('');
+    }
+    var nm = $('acctName'); if (nm) nm.textContent = acc.name;
+    var ct = $('acctContact'); if (ct) ct.textContent = acc.contact || '—';
+    var ad = $('acctAddresses');
+    if (ad) {
+      ad.innerHTML = acc.addresses.map(function (a) {
+        return '<div class="summary-card" style="position:static"><h3>' + esc(a.title) + '</h3><p class="small muted" style="margin-top:6px">' + esc(a.note) + '</p></div>';
+      }).join('');
+    }
+    var badge = $('acctAddrBadge');
+    if (badge) badge.textContent = acc.residency === 'overseas' ? 'Home country + SG hotel' : 'SG home + trip address';
+  }
+  function boot() {
+    render();
+    if (!bound && typeof window.ELSEG === 'object' && window.ELSEG) { window.ELSEG.onChange(render); bound = true; }
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+  setTimeout(boot, 400); /* segment.js loads deferred — catch it once ready */
+})();
+</script>
 </body>
 </html>

@@ -343,18 +343,28 @@
     }
   });
 
+  /* ---------- visitor segment (PRD §5.1 — real signals, no demo bar) ----------
+     assets/segment.js resolves the four segments: signed-in accounts are
+     RETURNING and classified by their PROFILE residency (Tom = overseas →
+     tourist-return, Chloe = SG → local-return); anonymous visitors are
+     FIRST-TIME and classified by live geo (geo.js chain: Vercel edge →
+     ipwho.is → timezone hint). The engine keys below are unchanged. */
   function demoSeg() {
-    return { geo: ssGet('elly-geo') || 'local', guest: ssGet('elly-guest') || 'returning' };
+    if (typeof window.ELSEG === 'object' && window.ELSEG) return window.ELSEG.current();
+    return { geo: 'local', guest: 'first', account: null, key: 'local-first' };
   }
 
-  /* header account tool: "Sign In" only while signed out; the demo's
-     Returning-member toggle counts as signed in (PRD §5.2 recognition) */
+  /* header account tool: real session — "Sign In" while signed out; the
+     signed-in label comes from the account DB (PRD §5.2 recognition) */
   function updateSignState() {
     var lbl = $('#signLbl');
     if (!lbl) return;
-    var signedIn = demoSeg().guest === 'returning';
-    lbl.textContent = signedIn ? 'Hi, Chloe' : 'Sign In';
-    lbl.title = signedIn ? 'Signed in as Chloe \u00b7 1,240 pts (demo)' : 'Sign in to your account';
+    var s = demoSeg();
+    var signedIn = !!s.account;
+    lbl.textContent = signedIn ? 'Hi, ' + s.account.name.split(' ')[0] : 'Sign In';
+    lbl.title = signedIn
+      ? 'Signed in as ' + s.account.name + ' \u00b7 ' + s.account.points.toLocaleString() + ' pts (demo)'
+      : 'Sign in to your account';
     var link = $('#signLink');
     if (link) link.setAttribute('aria-label', signedIn ? 'Your account' : 'Sign in to your account');
   }
@@ -382,10 +392,9 @@
     .forEach(function (w) { POPULAR_STOP[w] = 1; });
 
   function segSuggestionKey() {
-    var s = demoSeg();
-    /* normalise "returning" (demoSeg default + demo-bar value) to "return",
-       matching the SUGGEST / SEG_PICKS / REC_TILES keys */
-    return s.geo + '-' + (s.guest === 'returning' ? 'return' : s.guest);
+    /* ELSEG already emits the engine keys: local-first · tourist-first ·
+       local-return · tourist-return (matching SUGGEST / SEG_PICKS / REC_TILES) */
+    return (typeof window.ELSEG === 'object' && window.ELSEG) ? window.ELSEG.segKey() : 'local-first';
   }
 
   function renderSearchChips() {
@@ -393,9 +402,9 @@
     var key = segSuggestionKey();
     var label = $('#suggestLabel');
     if (label) {
-      label.textContent = s.guest === 'returning'
-        ? 'Suggested for you \u00b7 based on your purchase & browse history (demo)'
-        : 'Suggested searches \u00b7 ' + (s.geo === 'tourist' ? 'visiting Singapore' : 'local') + ' first-time visitor (demo)';
+      label.textContent = s.account
+        ? 'Suggested for you \u00b7 based on your purchase & browse history'
+        : 'Suggested searches \u00b7 ' + (s.geo === 'tourist' ? 'visiting Singapore' : 'local') + ' first-time visitor';
     }
     var wrap = $('#suggestChips');
     if (wrap) {
@@ -485,26 +494,16 @@
     });
   }
 
-  document.addEventListener('click', function (e) {
-    var seg = e.target.closest('.seg button[data-seg]');
-    if (!seg) return;
-    var group = seg.parentElement;
-    $$('button', group).forEach(function (b) { b.classList.remove('is-on'); });
-    seg.classList.add('is-on');
-    ssSet(seg.getAttribute('data-seg'), seg.getAttribute('data-val'));
-    applyHeroState();
-    toast('Visitor signals updated \u2014 hero, occasion rail & search suggestions now serve the <b>' + demoSeg().geo + ' \u00b7 ' + demoSeg().guest + '</b> experience (demo)');
-  });
-
-  /* self-declare fallback (PRD §5.1) */
+  /* ---------- PRD §5.1 self-declare fallback (no demo bar) ----------
+     Anonymous first-time visitors whose IP misleads them (VPN at home) can
+     still self-select the tourist experience; kept from the PRD's fallback
+     requirement, now wired to the segment resolver instead of the old bar. */
   document.addEventListener('click', function (e) {
     var decl = e.target.closest('[data-selfdeclare]');
     if (!decl) return;
-    ssSet('elly-geo', 'tourist');
-    var segs = $$('.seg button[data-seg="elly-geo"]');
-    segs.forEach(function (b) { b.classList.toggle('is-on', b.getAttribute('data-val') === 'tourist'); });
+    if (typeof window.ELSEG === 'object' && window.ELSEG) window.ELSEG.debug.setGeo('tourist');
     applyHeroState();
-    toast('Got it \u2014 serving the <b>tourist</b> experience \u00b7 I\u2019m visiting Singapore \ud83c\udf34 (demo override)');
+    toast('Got it \u2014 serving the <b>tourist</b> experience \u00b7 I\u2019m visiting Singapore \ud83c\udf34');
   });
 
   /* ---------- Occasion banner (query param) ---------- */
@@ -1899,10 +1898,10 @@
 
   /* --- recommender tiles under the hero (occasion rail) --- */
   var REC_TILES = {
-    'tourist-first': { kicker: 'Recommended for your visit · demo', title: 'What tourists search first', sub: 'Theme-park looks, family photoshoots and gifting lead the list for visitors planning a Singapore trip.' },
-    'local-first': { kicker: 'Popular this week · demo', title: 'What Singapore families are shopping', sub: 'Newborn & baby-shower edits, sibling & twinning sets and sleepover favourites lead for local families.' },
-    'tourist-return': { kicker: 'Recommender · based on your last trip', title: 'Recommended for you', sub: 'Your purchase & browse history re-ranks these occasions — travel edits first, events second.' },
-    'local-return': { kicker: 'Recommender · from your history', title: 'Recommended for you', sub: 'Occasions ranked from your purchase & browse history (incl. in-store records), events second.' }
+    'tourist-first': { kicker: 'Recommended for your visit', title: 'What tourists search first', sub: 'Theme-park looks, family photoshoots and gifting lead the list for visitors planning a Singapore trip.' },
+    'local-first': { kicker: 'Popular this week', title: 'What Singapore families are shopping', sub: 'Newborn & baby-shower edits, sibling & twinning sets and sleepover favourites lead for local families.' },
+    'tourist-return': { kicker: 'Recommender \u00b7 based on your last trip', title: 'Welcome back \u2014 what\u2019s new since your visit', sub: 'Your purchase & browse history re-ranks these occasions, with new designs since your last trip first (PRD §5.1).' },
+    'local-return': { kicker: 'Recommender \u00b7 from your history', title: 'Recommended for you', sub: 'Occasions ranked from your purchase & browse history (incl. in-store records), events second.' }
   };
 
   function updateRecTiles() {
@@ -1910,6 +1909,17 @@
     var k = $('#recTilesKicker'); if (k) k.textContent = c.kicker;
     var t = $('#recTilesTitle'); if (t) t.textContent = c.title;
     var s = $('#recTilesSub'); if (s) s.textContent = c.sub;
+  }
+
+  /* --- segment-flavoured events eyebrow (PRD §5.1 priority #2) ---
+     Events follow the GEO signal: tourist-geo sees travel-flavoured
+     events, local-geo sees local occasion events. */
+  function updateEventsEyebrow() {
+    var el = $('#eventsEyebrow');
+    if (!el) return;
+    el.innerHTML = demoSeg().geo === 'tourist'
+      ? '<b>On during your visit:</b> <a href="disney-elly.html?occasion=Theme%20Park%20Vacation">Theme Park Vacation edit</a><span class="events-eyebrow__sep">\u00b7</span><a href="disney-elly.html?occasion=Family%20Photoshoot">Family Photoshoot slots</a><span class="events-eyebrow__sep">\u00b7</span>Disney Cruise season is coming \u2014 shop now, ship home'
+      : '<b>This month for local families:</b> <a href="gifting-hub.html?occasion=Newborn%20%26%20Baby%20Shower">Newborn &amp; Baby Shower season</a><span class="events-eyebrow__sep">\u00b7</span><a href="elly-label.html?occasion=Pajama%20Party%2FSleepover">Sleepover picks</a><span class="events-eyebrow__sep">\u00b7</span>CNY twinning sets landing soon';
   }
 
   /* --- rotating hero slides (PRD §5.1: max 3–4 per segment) --- */
@@ -2073,20 +2083,25 @@
     startHeroTimer();
   }
 
-  /* overrides the earlier demo implementation */
+  /* visitor-segment changes (sign-in/out, geo resolving late) re-run the
+     page renderer — exposed as EL.applySegmentState for segment.js */
   function applyHeroState() {
     renderHeroSlides();
     renderRecGrid();
     updateRecTiles();
+    updateEventsEyebrow();
+    renderSearchChips(); /* suggestion chips follow the segment too */
     var rec = $('#recRail');
-    if (rec) rec.style.display = demoSeg().guest === 'returning' ? '' : 'none';
+    if (rec) rec.style.display = demoSeg().guest === 'return' ? '' : 'none';
     reorderOccasions(demoSeg().geo);
     fillGrids(); /* re-rank product rails per visitor segment */
     updateSignState();
     updateDemoStatus();
   }
+  window.EL = window.EL || {};
+  window.EL.applySegmentState = applyHeroState;
 
-  /* overrides the earlier demo status copy */
+  /* overrides the earlier demo status copy — now describes the REAL signals */
   function updateDemoStatus() {
     var st = $('.demo-status');
     if (!st) return;
@@ -2094,10 +2109,13 @@
     var txt = {
       'tourist-first': 'Hero: 4 rotating slides (event \u2192 trending \u2192 pre-order \u2192 customization) \u00b7 rail weighted to travel, photoshoot & gifting. Search = trending intents.',
       'local-first': 'Hero: 4 rotating slides (event \u2192 trending \u2192 pre-order \u2192 customization) \u00b7 rail weighted to newborn, twinning, sleepover & siblings. Search = trending intents.',
-      'tourist-return': 'Hero: 4 rotating slides (recommender \u2192 event \u2192 pre-order \u2192 customization) \u00b7 rail weighted to travel. Search = your cross-sell suggestions.',
-      'local-return': 'Hero: 4 rotating slides (recommender \u2192 event \u2192 pre-order \u2192 customization) \u00b7 rail weighted to local occasions. Search = your cross-sell suggestions.'
-    }[s.geo + '-' + s.guest];
-    st.innerHTML = 'Serving: <b>' + (s.geo === 'tourist' ? 'Tourist \u00b7 overseas geo' : 'Local \u00b7 SG geo') + '</b> + <b>' + (s.guest === 'returning' ? 'Returning member (logged in)' : 'First-time (anonymous)') + '</b>. ' + txt;
+      'tourist-return': 'Welcome-back framing for your last-trip history \u00b7 rail weighted to travel + what\u2019s new since your visit. Search = your cross-sell suggestions.',
+      'local-return': 'History-driven recommendations (incl. in-store records) \u00b7 rail weighted to local occasions. Search = your cross-sell suggestions.'
+    }[s.key];
+    var who = s.account
+      ? '<b>' + s.account.name + '</b> \u00b7 ' + (s.account.residency === 'overseas' ? 'overseas residency \u2192 tourist-return' : 'SG residency \u2192 local-return')
+      : '<b>Anonymous \u00b7 first-time</b> \u00b7 live geo = ' + (s.geo === 'tourist' ? 'overseas \u2192 tourist' : 'Singapore \u2192 local');
+    st.innerHTML = 'Serving: ' + who + '. ' + (txt || '');
   }
 
   /* carousel controls: dots + arrows + pause on hover */
@@ -3078,13 +3096,7 @@
     });
     var fopt = $('.fopt input[type="radio"]:checked');
     if (fopt) fopt.dispatchEvent(new Event('change', { bubbles: true }));
-    /* demo seg UI reflect saved state */
-    [['elly-geo', 'local'], ['elly-guest', 'returning']].forEach(function (pair) {
-      var saved = ssGet(pair[0]);
-      $$('.seg button[data-seg="' + pair[0] + '"]').forEach(function (b) {
-        b.classList.toggle('is-on', b.getAttribute('data-val') === (saved || pair[1]));
-      });
-    });
+    /* demo seg UI reflect saved state — demo bar removed; nothing to sync */
     document.body.classList.add('ready');
   }
 
