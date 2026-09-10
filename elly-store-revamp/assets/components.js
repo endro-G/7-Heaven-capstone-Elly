@@ -304,7 +304,7 @@
       '</div>' +
       '</div>' +
       '<div class="foot-sub"><div class="foot-sub__in"><span>\u00a9 2026 The Elly Store \u00b7 Prototype demo \u2014 catalog populated from theellystore.com \u00b7 not a live store</span>' +
-      '<ul><li><a href="#">Terms</a></li><li><a href="#">Privacy</a></li><li><a href="#">Accessibility</a></li><li><a href="admin.html" style="opacity:.7">Demo admin</a></li></ul></div></div>' +
+      '<ul><li><a href="#">Terms</a></li><li><a href="#">Privacy</a></li><li><a href="#">Accessibility</a></li><li><a href="admin.html" style="opacity:.7">Demo admin</a></li><li><a href="staff.html" style="opacity:.7">Staff assist</a></li></ul></div></div>' +
       '</div></footer>';
   }
 
@@ -338,7 +338,7 @@
     if (acc) {
       var segName = acc.residency === 'overseas' ? 'tourist-return' : 'local-return';
       head = 'Signed in as ' + esc(acc.name);
-      intro = 'Serving the <b>' + segName + '</b> segment — content follows this profile\u2019s residency (PRD §5.1/§5.2), not your network.';
+      intro = 'Serving the <b>' + segName + '</b> segment — content follows this profile\u2019s residency, not your network.';
       chips = list.filter(function (a) { return a.id !== acc.id; }).map(function (a) {
         var tag = a.residency === 'overseas' ? 'overseas residency' : 'SG residency';
         return '<button type="button" class="chip js-signin" data-acc="' + a.id + '">' + a.emoji + ' Switch to <b>' + esc(a.name) + '</b> \u00b7 ' + tag + '</button>';
@@ -346,7 +346,7 @@
       chips += '<a class="chip" href="account.html">View full profile \u2192</a>';
     } else {
       head = 'Sign in as a demo account';
-      intro = 'Simulates the unified customer database (PRD §5.2). Your choice sets the returning segment: Tom → tourist-return, Chloe → local-return. Real auth replaces this later.';
+      intro = 'Simulates the unified customer database. Your choice sets the returning segment: Tom → tourist-return, Chloe → local-return.';
       chips = list.map(function (a) {
         var tag = a.residency === 'overseas' ? 'visiting Singapore · overseas residency' : 'Singapore · SG residency';
         return '<button type="button" class="chip js-signin" data-acc="' + a.id + '">' + a.emoji + ' <b>' + esc(a.name) + '</b> \u00b7 ' + tag + '</button>';
@@ -437,8 +437,10 @@
     var b = document.body;
     var headWrap = document.createElement('div');
     /* skip the B2B banner on the B2B page itself — visitors are already there */
-    var onB2B = (b.getAttribute('data-page') || '') === 'b2b';
-    headWrap.innerHTML = (onB2B ? '' : b2bBannerHTML()) + announcementHTML() + headerHTML(activeKey || '');
+    /* skip the B2B banner on the B2B page (visitors are already there) and the
+       staff tablet (a "Start your quote" CTA is noise for shop-floor staff) */
+    var noBanner = (b.getAttribute('data-page') || '') === 'b2b' || (b.getAttribute('data-page') || '') === 'staff';
+    headWrap.innerHTML = (noBanner ? '' : b2bBannerHTML()) + announcementHTML() + headerHTML(activeKey || '');
     /* move EVERY injected child (announcement + <header>) to the top of <body>
        — inserting only headWrap.firstChild used to drop the header entirely */
     while (headWrap.firstChild) b.insertBefore(headWrap.firstChild, b.firstChild);

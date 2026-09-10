@@ -38,7 +38,7 @@
       countryName: 'Australia',
       visitingSG: true,
       points: 310,
-      pointsLabel: '= S$15.50 off at checkout \u00b7 100 pts = S$5 (Smile placeholder rules \u2014 PRD \u00a75.4)',
+      pointsLabel: '= S$15.50 off at checkout \u00b7 100 pts = S$5 (Smile loyalty rules)',
       ordersNote: '3 online \u00b7 1 in-store (One Holland Village, last trip)',
       kids: 'No kids \u2014 shops Disney matching tees for himself and his wife while visiting Singapore',
       lastVisit: 'Aug 2026',
@@ -51,8 +51,8 @@
       ],
       browse: ['Adult Tee - Pastel Mickey Crew', 'Ladies Polo Dress - Nautical Mickey', 'Men\u2019s Polo Tee - Nautical Mickey'],
       addresses: [
-        { title: 'Melbourne, Australia (home)', note: 'Ship-to history \u2014 residency field: overseas (PRD \u00a75.1).' },
-        { title: 'Hotel / trip address \u00b7 Singapore', note: 'Tourist fulfilment option \u2014 ship to your hotel, or buy in-store (PRD \u00a75.3).' }
+        { title: 'Melbourne, Australia (home)', note: 'Ship-to history \u2014 residency field: overseas.' },
+        { title: 'Hotel / trip address \u00b7 Singapore', note: 'Tourist fulfilment option \u2014 ship to your hotel, or buy in-store.' }
       ]
     },
     {
@@ -64,7 +64,7 @@
       countryName: 'Singapore',
       visitingSG: false,
       points: 1240,
-      pointsLabel: '= S$62 off at checkout \u00b7 100 pts = S$5 (Smile placeholder rules \u2014 PRD \u00a75.4)',
+      pointsLabel: '= S$62 off at checkout \u00b7 100 pts = S$5 (Smile loyalty rules)',
       ordersNote: '8 online \u00b7 4 in-store / pop-up \u2014 all merged into this one profile',
       kids: 'Two daughters \u2014 3 months and 6 years old',
       lastVisit: '',
@@ -78,8 +78,8 @@
       ],
       browse: ['Bamboo 2 Piece Set - Light Pink (Onesie & Sleepsuit)', 'Kids Tee - Doodle Minnie', 'Sleeping Bag - White Floral Bunny (0.2 TOG)'],
       addresses: [
-        { title: 'Singapore (home)', note: 'Default shipping \u2014 free over S$100. Residency field: SG (PRD \u00a75.1).' },
-        { title: 'Hotel / trip address', note: 'Tourist fulfilment option \u2014 ship to your hotel, or buy in-store (PRD \u00a75.3).' }
+        { title: 'Singapore (home)', note: 'Default shipping \u2014 free over S$100. Residency field: SG.' },
+        { title: 'Hotel / trip address', note: 'Tourist fulfilment option \u2014 ship to your hotel, or buy in-store.' }
       ]
     }
   ];

@@ -80,7 +80,7 @@
       '<button type="button" class="quick-add js-add-demo">Add to bag</button></div>' +
       title +
       '<div class="ph-card__meta">' + price + starRow + '</div>' +
-      '<div class="ph-card__meta" style="margin-top:7px"><span class="ph-card__title" style="font-size:11.5px;color:var(--ink-light);font-weight:400">' + label + ' \u2014 placeholder</span></div>' +
+      '<div class="ph-card__meta" style="margin-top:7px"><span class="ph-card__title" style="font-size:11.5px;color:var(--ink-light);font-weight:400">' + label + '</span></div>' +
       '</article>';
   }
 
@@ -180,21 +180,43 @@
     }
   });
 
-  /* ---------- Bag (demo, session-scoped) ----------
-     The header badge count and the cart/checkout lines both come from one source:
-     elly-bag-items (the product names actually added). elly-bag mirrors its length
-     for the badge, so count and contents can never disagree. */
+  /* ---------- Bag (demo, per-account + persistent) ----------
+     ONE source of truth for the header badge, the cart/checkout lines AND the
+     staff tablet's "set": a per-account bag in localStorage (elly-bags), keyed by
+     the signed-in account id (guest = '__guest'). Items are product names, so
+     every surface reads the same list — staff additions for a matched customer
+     appear in that customer's online bag, and online additions show up on the
+     staff set. elly-bag still mirrors the length for the badge. */
+  var BAG_MAP_KEY = 'elly-bags';
+  var BAG_GUEST = '__guest';
+  function lsGet(k) { try { return window.localStorage.getItem(k); } catch (e) { return null; } }
+  function lsSet(k, v) { try { window.localStorage.setItem(k, v); } catch (e) {} }
+  function bagAccountKey() {
+    try {
+      var acc = (typeof window.ELSEG === 'object' && typeof window.ELSEG.current === 'function') ? window.ELSEG.current().account : null;
+      return (acc && acc.id) ? acc.id : BAG_GUEST;
+    } catch (e) { return BAG_GUEST; }
+  }
+  function readBagMap() {
+    try {
+      var raw = lsGet(BAG_MAP_KEY);
+      var map = raw ? JSON.parse(raw) : {};
+      return (map && typeof map === 'object') ? map : {};
+    } catch (e) { return {}; }
+  }
   var CURRENT_PDP = null;
   function bagItems() {
     try {
-      var raw = ssGet('elly-bag-items');
-      var arr = raw ? JSON.parse(raw) : [];
+      var map = readBagMap();
+      var arr = map[bagAccountKey()] || [];
       return Array.isArray(arr) ? arr : [];
     } catch (e) { return []; }
   }
   function bagCount() { return bagItems().length; }
   function saveBagItems(items) {
-    ssSet('elly-bag-items', JSON.stringify(items));
+    var map = readBagMap();
+    map[bagAccountKey()] = items;
+    lsSet(BAG_MAP_KEY, JSON.stringify(map));
     var n = items.length;
     ssSet('elly-bag', n);
     var c = $('#bagCount');
@@ -1005,7 +1027,7 @@
      Every product tagged b2b.available surfaces here with its unit price and size
      run; B2B-only items (adult/varsity tees) live in the same database but are
      excluded from consumer browsing (PRD §10: same catalog, B2B-eligible subset). */
-  var B2B_KIND_LABEL = { elly: 'Elly Label', disney: 'Disney | elly', custom: 'Customization', gift: 'Gifting Hub' };
+  var B2B_KIND_LABEL = { elly: 'Elly Label', disney: 'Disney | elly', custom: 'Customization', gift: 'Gifting Hub', furkids: 'Elly FurKids' };
   var B2B_ITEMS = [];
   ALL_PRODUCTS.forEach(function (p) {
     if (!p.b2b || !p.b2b.available) return;
@@ -1123,7 +1145,7 @@
   /* ---- step-2 dropdown rows: one item per row, options appear under the selected item ---- */
   function b2bSelectOptionsHTML() {
     var out = '<option value="">Choose an item…</option>';
-    ['elly', 'disney', 'custom', 'gift'].forEach(function (kind) {
+    ['elly', 'disney', 'custom', 'gift', 'furkids'].forEach(function (kind) {
       var group = [];
       B2B_ITEMS.forEach(function (it, i) {
         if (it.kind !== kind) return;
@@ -1900,7 +1922,7 @@
   var REC_TILES = {
     'tourist-first': { kicker: 'Recommended for your visit', title: 'What tourists search first', sub: 'Theme-park looks, family photoshoots and gifting lead the list for visitors planning a Singapore trip.' },
     'local-first': { kicker: 'Popular this week', title: 'What Singapore families are shopping', sub: 'Newborn & baby-shower edits, sibling & twinning sets and sleepover favourites lead for local families.' },
-    'tourist-return': { kicker: 'Recommender \u00b7 based on your last trip', title: 'Welcome back \u2014 what\u2019s new since your visit', sub: 'Your purchase & browse history re-ranks these occasions, with new designs since your last trip first (PRD §5.1).' },
+    'tourist-return': { kicker: 'Recommender \u00b7 based on your last trip', title: 'Welcome back \u2014 what\u2019s new since your visit', sub: 'Your purchase & browse history re-ranks these occasions, with new designs since your last trip first.' },
     'local-return': { kicker: 'Recommender \u00b7 from your history', title: 'Recommended for you', sub: 'Occasions ranked from your purchase & browse history (incl. in-store records), events second.' }
   };
 
@@ -2097,6 +2119,12 @@
     fillGrids(); /* re-rank product rails per visitor segment */
     updateSignState();
     updateDemoStatus();
+    /* the bag + cart follow the signed-in account: segment.js loads as a DYNAMIC
+       script AFTER app.js's first render (and sign-in can happen on the page), so
+       the initial render may show the guest bag. Re-render badge AND lines here —
+       the badge alone updating while the cart lines stay stale was a live bug. */
+    refreshBag();
+    populateCartLines();
   }
   window.EL = window.EL || {};
   window.EL.applySegmentState = applyHeroState;

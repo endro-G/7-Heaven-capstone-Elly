@@ -20,9 +20,9 @@
     <div class="wrap">
       <div class="occ-head">
         <div>
-          <span class="kicker">Recognise · unified profile (PRD §5.2)</span>
+          <span class="kicker">Recognise · unified profile</span>
           <h1 class="sec" style="font-size:clamp(28px,3.4vw,40px)">Hi, <span id="acctHello">guest</span> 👋</h1>
-          <p class="small muted" style="margin-top:8px" id="acctSub">One profile across online, in-store and pop-up — keyed to your Smile loyalty account (phone / email matched at POS). Demo data shown; structure is the point.</p>
+          <p class="small muted" style="margin-top:8px" id="acctSub">One profile across online, in-store and pop-up — keyed to your Smile loyalty account (phone / email matched at POS). Demo data shown.</p>
         </div>
         <a class="btn btn--ghost btn--sm" href="index.html">Continue shopping</a>
       </div>
@@ -30,7 +30,7 @@
       <!-- signed-out: pick a demo account (drives the returning segment, PRD §5.1) -->
       <div class="demo-note" id="acctPick" style="margin-bottom:26px">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-3.5 4.5-5 8-5s6.5 1.5 8 5"/></svg>
-        <span><b>You're browsing as a first-time visitor.</b> Sign in as a demo account to preview the returning segments (PRD §5.1): each account's <i>residency</i> — not your network — decides local vs tourist.</span>
+        <span><b>You're browsing as a first-time visitor.</b> Sign in as a demo account to preview the returning segments: each account's <i>residency</i> — not your network — decides local vs tourist.</span>
         <div class="chip-row" style="margin-top:12px">
           <button type="button" class="chip js-signin" data-acc="tom-cook">🇦🇺 <b>Tom Cook</b> · visiting Singapore · overseas residency</button>
           <button type="button" class="chip js-signin" data-acc="chloe-ng">🇸🇬 <b>Chloe Ng</b> · Singapore · SG residency</button>
@@ -53,7 +53,7 @@
             <div class="stat-tile">
               <span class="lab">Points balance</span>
               <span class="val" id="acctPoints">—</span>
-              <p id="acctPointsNote">= S$— off at checkout · 100 pts = S$5 (Smile placeholder rules — PRD §5.4)</p>
+              <p id="acctPointsNote">= S$— off at checkout · 100 pts = S$5 (Smile loyalty rules)</p>
             </div>
             <div class="stat-tile">
               <span class="lab">Orders (lifetime)</span>
@@ -88,7 +88,21 @@
               </tbody>
             </table>
           </div>
-          <p class="small muted" style="margin-top:10px">Filter by source (online / in-store) arrives with the live Smile + POS sync. Judge.me review prompts are attached to completed rows (PRD §5.4).</p>
+          <p class="small muted" style="margin-top:10px">Filter by source (online / in-store) arrives with the live Smile + POS sync. Review invites attach to completed rows.</p>
+
+          <!-- in-store staff assist orders (PRD §12) -->
+          <div style="margin-top:34px" id="stafforders">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px">
+              <h2 style="font-size:24px">Personalisation orders &amp; wearers</h2>
+              <span class="badge badge--blue">In-store staff assist</span>
+            </div>
+            <div id="acctStaffOrders">
+              <div class="summary-card" style="position:static">
+                <h3>Loading…</h3>
+              </div>
+            </div>
+            <p class="small muted" style="margin-top:10px">Draft orders handed off from the in-store staff tablet appear here with their status — received → in production → ready for pickup/shipped — and the personalisation wearers saved to this account. Demo: create one from the staff tablet (footer link) for this account, then refresh.</p>
+          </div>
 
           <!-- personal details -->
           <div style="margin-top:34px" id="details">
@@ -100,7 +114,7 @@
               <div class="s-row"><span>Name</span><b id="acctName">—</b></div>
               <div class="s-row"><span>Email / phone</span><b id="acctContact">—</b></div>
               <div class="s-row"><span>Loyalty (Smile) link</span><b>Keyed to phone · email matched at POS</b></div>
-              <p class="small muted" style="margin-top:12px">Fields populate from the unified profile once accounts + Smile are connected (PRD §5.2).</p>
+              <p class="small muted" style="margin-top:12px">Fields populate from the unified profile once accounts + Smile are connected.</p>
             </div>
           </div>
 
@@ -113,7 +127,7 @@
             <div class="feat-grid" style="grid-template-columns:1fr 1fr" id="acctAddresses">
               <div class="summary-card" style="position:static">
                 <h3>Sign in to see saved addresses</h3>
-                <p class="small muted" style="margin-top:6px">Residency (home) + hotel/trip addresses, from the unified profile (PRD §5.2).</p>
+                <p class="small muted" style="margin-top:6px">Residency (home) + hotel/trip addresses, from the unified profile.</p>
               </div>
             </div>
           </div>
@@ -122,7 +136,7 @@
           <div style="margin-top:34px" id="rewards">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px">
               <h2 style="font-size:24px">Rewards &amp; points</h2>
-              <span class="badge badge--blue">Smile loyalty · placeholder rules</span>
+              <span class="badge badge--blue">Smile loyalty</span>
             </div>
             <div class="feat-grid" style="grid-template-columns:1fr 1fr">
               <div class="summary-card" style="position:static">
@@ -130,7 +144,7 @@
                 <div class="s-row"><span>S$1 spent (online or in-store)</span><b>1 pt</b></div>
                 <div class="s-row"><span>Account sign-up bonus</span><b>100 pts</b></div>
                 <div class="s-row"><span>Birthday month bonus</span><b>50 pts</b></div>
-                <div class="s-row"><span>Verified review (Judge.me)</span><b>20 pts</b></div>
+                <div class="s-row"><span>Verified review</span><b>20 pts</b></div>
                 <div class="s-row"><span>Refer a friend who buys</span><b>100 pts</b></div>
                 <p class="small muted" style="margin-top:12px">Points expire after 12 months of inactivity.</p>
               </div>
@@ -154,6 +168,7 @@
 <script src="assets/products.js"></script>
 <script src="assets/accounts.js"></script>
 <script src="assets/app.js"></script>
+<script src="assets/staff.js"></script>
 <script>
 /* account page: render the signed-in profile from the demo account DB
    (assets/accounts.js) — order history, details, addresses — and re-render
@@ -170,7 +185,7 @@
   var bound = false;
   var PICK_SIGNED_OUT =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-3.5 4.5-5 8-5s6.5 1.5 8 5"/></svg>' +
-    '<span><b>You\u2019re browsing as a first-time visitor.</b> Sign in as a demo account to preview the returning segments (PRD §5.1): each account\u2019s <i>residency</i> \u2014 not your network \u2014 decides local vs tourist.</span>' +
+    '<span><b>You\u2019re browsing as a first-time visitor.</b> Sign in as a demo account to preview the returning segments: each account\u2019s <i>residency</i> \u2014 not your network \u2014 decides local vs tourist.</span>' +
     '<div class="chip-row" style="margin-top:12px">' +
     '<button type="button" class="chip js-signin" data-acc="tom-cook">🇦🇺 <b>Tom Cook</b> · visiting Singapore · overseas residency</button>' +
     '<button type="button" class="chip js-signin" data-acc="chloe-ng">🇸🇬 <b>Chloe Ng</b> · Singapore · SG residency</button>' +
@@ -183,6 +198,10 @@
     if (!acc) {
       hello.textContent = 'guest';
       if (pick) { pick.style.display = ''; pick.innerHTML = PICK_SIGNED_OUT; }
+      var staffOrders0 = $('acctStaffOrders');
+      if (staffOrders0 && typeof window.EL_STAFF === 'object' && window.EL_STAFF.accountOrdersHTML) {
+        staffOrders0.innerHTML = '<div class="summary-card" style="position:static"><h3>Sign in to see staff-assisted orders</h3><p class="small muted" style="margin-top:6px">Draft orders handed off from the in-store staff tablet appear here per account, with their status and wearer personalisations.</p></div>';
+      }
       return;
     }
     /* signed in: keep the bar visible — switch to the other account,
@@ -193,7 +212,7 @@
       var segName = acc.residency === 'overseas' ? 'tourist-return' : 'local-return';
       pick.innerHTML =
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-3.5 4.5-5 8-5s6.5 1.5 8 5"/></svg>' +
-        '<span><b>Signed in as ' + esc(acc.name) + '.</b> Serving the <b>' + segName + '</b> segment — content follows this profile\u2019s residency (PRD §5.1/§5.2), not your network.</span>' +
+        '<span><b>Signed in as ' + esc(acc.name) + '.</b> Serving the <b>' + segName + '</b> segment — content follows this profile\u2019s residency, not your network.</span>' +
         '<div class="chip-row" style="margin-top:12px">' +
         (other ? '<button type="button" class="chip js-signin" data-acc="' + other.id + '">' + other.emoji + ' Switch to <b>' + esc(other.name) + '</b></button>' : '') +
         '<a class="chip" href="index.html">See the segment content →</a>' +
@@ -229,6 +248,11 @@
     }
     var badge = $('acctAddrBadge');
     if (badge) badge.textContent = acc.residency === 'overseas' ? 'Home country + SG hotel' : 'SG home + trip address';
+    /* staff-assist orders: status ladder + wearers from the in-store tablet (PRD §12) */
+    var staffOrders = $('acctStaffOrders');
+    if (staffOrders && typeof window.EL_STAFF === 'object' && window.EL_STAFF.accountOrdersHTML) {
+      staffOrders.innerHTML = window.EL_STAFF.accountOrdersHTML(acc ? acc.id : '');
+    }
   }
   function boot() {
     render();

@@ -103,7 +103,8 @@ in either environment.
 | `pdp.html` | Product detail with the **personalisation configurator** (embroidered initial — font/size/language/thread/placement; iron-on patches — up to 3, pre-set spots) + sizes, qty, add-to-bag demo, accordions, cross-sell |
 | `cart.html` / `checkout.html` | Bag + checkout with **all 3 tourist fulfilment options** (ship to SG/hotel · ship home · buy in-store/pop-up) |
 | `b2b.html` | B2B landing (use-case cards) → 5-step RFQ: order type/date → **item rows with a product dropdown** (sizes + decoration options appear under the selected item; add/remove rows) → artwork/shipping → your details → **review & confirm** (the validated details are frozen and echoed back; Request and printable Download live on this step) → two-stage confirmation + printable quote sheet |
-| `account.html` | Unified profile: in-store + online order history merged, loyalty points (Smile placeholder rules) |
+| `account.html` | Unified profile: in-store + online order history merged, loyalty points (Smile placeholder rules), and **Personalisation orders & wearers** fed by the staff tablet (PRD §12) |
+| `staff.html` | **In-store staff assist tablet (PRD §12)**: a 4-stage loop — greet/occasion capture → **build the set** (search the catalog → tap a result to show the item photo for customer confirmation → add; the basket mixes personalisable and plain items, and each eligible item opens the configurator in a slide-over drawer with its own name, placement, font, colour **and wearer**, PRD §12; **the set is the matched customer's bag** — ONE store with the online site (per-account, localStorage): items added online show up on the staff tablet, staff additions land in the customer's bag, switching customers swaps sets, and walk-in/new customers start empty) → fulfilment (pickup or gift-from-counter reusing checkout ship-to) → draft-order handoff to POS. Stock is two-tier: **One Holland Village first** (the shelf carries the popular edit in sufficient quantity, ~35% of sales) with **warehouse fallback** (more SKUs popular + niche, larger quantities, ~65% of sales are online; wait-time estimate, pop-up excluded, lost-sale logging). The left rail is clickable to jump between stages, and the order-status ladder tracks back in the customer's account |
 | `admin.html` | Demo dashboard: 3 KPI families + interactive **demand vs MOQ** per Pre-Order design |
 
 ## Brand system (from live theellystore.com)
@@ -154,3 +155,6 @@ in either environment.
 - Wire the reserved third-party hooks: Smile loyalty + POS sync, Klaviyo flows, Judge.me
   reviews, live payments, and fill Pre-Order PDP pricing.
 - Swap B2B illustrative decoration add-ons / tier discounts for confirmed quote pricing.
+- Replace the staff tablet's placeholder inventory + wait times (PRD §12 Open Items) with
+  real warehouse-to-store transfer data, and swap the sessionStorage draft-order store
+  for the Shopify Draft Order API (same pattern as the B2B quote flow, §10).

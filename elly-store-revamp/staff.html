@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Staff Assist — In-Store | The Elly Store</title>
+<meta name="description" content="In-store staff assist tablet interface — greet/occasion capture, catalog search with photo confirm, build-the-set basket with per-item personalisation, approved-character library, draft order handoff.">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin">
+<link href="https://fonts.googleapis.com/css2?family=Ovo&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Parisienne&family=Cormorant+Garamond:wght@400;500;600&family=Cinzel:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body data-page="staff">
+<main id="content">
+
+  <div class="wrap" style="padding-block:10px 0"><nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">Home</a><span class="sep">/</span><span aria-current="page">Staff assist</span></nav>
+    <span class="badge badge--demo" style="margin-top:8px">Demo — order handoff is illustrative</span>
+  </div>
+
+  <section class="block block--tight" data-bump>
+    <div class="wrap staff-wrap" id="staffApp">
+
+      <!-- step rail — click any stage to jump straight to it (or use Back/Continue) -->
+      <aside class="staff-rail" aria-label="Staff flow steps">
+        <button type="button" class="staff-rail__step is-on" data-step="1"><span class="no">01</span><b>Greet &amp; occasion</b><span class="muted">capture context at greet</span></button>
+        <button type="button" class="staff-rail__step" data-step="2"><span class="no">02</span><b>Build the set</b><span class="muted">search · confirm · personalise</span></button>
+        <button type="button" class="staff-rail__step" data-step="3"><span class="no">03</span><b>Fulfilment</b><span class="muted">pickup or gift from counter</span></button>
+        <button type="button" class="staff-rail__step" data-step="4"><span class="no">04</span><b>Hand to POS</b><span class="muted">draft order · status tracks</span></button>
+      </aside>
+
+      <div class="staff-main">
+
+        <!-- ============ STEP 1 · greet & occasion capture ============ -->
+        <section class="staff-step" data-step="1">
+          <div class="staff-step__head">
+            <span class="kicker kicker--coral">Step 1 · Greet</span>
+            <h2 class="sec" style="font-size:clamp(22px,2.6vw,30px)">Occasion &amp; context at greet</h2>
+            <p class="small muted">Replaces the &ldquo;asked, never recorded&rdquo; paper form — the occasion and travel date feed the same unified profile the online site personalises from.</p>
+          </div>
+
+          <div class="staff-card">
+            <span class="opt-label">Find the customer</span>
+            <div class="staff-search-row">
+              <input type="search" id="staffCustInput" class="cfg-text" placeholder="Name, country or email…" autocomplete="off" aria-label="Search customers">
+              <button type="button" class="btn btn--blue btn--sm" onclick="document.getElementById('staffCustInput').dispatchEvent(new Event('input',{bubbles:true}))">Search</button>
+              <button type="button" class="chip" id="staffWalkIn">Walk-in / new customer</button>
+            </div>
+            <div id="staffCustResults" style="margin-top:10px"></div>
+            <p class="small muted" style="margin-top:10px">Matched via the demo customer database — the future unified profile keyed on Smile (phone/email matched at POS).</p>
+          </div>
+
+          <div class="staff-card">
+            <span class="opt-label">Occasion</span>
+            <select id="staffOccasion" class="cfg-text">
+              <option value="">Select occasion…</option>
+              <option>Newborn &amp; Baby Shower</option>
+              <option>Birthday</option>
+              <option>Sleepover / Pajama Party</option>
+              <option>Theme Park Vacation</option>
+              <option>Family Photoshoot</option>
+              <option>Holiday Gift</option>
+              <option>Other</option>
+            </select>
+            <div style="margin-top:12px">
+              <span class="opt-label">Travel / event date (if known)</span>
+              <input type="date" id="staffTravel" class="cfg-text" aria-label="Travel or event date">
+            </div>
+            <p class="small muted" style="margin-top:10px">Captured once here, then used by the recogniser — no re-asking at checkout or on return visits.</p>
+          </div>
+
+          <div class="staff-actions">
+            <button type="button" class="btn btn--coral js-staff-go" data-step="2">Continue to build the set <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h15M13 6l6 6-6 6"/></svg></button>
+          </div>
+        </section>
+
+        <!-- ============ STEP 2 · build the set (search → confirm → add → personalise) ============ -->
+        <section class="staff-step" data-step="2" hidden>
+          <div class="staff-step__head">
+            <span class="kicker kicker--coral">Step 2 · Build the set</span>
+            <h2 class="sec" style="font-size:clamp(22px,2.6vw,30px)">Search it, show it, personalise it — in any order</h2>
+            <p class="small muted">Add as many items as the customer wants, mixing personalisable and plain. Every pick shows the item photo first so you can confirm with the customer. <b>One Holland Village first</b> (popular edit, sufficient qty — ~35% of sales in-store) with <b>warehouse fallback</b> (more SKUs, larger quantities — ~65% online). Personalisable items open the configurator in a side panel; each item keeps its own name, font, colour <i>and wearer</i>.</p>
+          </div>
+
+          <!-- search + photo confirm -->
+          <div class="staff-card">
+            <span class="opt-label">Search the catalog</span>
+            <div class="staff-search-row">
+              <input type="search" id="staffSearch" class="cfg-text" placeholder="Search by name, character or type — e.g. “Doodle Mickey”, “swaddle”, “Pooh”…" autocomplete="off" aria-label="Search the catalog">
+            </div>
+            <div id="staffResults" class="staff-results" style="margin-top:14px"></div>
+            <div id="staffConfirm" class="staff-confirm" hidden></div>
+            <p class="small muted" style="margin-top:12px"><b style="color:var(--blue-deep)">Pop-up stores are excluded</b> — consigned inventory isn&rsquo;t in the centralized warehouse view. Warehouse wait times are estimates.</p>
+          </div>
+
+          <!-- the set (basket) -->
+          <div class="staff-card">
+            <div class="s-row" style="margin-bottom:4px">
+              <span class="opt-label" style="margin:0">The set</span>
+              <span class="small muted" id="stockSummary"></span>
+            </div>
+            <div id="staffBasket" style="margin-top:12px"></div>
+            <div class="staff-empty" id="basketEmpty">
+              <p class="small muted">Nothing added yet — search above, confirm the photo with the customer, then “Add to set”. The set belongs to the matched customer: switch customers on step 1 and this refreshes to their saved set (walk-in/new customers start empty).</p>
+            </div>
+          </div>
+
+          <div class="staff-actions">
+            <button type="button" class="btn btn--ghost js-staff-go" data-step="1">← Back</button>
+            <button type="button" class="btn btn--coral js-staff-go" data-step="3">Continue to fulfilment <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h15M13 6l6 6-6 6"/></svg></button>
+          </div>
+        </section>
+
+        <!-- ============ STEP 3 · fulfilment (incl. gift from counter · 2c) ============ -->
+        <section class="staff-step" data-step="3" hidden>
+          <div class="staff-step__head">
+            <span class="kicker kicker--coral">Step 3 · Fulfilment</span>
+            <h2 class="sec" style="font-size:clamp(22px,2.6vw,30px)">Pickup or ship it for them</h2>
+            <p class="small muted">Gift-from-counter reuses the same ship-to options as online checkout — no manual re-capture of address and shipping choice.</p>
+          </div>
+
+          <div class="fopts" role="radiogroup" aria-label="Fulfilment option">
+            <div>
+              <label class="fopt is-on">
+                <input type="radio" name="staffFulfil" value="pickup" checked>
+                <span style="flex:1"><b>Buy in-store, pickup at One Holland Village</b><span>No shipping — the set is picked up today (or when the warehouse items arrive).</span></span>
+                <span class="ship-tag"><span class="badge">Free · immediate</span></span>
+              </label>
+              <div class="collapse"></div>
+            </div>
+            <div>
+              <label class="fopt">
+                <input type="radio" name="staffFulfil" value="gift">
+                <span style="flex:1"><b>Gift from counter — ship to someone else</b><span>Buy in-store, ship to a recipient: same ship-to options as online checkout.</span></span>
+                <span class="ship-tag"><span class="badge">Shipping applies</span></span>
+              </label>
+              <div class="collapse" id="staffGiftPanel" hidden>
+                <div class="form-grid" style="margin-top:16px">
+                  <div class="field"><label for="staffGiftName">Recipient name <b>*</b></label><input id="staffGiftName" class="cfg-text" type="text" placeholder="Full name"></div>
+                  <div class="field"><label for="staffShipTo">Ship to</label>
+                    <select id="staffShipTo" class="cfg-text">
+                      <option value="SG address / hotel">SG address / hotel (before they fly home)</option>
+                      <option value="recipient home country">Recipient home country (after the trip)</option>
+                    </select>
+                  </div>
+                  <div class="field full"><label for="staffGiftAddr">Street address <b>*</b></label><input id="staffGiftAddr" class="cfg-text" type="text" placeholder="Block, street, unit"></div>
+                  <div class="field"><label for="staffGiftPostal">Postal / ZIP <b>*</b></label><input id="staffGiftPostal" class="cfg-text" type="text" placeholder="123456"></div>
+                  <div class="field"><label for="staffGiftNote">Note / occasion tag</label><input id="staffGiftNote" class="cfg-text" type="text" placeholder="e.g. From grandma"></div>
+                </div>
+                <p class="small muted" style="margin-top:12px">Same ship-to/recipient logic as online checkout — captured here instead of on paper.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="staff-actions">
+            <button type="button" class="btn btn--ghost js-staff-go" data-step="2">← Back</button>
+            <button type="button" class="btn btn--coral js-staff-go" data-step="4">Review draft order <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h15M13 6l6 6-6 6"/></svg></button>
+          </div>
+        </section>
+
+        <!-- ============ STEP 4 · draft order review & handoff ============ -->
+        <section class="staff-step" data-step="4" hidden>
+          <div class="staff-step__head">
+            <span class="kicker kicker--coral">Step 4 · Hand to POS</span>
+            <h2 class="sec" style="font-size:clamp(22px,2.6vw,30px)">Draft order review</h2>
+            <p class="small muted">The tablet prepares a draft order carrying the customer&rsquo;s profile, loyalty context and full per-item personalisation/wearer specs — the cashier completes payment on the existing POS terminal.</p>
+          </div>
+
+          <div id="draftReview"></div>
+
+          <div class="staff-actions">
+            <button type="button" class="btn btn--ghost js-staff-go" data-step="3">← Back</button>
+            <button type="button" class="btn btn--coral" id="staffHandoff">Hand order to POS <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h15M13 6l6 6-6 6"/></svg></button>
+          </div>
+
+          <div id="handoffResult" style="margin-top:18px"></div>
+        </section>
+
+      </div>
+    </div>
+  </section>
+
+</main>
+
+  <!-- ============ personalisation drawer (slide-over, tablet-fit, no page scroll) ============
+       A DIRECT child of <body>, matching the site's other overlays (mobile drawer, search
+       layer). Inside <main> an ancestor transform/filter could make `position: fixed` anchor
+       to the PAGE instead of the viewport — the wizard would sit at the document top,
+       off-screen once the page is scrolled. The panel scrolls internally (right side). -->
+  <aside class="staff-drawer" id="staffDrawer" hidden aria-hidden="true">
+    <div class="staff-drawer__scrim" id="staffDrawerScrim"></div>
+    <div class="staff-drawer__panel" role="dialog" aria-modal="true" aria-label="Personalise item">
+      <div class="staff-drawer__head">
+        <div style="min-width:0">
+          <span class="kicker kicker--coral">Personalise</span>
+          <h3 id="drawerTitle" style="margin-top:2px;font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Item</h3>
+        </div>
+        <button type="button" class="btn btn--ghost btn--sm" id="drawerClose" aria-label="Close personalisation panel">✕ Close</button>
+      </div>
+
+      <div class="staff-drawer__dots" id="drawerDots" role="tablist" aria-label="Personalisation steps"></div>
+
+      <div class="staff-drawer__body">
+        <!-- mini-step 2 · approved-character library -->
+        <section class="drawer-step" data-step="2" hidden>
+          <span class="opt-label">Pick an approved name</span>
+          <p class="small muted" style="margin-bottom:10px">A name approved once is reusable — paired with its approved font, size and colour. Tap “Use” to apply it.</p>
+          <input type="search" id="charSearch" class="cfg-text" placeholder="Search approved names (EN · KR · CN)…" autocomplete="off" aria-label="Search approved characters">
+          <div id="charResults" style="margin-top:12px"></div>
+          <button type="button" class="btn btn--ghost btn--sm" id="charApprove" style="margin-top:12px">Approve current name into the library</button>
+        </section>
+
+        <!-- mini-step 1 · configurator details (same IDs as pdp.html so app.js drives it identically).
+             The visible step is always the first in view: hidden steps are display:none, so
+             renumbering is enough to make the configurator what staff see on opening. -->
+        <section class="drawer-step drawer-step--cfg" data-step="1">
+          <div class="seg seg--coral" id="cfgViewSeg" aria-label="Configurator view">
+            <button type="button" data-cfgview="customer">Customer</button>
+            <button type="button" class="is-on" data-cfgview="staff">Staff · POS</button>
+          </div>
+          <div class="cfg-staff-note" id="cfgStaffNote" style="margin-top:10px">
+            <b>In-store capture</b> — same configurator on tablet/POS as the website; the order syncs to the customer&rsquo;s unified profile. Demo only.
+          </div>
+
+          <div class="configurator" id="configurator" hidden>
+            <div class="cfg-row">
+              <span class="opt-label">Method <b id="cfgMethod">—</b></span>
+              <div class="cfg-chips" id="cfgMethods"></div>
+            </div>
+            <div class="cfg-row" id="cfgPlaceWrap">
+              <span class="opt-label">Placement <b id="cfgPlacement">—</b></span>
+              <div class="cfg-chips" id="cfgPlacements"></div>
+              <p class="small muted cfg-hint" id="cfgPlaceHint">Pick a placement — only ones that work on this item are offered.</p>
+            </div>
+            <div class="cfg-row" id="cfgTextWrap">
+              <span class="opt-label">Initial / name <b id="cfgChars">0</b></span>
+              <input type="text" class="cfg-text" id="cfgText" placeholder="e.g. Amelia" autocomplete="off" spellcheck="false">
+              <p class="small muted cfg-hint" id="cfgTextHint"></p>
+            </div>
+            <div class="cfg-row" id="cfgLangWrap">
+              <span class="opt-label">Language <b id="cfgLang">—</b></span>
+              <div class="cfg-chips" id="cfgLangs"></div>
+              <p class="small muted cfg-hint">English, 日本語 or 한국어 embroidery — native script keeps its shape.</p>
+            </div>
+            <div class="cfg-row" id="cfgFontWrap">
+              <span class="opt-label">Font type <b id="cfgFont">—</b></span>
+              <div class="cfg-chips cfg-fonts" id="cfgFonts"></div>
+              <p class="small muted cfg-hint">A curated set of embroidery fonts — each chip is set in its own typeface.</p>
+            </div>
+            <div class="cfg-row" id="cfgSizeWrap">
+              <span class="opt-label">Font size <b id="cfgSize">—</b></span>
+              <div class="cfg-chips" id="cfgSizes"></div>
+            </div>
+            <div class="cfg-row cfg-colours" id="cfgColoursWrap">
+              <span class="opt-label">Thread colour <b id="cfgColour">—</b></span>
+              <div class="f-color" id="cfgColours"></div>
+            </div>
+            <div class="cfg-row" id="cfgPatchesWrap" hidden>
+              <span class="opt-label">Iron-on patches <b id="cfgPatchSel">—</b> <em class="cfg-free" id="cfgPatchCount"></em></span>
+              <div class="cfg-chips cfg-patches" id="cfgPatches"></div>
+              <p class="small muted cfg-hint" id="cfgPatchHint"></p>
+            </div>
+            <p class="cfg-summary" id="cfgSummary" style="grid-column:1 / -1">Choose a method, placement and text to preview your personalisation here.</p>
+          </div>
+        </section>
+
+        <!-- mini-step 3 · live preview + wearer + save -->
+        <section class="drawer-step" data-step="3" hidden>
+          <span class="opt-label">Live preview</span>
+          <figure class="livelook" id="livelookStage" hidden>
+            <div class="livelook__wrap" id="livelookArtWrap"></div>
+            <span class="livelook__tag">Rendered preview — final embroidery may vary slightly</span>
+            <figcaption class="livelook__caption"></figcaption>
+          </figure>
+
+          <div class="staff-card" style="margin-top:14px;margin-bottom:0">
+            <span class="kicker kicker--coral" style="margin-bottom:10px">Wearer profile</span>
+            <p class="small muted" style="margin-bottom:12px">Frequently the buyer&rsquo;s child, not the buyer — saved per personalised item, so a twin set keeps two names and two wearers.</p>
+            <div class="form-grid">
+              <div class="field"><label for="wearerName">Name <b>*</b></label><input id="wearerName" class="cfg-text" type="text" placeholder="e.g. Amelia"></div>
+              <div class="field"><label for="wearerAge">Approx. age / size</label><input id="wearerAge" class="cfg-text" type="text" placeholder="e.g. 3Y"></div>
+              <div class="field full"><label for="wearerRel">Relationship to account</label>
+                <select id="wearerRel" class="cfg-text">
+                  <option value="">Select…</option>
+                  <option>Child — daughter</option>
+                  <option>Child — son</option>
+                  <option>Grandchild</option>
+                  <option>Niece / nephew</option>
+                  <option>Self</option>
+                  <option>Other</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="staff-drawer__foot">
+        <button type="button" class="btn btn--ghost" id="drawerPrev">← Back</button>
+        <button type="button" class="btn btn--coral" id="drawerNext">Next</button>
+      </div>
+    </div>
+  </aside>
+
+<script src="assets/components.js"></script>
+<script src="assets/products.js"></script>
+<script src="assets/accounts.js"></script>
+<script src="assets/app.js"></script>
+<script src="assets/staff.js"></script>
+</body>
+</html>

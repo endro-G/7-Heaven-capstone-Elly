@@ -42,7 +42,15 @@ const registry = {};
  '#cfgLang', '#cfgLangWrap', '#cfgLangs', '#cfgFont', '#cfgFontWrap', '#cfgFonts', '#cfgSize', '#cfgSizeWrap', '#cfgSizes',
  '#pdpTitle', '#pdpKicker', '#pdpPrice', '#pdpDesc', '#pdpCrumb', '.pdp', '.pdp__main',
  '#cartLines', '#ckLines', '#cartEmpty', '#cartSubtotal', '#cartTotal', '#shipMeter', '#shipMeterLabel',
- '#recRail', '#eventsEyebrow', '#mAcctPill', '#signPanel', '.announce__loc', '#f-country']
+ '#recRail', '#eventsEyebrow', '#mAcctPill', '#signPanel', '.announce__loc', '#f-country',
+ /* in-store staff assist (PRD §12) */
+ '#staffApp', '#staffCustInput', '#staffCustResults', '#staffWalkIn', '#staffOccasion', '#staffTravel',
+ '#staffSearch', '#staffResults', '#staffConfirm', '#confirmSize', '#confirmQty', '#confirmAdd',
+ '#confirmBack', '#confirmLost', '#staffBasket', '#basketEmpty', '#stockSummary',
+ '#staffDrawer', '#staffDrawerScrim', '#drawerTitle', '#drawerDots', '#drawerPrev', '#drawerNext', '#drawerClose',
+ '#charSearch', '#charResults', '#charApprove', '#livelookStage', '#livelookArtWrap',
+ '#staffGiftPanel', '#staffShipTo', '#wearerName', '#wearerAge', '#wearerRel',
+ '#draftReview', '#staffHandoff', '#handoffResult', '#orderLadder', '#acctStaffOrders']
   .forEach((s) => { registry[s] = makeEl('div'); });
 
 const listeners = {};
@@ -79,7 +87,8 @@ try {
   load('assets/components.js');
   sandbox.EL_PRODUCTS = [
     { n: 'Beary Personalisable Baby Gift Set', p: 'S$150', k: 'custom', img: 'x.jpg', custom: { methods: ['embroidered'], placements: ['front'] } },
-    { n: 'Kids Tee - Doodle Mickey', p: 'S$49.90', k: 'disney', kinds: ['disney', 'custom'], img: 'y.jpg', custom: { methods: ['patches'], patchSet: 'disney', patchCount: 2 } }
+    { id: 'disney-1', n: 'Kids Tee - Doodle Mickey', p: 'S$49.90', k: 'disney', kinds: ['disney', 'custom'], img: 'y.jpg', tags: ['kids tee', 'mickey', 'doodle'], custom: { methods: ['patches'], patchSet: 'disney', patchCount: 2 } },
+    { id: 'elly-24', n: 'Swim Shorts - Turtles', p: 'S$39.90', k: 'elly', img: 'z.jpg', tags: ['swim shorts', 'turtles'] }
   ];
   /* demo account database + segment resolver load BEFORE app.js so the
      engine's first render already serves the right segment */
@@ -89,6 +98,13 @@ try {
      geo tiers are the ?geo= override and the timezone/locale hint —
      exactly the two paths that must never hit the network */
   sandbox.sessionStorage = {
+    _m: {},
+    getItem: function (k) { return k in this._m ? this._m[k] : null; },
+    setItem: function (k, v) { this._m[k] = String(v); },
+    removeItem: function (k) { delete this._m[k]; }
+  };
+  /* per-account bag lives in localStorage (survives tabs/restarts) */
+  sandbox.localStorage = {
     _m: {},
     getItem: function (k) { return k in this._m ? this._m[k] : null; },
     setItem: function (k, v) { this._m[k] = String(v); },
@@ -110,7 +126,9 @@ try {
   load('assets/geo.js');
   load('assets/segment.js');
   load('assets/app.js');
+  load('assets/staff.js'); /* staff assist registers its own DOMContentLoaded wiring */
   check('scripts evaluate fully', typeof sandbox.EL === 'object' && typeof sandbox.EL.ghostCard === 'function');
+  check('staff module exports (EL_STAFF + DAO)', typeof sandbox.EL_STAFF === 'object' && typeof sandbox.EL_STAFF_DAO === 'object' && typeof sandbox.EL_STAFF.checkStock === 'function');
   (listeners['DOMContentLoaded'] || []).forEach((fn) => fn());
 
   const all = registry['body'].children.map((c) => c._html || '').join('\n');
@@ -177,6 +195,84 @@ try {
   sandbox.EL.populateCartLines();
   check('cart line removed and remaining item shown', (registry['#cartLines']._html || '').indexOf('Kids Tee - Doodle Mickey') < 0 && (registry['#cartLines']._html || '').indexOf('Beary Personalisable Baby Gift Set') >= 0);
 
+  /* ---------- in-store staff assist (PRD §12) — Workflows 1 & 2 ---------- */
+  check('stock check: in-store item resolves to store', sandbox.EL_STAFF.checkStock('disney-1').loc === 'store');
+  check('stock check: popular edit in-store (Bamboo set)', sandbox.EL_STAFF.checkStock('elly-1').loc === 'store');
+  check('stock check: niche SKU is warehouse-only with wait time', (function () { var s = sandbox.EL_STAFF.checkStock('elly-24'); return s.loc === 'warehouse' && !!s.wait; })());
+  check('stock check: warehouse carries popular + niche SKUs', sandbox.EL_STAFF.checkStock('elly-4').loc === 'warehouse' && sandbox.EL_STAFF.checkStock('disney-6').loc === 'warehouse');
+  check('stock check: warehouse qty exceeds store qty for shared SKUs', (function () { var s = sandbox.EL_STAFF.stockSplit('disney-1'); return s.store > 0 && s.wh > s.store; })());
+  check('stock check: warehouse covers more SKUs than the store edit', (function () {
+    /* store edit is the curated popular list; anything not on it falls back to warehouse */
+    var a = sandbox.EL_STAFF.stockSplit('elly-24'); /* niche swim shorts — not on the shelf */
+    return a.store === 0 && a.wh > 0;
+  })());
+  check('stock check: unavailable item flagged (lost-sale path)', sandbox.EL_STAFF.checkStock('elly-20').loc === 'none');
+  check('stock check: pop-up never offered as a source', ['disney-1', 'elly-24', 'elly-20'].every(function (id) { return sandbox.EL_STAFF.checkStock(id).loc !== 'popup'; }));
+  check('character library: seeded KR/CN/EN entries', sandbox.EL_STAFF.library().length >= 7);
+  check('character library: search filters by script/name', sandbox.EL_STAFF.searchLibrary('KR').length >= 1 && sandbox.EL_STAFF.searchLibrary('美娜').length >= 1);
+  var staffOrder = sandbox.EL_STAFF_DAO.create({
+    customerId: 'tom-cook', customerName: 'Tom Cook', occasion: 'Family Photoshoot',
+    items: [{ name: 'Kids Tee - Doodle Mickey', size: '3Y', qty: 1 }],
+    personalisation: 'Embroidered · Front centre · Amelia',
+    wearer: { name: 'Amelia', ageSize: '3Y', rel: 'Child — daughter' },
+    fulfilment: 'Pick up at One Holland Village'
+  });
+  check('draft order created with OHV ref + received status', /^OHV-\d+$/.test(staffOrder.ref) && staffOrder.status === 'received');
+  check('draft order persisted + readable by ref', sandbox.EL_STAFF_DAO.byRef(staffOrder.ref) !== null);
+  var advancedStaff = sandbox.EL_STAFF_DAO.advance(staffOrder.ref);
+  check('order status advances (received → in production)', advancedStaff && advancedStaff.status === 'in production');
+  var staffAccHTML = sandbox.EL_STAFF.accountOrdersHTML('tom-cook');
+  check('account view: staff order + wearer + status ladder rendered', staffAccHTML.indexOf('Amelia') >= 0 && staffAccHTML.indexOf('in production') >= 0 && staffAccHTML.indexOf(staffOrder.ref) >= 0);
+  check('account view: empty state for an account with no staff orders', sandbox.EL_STAFF.accountOrdersHTML('chloe-ng').indexOf('No staff-assisted orders yet') >= 0);
+
+  /* build-the-set flow: search → photo confirm → per-item personalisation */
+  check('catalog search: finds the Doodle Mickey tee', (function () {
+    var hits = sandbox.EL_STAFF.searchItems('doodle');
+    return hits.some(function (p) { return p.id === 'disney-1'; });
+  })());
+  check('catalog search: finds the niche swim shorts (warehouse item)', (function () {
+    var hits = sandbox.EL_STAFF.searchItems('swim');
+    return hits.some(function (p) { return p.id === 'elly-24'; });
+  })());
+  check('personalisation eligibility: tee yes, swim shorts no', (function () {
+    return sandbox.EL_STAFF.isPersonalisable(sandbox.EL_STAFF.productById('disney-1')) === true &&
+      sandbox.EL_STAFF.isPersonalisable(sandbox.EL_STAFF.productById('elly-24')) === false;
+  })());
+  check('persSummary formats a saved spec for chips/review', sandbox.EL_STAFF.persSummary({ text: 'Amelia', placement: 'left chest', colourName: 'Coral', font: 'serif', fontSize: 'md', language: 'en' }).indexOf('Amelia') >= 0);
+  var perItemOrder = sandbox.EL_STAFF_DAO.create({
+    customerId: 'tom-cook', customerName: 'Tom Cook', occasion: 'Family Photoshoot',
+    items: [
+      { name: 'Kids Tee - Doodle Mickey', size: '3Y', qty: 1, pers: { summary: "'Amelia' · left chest · Coral thread" }, wearer: { name: 'Amelia', ageSize: '3Y', rel: 'Child — daughter' } },
+      { name: 'Adult Tee - Lion City', size: 'M', qty: 1, pers: { summary: "'Olivia' · sleeve · Navy thread" }, wearer: { name: 'Olivia', ageSize: 'M', rel: 'Self' } },
+      { name: 'Swim Shorts - Turtles', size: '4Y', qty: 1 }
+    ],
+    fulfilment: 'Pick up at One Holland Village'
+  });
+  check('draft order stores per-item personalisation specs', perItemOrder.items.length === 3 && perItemOrder.items[0].pers && perItemOrder.items[0].pers.summary.indexOf('Amelia') >= 0 && perItemOrder.items[2].pers === null);
+  var perItemHTML = sandbox.EL_STAFF.accountOrdersHTML('tom-cook');
+  check('account view: each personalised item listed with its own name + wearer', perItemHTML.indexOf('Amelia') >= 0 && perItemHTML.indexOf('Olivia') >= 0 && perItemHTML.indexOf('2 personalised') >= 0 && perItemHTML.indexOf('wearer Amelia') >= 0);
+
+  /* per-customer set = the customer's bag: the staff set and the online bag
+     are ONE shared localStorage store (elly-bags), keyed by account id */
+  check('per-customer bag: saves an item for an account and restores it', (function () {
+    sandbox.EL_STAFF.bag.save('tom-cook', ['Kids Tee - Doodle Mickey']);
+    var b = sandbox.EL_STAFF.bag.get('tom-cook');
+    return b.length === 1 && b[0] === 'Kids Tee - Doodle Mickey';
+  })());
+  check('per-customer bag: a different customer has an empty set', sandbox.EL_STAFF.bag.get('chloe-ng').length === 0);
+  check('per-customer bag: walk-in / new customer is never persisted', (function () {
+    sandbox.EL_STAFF.bag.save('', ['Swim Shorts - Turtles']);
+    return !('' in sandbox.EL_STAFF.bag.all());
+  })());
+  check('per-customer bag: names materialise into staff rows', (function () {
+    var rows = sandbox.EL_STAFF.rowsFromNames(['Kids Tee - Doodle Mickey']);
+    return rows.length === 1 && rows[0].name === 'Kids Tee - Doodle Mickey' && !!rows[0].img;
+  })());
+  check('per-customer bag: clearing the set empties it for the account', (function () {
+    sandbox.EL_STAFF.bag.clear('tom-cook');
+    return sandbox.EL_STAFF.bag.get('tom-cook').length === 0;
+  })());
+
   /* ---------- visitor segments (PRD §5.1) — real signals ---------- */
   check('ELSEG resolver exported', typeof sandbox.ELSEG === 'object' && typeof sandbox.ELSEG.current === 'function');
   check('account DB: two seeded profiles', sandbox.EL_ACCOUNTS.length === 2);
@@ -192,8 +288,14 @@ try {
   check('geo tier recorded as hint source', sandbox.ELGEO && typeof sandbox.ELGEO.flagFor === 'function' && sandbox.ELGEO.flagFor('US').length === 4); /* 🇺🇸 = 2 regional indicators */
 
   /* returning segments via the demo account DB (the future unified profile) */
+  /* the site bag and the staff set share elly-bags — re-seed Tom's set here (the
+     per-account checks above cleared it) so the sign-in's segment re-render shows
+     it in both the badge and the cart lines */
+  sandbox.EL_STAFF.bag.save('tom-cook', ['Kids Tee - Doodle Mickey']);
   check('signIn accepts a seeded account', sandbox.ELSEG.signIn('tom-cook') === true);
   check('Tom Cook resolves tourist-return by PROFILE residency', sandbox.ELSEG.current().key === 'tourist-return' && sandbox.ELSEG.current().account.name === 'Tom Cook');
+  check('customer bag follows the account: staff set + site bag are one store', sandbox.EL.bagItems().indexOf('Kids Tee - Doodle Mickey') >= 0 && sandbox.EL.bagCount() === 1);
+  check('cart lines follow the account: Toms saved set renders in the cart', (registry['#cartLines']._html || '').indexOf('Kids Tee - Doodle Mickey') >= 0);
   check('header greets the signed-in account', (registry['#signLbl'].textContent || '') === 'Hi, Tom');
   check('drawer pill shows account + points', (registry['#mAcctPill'].textContent || '').indexOf('Tom') >= 0 && (registry['#mAcctPill'].textContent || '').indexOf('310') >= 0);
   check('returning-tourist gets PRD welcome-back framing', (registry['#recTilesTitle'].textContent || '').indexOf('Welcome back') >= 0);
@@ -204,6 +306,7 @@ try {
      (live geo = US here) must STAY local — profile residency wins */
   sandbox.ELSEG.signIn('chloe-ng');
   check('Chloe stays local-return despite overseas live geo (PRD rule)', sandbox.ELSEG.current().key === 'local-return' && sandbox.ELSEG.current().geo === 'local');
+  check('cart lines follow the account: Chloes empty bag clears the cart lines', (registry['#cartLines']._html || '').indexOf('js-cart-line') < 0);
   check('rec rail title returns to history framing', (registry['#recTilesTitle'].textContent || '').indexOf('Recommended for you') >= 0);
 
   sandbox.ELSEG.signOut();
