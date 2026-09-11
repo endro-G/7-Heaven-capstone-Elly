@@ -40,7 +40,7 @@ const registry = {};
  '#cfgMethod', '#cfgPlacement', '#cfgChars', '#cfgColour', '#cfgSummary', '#cfgStaffNote', '#cfgViewSeg', '#cfgPreview',
  '#cfgPlaceWrap', '#cfgTextWrap', '#cfgPatchesWrap', '#cfgPatches', '#cfgPatchSel', '#cfgPatchCount', '#cfgPatchHint',
  '#cfgLang', '#cfgLangWrap', '#cfgLangs', '#cfgFont', '#cfgFontWrap', '#cfgFonts', '#cfgSize', '#cfgSizeWrap', '#cfgSizes',
- '#pdpTitle', '#pdpKicker', '#pdpPrice', '#pdpDesc', '#pdpCrumb', '.pdp', '.pdp__main',
+ '#pdpTitle', '#pdpKicker', '#pdpPrice', '#pdpDesc', '#pdpCrumb', '.pdp', '.pdp__main', '.pdp__gal', '.pdp__thumbs',
  '#cartLines', '#ckLines', '#cartEmpty', '#cartSubtotal', '#cartTotal', '#shipMeter', '#shipMeterLabel',
  '#recRail', '#eventsEyebrow', '#mAcctPill', '#signPanel', '.announce__loc', '#f-country',
  /* in-store staff assist (PRD §12) */
@@ -50,7 +50,11 @@ const registry = {};
  '#staffDrawer', '#staffDrawerScrim', '#drawerTitle', '#drawerDots', '#drawerPrev', '#drawerNext', '#drawerClose',
  '#charSearch', '#charResults', '#charApprove', '#livelookStage', '#livelookArtWrap',
  '#staffGiftPanel', '#staffShipTo', '#wearerName', '#wearerAge', '#wearerRel',
- '#draftReview', '#staffHandoff', '#handoffResult', '#orderLadder', '#acctStaffOrders']
+ '#draftReview', '#staffHandoff', '#handoffResult', '#orderLadder', '#acctStaffOrders',
+ '#viewedRail', '#viewedGrid', '#viewedChipsWrap', '#viewedChips',
+ '#pdpXsellGrid', '#pdpXsellTitle', '#pdpXsellKicker', '#pdpXsellLink', '#pdpXsell',
+ '#pdpViewed', '#pdpViewedGrid', '#pdpViewedKicker', '#pdpViewedTitle',
+ '#cartXsell', '#cartXsellGrid', '#persEditor']
   .forEach((s) => { registry[s] = makeEl('div'); });
 
 const listeners = {};
@@ -88,7 +92,13 @@ try {
   sandbox.EL_PRODUCTS = [
     { n: 'Beary Personalisable Baby Gift Set', p: 'S$150', k: 'custom', img: 'x.jpg', custom: { methods: ['embroidered'], placements: ['front'] } },
     { id: 'disney-1', n: 'Kids Tee - Doodle Mickey', p: 'S$49.90', k: 'disney', kinds: ['disney', 'custom'], img: 'y.jpg', tags: ['kids tee', 'mickey', 'doodle'], custom: { methods: ['patches'], patchSet: 'disney', patchCount: 2 } },
-    { id: 'elly-24', n: 'Swim Shorts - Turtles', p: 'S$39.90', k: 'elly', img: 'z.jpg', tags: ['swim shorts', 'turtles'] }
+    { id: 'elly-24', n: 'Swim Shorts - Turtles', p: 'S$39.90', k: 'elly', img: 'z.jpg', tags: ['swim shorts', 'turtles'] },
+    /* cross-sell fixtures: a same-category tee vs a complementary swim piece, and a
+       pair of pet items that must only ever pair with each other */
+    { id: 'xsell-1', n: 'Kids Tee - Doodle Mickey Twin', p: 'S$45.90', k: 'disney', type: 'Tops & tees', characters: ['Mickey'], int: ['park'], img: 'xs1.jpg' },
+    { id: 'xsell-2', n: 'Mickey Swim Shorts', p: 'S$25.90', k: 'disney', type: 'Swimwear', characters: ['Mickey'], int: ['park'], img: 'xs2.jpg' },
+    { id: 'pet-1', n: 'Pet Bandana - Test Paws', p: 'S$30', k: 'furkids', type: 'Pet apparel', int: ['pets'], img: 'p1.jpg' },
+    { id: 'pet-2', n: 'Pet Scarf - Test Paws', p: 'S$28', k: 'furkids', type: 'Pet apparel', int: ['pets'], img: 'p2.jpg' }
   ];
   /* demo account database + segment resolver load BEFORE app.js so the
      engine's first render already serves the right segment */
@@ -163,8 +173,238 @@ try {
   check('patches-only product: patch picker row visible, text row hidden', registry['#cfgPatchesWrap'].hidden === false && registry['#cfgTextWrap'].hidden === true);
   check('patches-only product: up to 3 free shown', (registry['#cfgPatchCount'].textContent || '') === '0 of 3 free');
   check('patches summary renders picked patches', (sandbox.EL.cfgSummaryText() || '').indexOf('Iron-on patches') >= 0);
+  /* scripts: the approved-character library is KR/CN/EN (PRD §12), so Chinese must be
+     selectable — a name the library approves can never land on the wrong chip */
+  check('embroidery scripts include 中文 (PRD §12: KR / CN / EN)', /中文/.test(registry['#cfgLangs']._html || ''));
+  check('every language id is unique so a stored spec restores exactly one chip', (function () {
+    var ids = sandbox.EL.customLangs.map(function (l) { return l.id; });
+    return ids.length === new Set(ids).size && ids.indexOf('cn') >= 0;
+  })());
+  check('staff character library tags its Chinese entry as cn, not kr', (function () {
+    var src = fs.readFileSync('assets/staff.js', 'utf8');
+    return /script: 'CN', lang: 'cn'/.test(src) && !/script: 'CN', lang: 'kr'/.test(src);
+  })());
+  /* native scripts get a limit that SCALES with the placement instead of a flat 8,
+     so a 12-character blanket corner / keepsake lid keeps its room */
+  check('native-script character limit scales with the placement (no flat ceiling)', (function () {
+    var f = sandbox.EL.cfgLangMaxFor;
+    return f(12, 'kr') === 9 && f(14, 'kr') === 11 && f(10, 'kr') === 8 && f(8, 'kr') === 8 && f(14, 'en') === 14;
+  })());
+  check('native-script limit is never tighter than the 8 the site already shipped', (function () {
+    var f = sandbox.EL.cfgLangMaxFor;
+    return [8, 10, 12, 14].every(function (m) { return f(m, 'kr') >= Math.min(m, 8); });
+  })());
+  check('native-script limit never exceeds its placement booking', (function () {
+    var f = sandbox.EL.cfgLangMaxFor;
+    return [8, 10, 12, 14].every(function (m) { return f(m, 'cn') <= m && f(m, 'jp') <= m; });
+  })());
+  /* B2B: decoration is item-aware — the same data the consumer configurator uses */
+  check('B2B capability: garment gets the bulk methods, placements include full back', (function () {
+    var cap = sandbox.EL.b2bCapability({ type: 'Tops & tees' });
+    return cap.deco.join(',') === 'Embroidery,Iron-on,Screen print,DTG' && cap.places.indexOf('full back') >= 0 && cap.diagram === 'tee';
+  })());
+  check('B2B capability: a keepsake box takes lid embroidery only', (function () {
+    var cap = sandbox.EL.b2bCapability({ type: 'Keepsake box' });
+    return cap.deco.join(',') === 'Embroidery' && cap.places.join(',') === 'keepsake box lid' && cap.diagram === 'box';
+  })());
+  check('B2B capability: an undecoratable item (pet bow-tie) offers nothing', (function () {
+    var cap = sandbox.EL.b2bCapability({ type: 'Bows' });
+    return cap.deco.length === 0;
+  })());
+  check('B2B capability: an item\u2019s own placements override the garment defaults', (function () {
+    var cap = sandbox.EL.b2bCapability({ type: 'Tops & tees', custom: { methods: ['embroidered'], placements: ['left chest', 'sleeve / cuff'] } });
+    return cap.places.join(',') === 'left chest,sleeve / cuff,full back';
+  })());
+  check('B2B panel offers only the item\u2019s own methods', (function () {
+    var panel = sandbox.EL.b2bItemPanelHTML({ name: 'Personalisable Turquoise Gift Box', meta: 'x', unit: 60, img: '', sizes: ['One size'], deco: ['Embroidery'], places: ['keepsake box lid'], diagram: 'box' });
+    return /Embroidery/.test(panel) && !/Screen print/.test(panel) && !/DTG/.test(panel) && /Standard \(no decoration\)/.test(panel);
+  })());
+  check('B2B panel says so when an item can take no decoration', (function () {
+    var panel = sandbox.EL.b2bItemPanelHTML({ name: 'Pet Bow-Tie', meta: 'x', unit: 20, img: '', sizes: ['S'], deco: [], places: [], diagram: 'bandana' });
+    return /js-deco-note/.test(panel) && /Decoration isn/.test(panel) && !/js-b2b-deco" data-method="Embroidery"/.test(panel);
+  })());
+  check('B2B line panel targets the wholesale per-line minimum note', (function () {
+    var panel = sandbox.EL.b2bItemPanelHTML({ name: 'Tee', meta: 'x', unit: 40, img: '', sizes: ['S'], deco: ['Embroidery'], places: ['left chest'], diagram: 'tee' });
+    return /js-line-moq/.test(panel);
+  })());
+  /* B2B embroidery pane is built from the SAME tables as the PDP configurator */
+  check('B2B embroidery pane uses the item\u2019s placements and its own diagram', (function () {
+    var pane = sandbox.EL.b2bParamHTML('Embroidery', { places: ['keepsake box lid'], diagram: 'box' });
+    return /Keepsake box lid/.test(pane) && !/Full back/.test(pane) && /data-diagram="box"/.test(pane);
+  })());
+  check('B2B embroidery pane carries script, font, size and the consumer thread palette', (function () {
+    var pane = sandbox.EL.b2bParamHTML('Embroidery', { places: ['left chest'], diagram: 'tee' });
+    return /data-param="lang"/.test(pane) && /中文/.test(pane) && /Graceful Serif/.test(pane) && /data-param="fontSize"/.test(pane) && /data-col="Cream"/.test(pane) && /data-col="Navy"/.test(pane) && /is-on" style="background:#ff6070"/.test(pane);
+  })());
+  check('B2B embroidery pane captures per-unit names with a live count', (function () {
+    var pane = sandbox.EL.b2bParamHTML('Embroidery', { places: ['left chest'], diagram: 'tee' });
+    return /js-dp-names/.test(pane) && /js-names-note/.test(pane) && /js-limit-note/.test(pane);
+  })());
+  check('B2B placement diagram follows the item shape, not always a t-shirt', (function () {
+    var box = sandbox.EL.b2bPlaceDiag('keepsake box lid', 'box');
+    var tee = sandbox.EL.b2bPlaceDiag('left chest', 'tee');
+    return /Keepsake box lid/.test(box) && /ellipse cx="50" cy="7"/.test(tee) && !/ellipse cx="50" cy="7"/.test(box);
+  })());
   check('multi-kind overlap: Disney tee also in Customization pool', typeof sandbox.EL.inKind === 'function' && sandbox.EL.inKind(sandbox.EL_PRODUCTS[1], 'custom') === true && sandbox.EL.inKind(sandbox.EL_PRODUCTS[0], 'custom') === true);
   check('multi-kind overlap: pickPool includes cross-kind product once', (sandbox.EL.pickPool([{ k: 'custom' }]).map((p) => p.n).indexOf('Kids Tee - Doodle Mickey') >= 0));
+  /* personalisation is ONE derived property (custom.methods) — there is no stored
+     `method` facet and no `giftStyle` flag to drift out of sync, and every surface
+     asks the same predicate */
+  check('one personalisation predicate: EL + staff agree', typeof sandbox.EL.isPersonalisable === 'function' && sandbox.EL.isPersonalisable(sandbox.EL_PRODUCTS[1]) === true && sandbox.EL.isPersonalisable(sandbox.EL_PRODUCTS[2]) === false && sandbox.EL_STAFF.isPersonalisable(sandbox.EL_PRODUCTS[1]) === sandbox.EL.isPersonalisable(sandbox.EL_PRODUCTS[1]));
+  /* the overlay must be visible on the listing card BEFORE the shopper opens the PDP */
+  check('listing cards overlay the Personalisable chip only when eligible', (function () {
+    var yes = sandbox.EL.productCard(sandbox.EL_PRODUCTS[1]);
+    var no = sandbox.EL.productCard(sandbox.EL_PRODUCTS[2]);
+    /* the same coral chip the staff tablet overlays on its result thumbs */
+    return /badge badge--coral">Personalisable</.test(yes) && !/Personalisable/.test(no);
+  })());
+  check('search alias: "personalisable" wired to the Personalisation intent', (function () {
+    /* smoke uses a stub catalog and never loads EL_INTENTS, so assert the alias on the
+       source — the intent match itself is exercised by the real-catalog checks */
+    var src = fs.readFileSync('assets/products.js', 'utf8');
+    var m = /key: 'custom'[\s\S]{0,200}?aliases:\s*\[([^\]]*)\]/.exec(src);
+    return !!m && m[1].indexOf("'personalisable'") >= 0;
+  })());
+  check('product database stores no duplicate personalisation fields', (function () {
+    var src = fs.readFileSync('assets/products.js', 'utf8');
+    return !/"method":/.test(src) && !/"giftStyle":\[[^\]]*Personalisable/.test(src);
+  })());
+  check('card badge overlay stacks above the product photo (CSS z-index)', (function () {
+    /* markup alone can't catch this: the real card's <img> is position:absolute and
+       follows the badge in the DOM, so the badge vanishes without a z-index */
+    var src = fs.readFileSync('assets/styles.css', 'utf8');
+    var m = /\.ph-card__badges\s*\{([^}]*)\}/.exec(src);
+    return !!m && /z-index\s*:/.test(m[1]);
+  })());
+  check('PDP carries no Personalisable badge — the configurator is the signal', (function () {
+    var src = fs.readFileSync('pdp.html', 'utf8');
+    return /id="pdpPersAcc" hidden/.test(src) && !/Personalisable/.test(src);
+  })());
+  /* PDP gallery: thumbnails are built from the item's own images (no static placeholders),
+     each carries its image for the click-to-swap, and a single-image item collapses the rail */
+  check('PDP gallery: thumbnails built from the item, not left as placeholders', (function () {
+    var thumbs = registry['.pdp__thumbs']._html || '';
+    return /class="pdp__thumb is-real is-on"/.test(thumbs) && /data-img="x\.jpg"/.test(thumbs) && thumbs.indexOf('<svg') < 0;
+  })());
+  check('PDP gallery: a single-image item collapses the thumbnail rail', registry['.pdp__gal'].classList.contains('pdp__gal--solo') === true);
+  check('PDP gallery: pdp.html ships no static placeholder thumbnails', (function () {
+    var src = fs.readFileSync('pdp.html', 'utf8');
+    var m = /<div class="pdp__thumbs"[^>]*>([\s\S]*?)<\/div>/.exec(src);
+    return !!m && m[1].trim() === '';
+  })());
+  check('PDP gallery: click handler swaps the main photo from data-img', (function () {
+    var src = fs.readFileSync('assets/app.js', 'utf8');
+    return /thumb\.getAttribute\('data-img'\)/.test(src) && /\.pdp__main \.pdp-img/.test(src);
+  })());
+  check('PDP gallery: single-image collapse rule exists in CSS', (function () {
+    var src = fs.readFileSync('assets/styles.css', 'utf8');
+    return /\.pdp__gal--solo\s*\{[^}]*grid-template-columns/.test(src) && /\.pdp__gal--solo \.pdp__thumbs\s*\{[^}]*display:\s*none/.test(src);
+  })());
+  check('PDP gallery: clicking a thumbnail actually swaps the main photo', (function () {
+    var mainImg = makeEl('img'); mainImg.src = 'A.jpg'; mainImg.alt = 'Product';
+    registry['.pdp__main .pdp-img'] = mainImg;   /* what $('.pdp__main .pdp-img') resolves to */
+    var thumb = makeEl('button');
+    thumb.dataset['data-img'] = 'B.jpg'; thumb.dataset['aria-label'] = 'Image 2';
+    thumb.parentElement = registry['.pdp__thumbs'];
+    var ev = { target: { closest: (s) => (s === '.pdp__thumb' ? thumb : null) } };
+    try { (listeners['click'] || []).forEach((fn) => fn(ev)); } catch (e) { return false; }
+    return mainImg.src === 'B.jpg' && thumb.classList.contains('is-on');
+  })());
+
+  /* ---------- personalisation on a bag line (edit it from the cart) ----------
+     The spec is stored the same way as the bag: a localStorage map keyed by account,
+     then by product name (the same key the cart aggregates lines on). */
+  check('personalisation: cfgSpec() is null until something is set, then captures it', (function () {
+    sandbox.EL.initConfigurator(sandbox.EL_PRODUCTS[0]);   /* default PDP item, embroidered */
+    var empty = sandbox.EL.cfgSpec();
+    var ev = { target: { id: 'cfgText', value: 'Amelia', closest: function () { return null; } } };
+    (listeners['input'] || []).forEach(function (fn) { fn(ev); });
+    var spec = sandbox.EL.cfgSpec();
+    return empty === null && !!spec && spec.method === 'embroidered' && spec.text === 'Amelia' && /Amelia/.test(spec.summary);
+  })());
+  check('personalisation: the cart line shows the saved spec with Edit / Remove', (function () {
+    sandbox.EL.setBag(0);
+    sandbox.EL.addToBag('Beary Personalisable Baby Gift Set');
+    sandbox.EL.savePers('Beary Personalisable Baby Gift Set', { method: 'embroidered', text: 'Amelia', summary: "'Amelia' \u00b7 Front centre" });
+    /* cart.html has only #cartLines; #ckLines makes populateCartLines take the compact
+       checkout branch, so drop the stub for this check to mirror the real cart page */
+    var ck = registry['#ckLines']; delete registry['#ckLines'];
+    sandbox.EL.populateCartLines();
+    var html = registry['#cartLines']._html || '';
+    registry['#ckLines'] = ck;
+    return /Personalised:/.test(html) && /js-edit-pers/.test(html) && /js-clear-pers/.test(html);
+  })());
+  check('personalisation: a personalisable line with no spec offers to add one', (function () {
+    sandbox.EL.savePers('Beary Personalisable Baby Gift Set', null);
+    var ck = registry['#ckLines']; delete registry['#ckLines'];
+    sandbox.EL.populateCartLines();
+    var html = registry['#cartLines']._html || '';
+    registry['#ckLines'] = ck;
+    return /js-edit-pers/.test(html) && /Add a name \/ initials/.test(html) && !/Personalised:/.test(html);
+  })());
+  check('personalisation: removing the bag line drops its spec', (function () {
+    sandbox.EL.savePers('Beary Personalisable Baby Gift Set', { method: 'embroidered', text: 'Amelia', summary: "'Amelia'" });
+    var had = !!sandbox.EL.persFor('Beary Personalisable Baby Gift Set');
+    sandbox.EL.removeFromBag('Beary Personalisable Baby Gift Set');
+    return had && sandbox.EL.persFor('Beary Personalisable Baby Gift Set') === null;
+  })());
+  check('personalisation: the cart editor injects the real configurator controls', (function () {
+    sandbox.EL.setBag(0);
+    sandbox.EL.addToBag('Beary Personalisable Baby Gift Set');
+    sandbox.EL.openPersEditor('Beary Personalisable Baby Gift Set');
+    var html = registry['#persEditor']._html || '';
+    var open = registry['#persEditor'].hidden === false && /js-save-pers/.test(html) && /js-cancel-pers/.test(html) &&
+      /cfg-row/.test(html) && /id="cfgText"/.test(html) && /cfgSummary/.test(html);
+    sandbox.EL.closePersEditor();
+    return open && registry['#persEditor'].hidden === true;
+  })());
+  check('personalisation: specs are per profile, exactly like the bag', (function () {
+    sandbox.EL.setBag(0);
+    sandbox.EL.savePers('Beary Personalisable Baby Gift Set', { summary: 'guest spec' });
+    var guest = sandbox.EL.persFor('Beary Personalisable Baby Gift Set');
+    sandbox.ELSEG.signIn('tom-cook');
+    var tom = sandbox.EL.persFor('Beary Personalisable Baby Gift Set');
+    sandbox.ELSEG.signOut();
+    return !!guest && tom === null;
+  })());
+  check('personalisation: adding a personalised PDP item stores its spec with the bag', (function () {
+    sandbox.EL.setBag(0);
+    sandbox.EL.initConfigurator(sandbox.EL_PRODUCTS[0]);
+    var evIn = { target: { id: 'cfgText', value: 'Noah', closest: function () { return null; } } };
+    (listeners['input'] || []).forEach(function (fn) { fn(evIn); });
+    var picked = { classList: { add: function () {}, remove: function () {}, contains: function () { return true; } } };
+    var sizeSel = { querySelector: function (s) { return s === '.size-chip.is-on' ? picked : { value: '1' }; } };
+    var buy = { getAttribute: function () { return null; }, closest: function () { return sizeSel; } };
+    var ev = { target: { closest: function (s) { return s === '.js-buy' ? buy : null; } }, preventDefault: function () {} };
+    try { (listeners['click'] || []).forEach(function (fn) { fn(ev); }); } catch (e) { return false; }
+    var spec = sandbox.EL.persFor('Beary Personalisable Baby Gift Set');
+    return !!spec && spec.text === 'Noah' && sandbox.EL.bagItems().indexOf('Beary Personalisable Baby Gift Set') >= 0;
+  })());
+  sandbox.EL.savePers('Beary Personalisable Baby Gift Set', null);
+  sandbox.EL.setBag(0);
+  check('personalisation: staff rows carry the customer\u2019s saved spec (and only theirs)', (function () {
+    sandbox.EL.savePersForAccount('chloe-ng', 'Kids Tee - Doodle Mickey', {
+      method: 'embroidered', text: 'Mia', placement: 'front', colourName: 'Navy', font: 'serif', fontSize: 'md', language: 'en', patches: []
+    });
+    var hers = sandbox.EL_STAFF.rowsFromNames(['Kids Tee - Doodle Mickey'], 'chloe-ng');
+    var his = sandbox.EL_STAFF.rowsFromNames(['Kids Tee - Doodle Mickey'], 'tom-cook');
+    var spec = sandbox.EL.persForAccount('chloe-ng', 'Kids Tee - Doodle Mickey');
+    var out = hers.length === 1 && !!hers[0].pers && hers[0].pers.text === 'Mia' && his[0].pers === null &&
+      !!spec.summary && /Mia/.test(spec.summary) && /Embroidered/.test(spec.summary);   /* summary rendered from the tables */
+    sandbox.EL.savePersForAccount('chloe-ng', 'Kids Tee - Doodle Mickey', null);
+    return out;
+  })());
+  check('staff drawer: the Name step is dropped for patches-only items', (function () {
+    var embro = sandbox.EL_STAFF.drawerStepsFor(sandbox.EL_PRODUCTS[0]);   /* embroidered */
+    var patches = sandbox.EL_STAFF.drawerStepsFor(sandbox.EL_PRODUCTS[1]); /* patches only */
+    return embro.join(',') === '1,2,3' && patches.join(',') === '1,3';
+  })());
+
+  /* size runs come from the item — a gift/plush/pet must never offer baby months */
+  check('sizeRun: item\u2019s own run wins (gift set -> Set)', JSON.stringify(sandbox.EL.sizeRun({ type: 'Gift set', sizes: ['Set'] })) === JSON.stringify(['Set']));
+  check('sizeRun: pet item -> pet S/M/L, not months', JSON.stringify(sandbox.EL.sizeRun({ petSize: ['S \u2014 small', 'M \u2014 medium'] })) === JSON.stringify(['S \u2014 small', 'M \u2014 medium']));
+  check('sizeRun: shoe item -> shoe sizes', JSON.stringify(sandbox.EL.sizeRun({ shoeSizes: ['Size 18\u201322'] })) === JSON.stringify(['Size 18\u201322']));
+  check('sizeRun: unknown item safely falls back to One size', JSON.stringify(sandbox.EL.sizeRun({})) === JSON.stringify(['One size']));
   /* bag count consistency: one shared counter element in the injected header, one
      storage key, same value on every page (components.js injects it site-wide) */
   check('bag count element injected in shared header', typeof registry['#bagCount'] === 'object' && /id="bagCount"/.test(all));
@@ -178,11 +418,19 @@ try {
   /* cart/checkout lines derive their count from the same elly-bag items */
   sandbox.EL.setBag(3);
   sandbox.EL.populateCartLines();
-  check('cart page renders 3 lines from bag count', (registry['#cartLines']._html || '').split('js-cart-line').length - 1 === 3);
+  /* repeated adds of the same item collapse into ONE line that carries the quantity */
+  check('cart aggregates repeated items into one line with a quantity', (registry['#cartLines']._html || '').split('js-cart-line').length - 1 === 1 && /data-qty="3"/.test(registry['#cartLines']._html || ''));
   check('cart empty state hidden when items present', (registry['#cartEmpty'].style.display || '') === 'none');
   sandbox.EL.setBag(0);
   sandbox.EL.populateCartLines();
   check('cart page shows empty state at zero', (registry['#cartLines']._html || '').indexOf('js-cart-line') < 0 && (registry['#cartEmpty'].style.display || '') !== 'none');
+  /* quantity: a PDP add carries its stepper value, and setBagQty re-scales a line */
+  sandbox.EL.addToBag('Beary Personalisable Baby Gift Set', 3);
+  check('addToBag(qty) stores one unit per quantity', sandbox.EL.bagCount() === 3 && sandbox.EL.bagItems().length === 3);
+  sandbox.EL.setBagQty('Beary Personalisable Baby Gift Set', 1);
+  check('setBagQty re-scales the line and the badge', sandbox.EL.bagCount() === 1);
+  sandbox.EL.setBag(0);
+  check('bag resets to zero for the item-name checks below', sandbox.EL.bagCount() === 0);
   /* bag tracks the actual items added, and removal keeps count + contents in sync */
   sandbox.EL.addToBag('Kids Tee - Doodle Mickey');
   sandbox.EL.addToBag('Beary Personalisable Baby Gift Set');
@@ -271,6 +519,107 @@ try {
   check('per-customer bag: clearing the set empties it for the account', (function () {
     sandbox.EL_STAFF.bag.clear('tom-cook');
     return sandbox.EL_STAFF.bag.get('tom-cook').length === 0;
+  })());
+
+  /* ---------- recently viewed (per profile; bag + purchase filtered) ----------
+     Storage mirrors the bag: a localStorage map keyed by account id, '__guest'
+     for anonymous. A synthetic profile proves the "already bought" rule against
+     the stub catalog (the demo history rows don't all resolve to stub names). */
+  sandbox.EL_ACCOUNTS.push({
+    id: 'viewer-demo', name: 'Viewer Demo', residency: 'SG', country: 'SG', points: 0,
+    history: [{ item: 'Kids Tee - Doodle Mickey \u00b7 M (him)' }],
+    browse: ['Swim Shorts - Turtles']
+  });
+  sandbox.ELSEG.signIn('viewer-demo');
+  check('recently viewed: per-profile trail, most-recent-first, seeded from profile browse', (function () {
+    sandbox.EL.recordView('Beary Personalisable Baby Gift Set');
+    var items = sandbox.EL.viewedItems();
+    return items[0] === 'Beary Personalisable Baby Gift Set' && items.indexOf('Swim Shorts - Turtles') >= 0;
+  })());
+  check('recently viewed: never recommends what this profile already bought', (function () {
+    sandbox.EL.recordView('Kids Tee - Doodle Mickey');   /* sits in the profile's history */
+    return sandbox.EL.viewedItems().indexOf('Kids Tee - Doodle Mickey') >= 0 &&
+      sandbox.EL.viewedRecommendations().every(function (p) { return p.n !== 'Kids Tee - Doodle Mickey'; });
+  })());
+  check('recently viewed: never recommends what is already in the bag', (function () {
+    sandbox.EL.addToBag('Swim Shorts - Turtles');
+    var hidden = sandbox.EL.viewedRecommendations().every(function (p) { return p.n !== 'Swim Shorts - Turtles'; });
+    sandbox.EL.removeFromBag('Swim Shorts - Turtles');
+    return hidden && sandbox.EL.viewedRecommendations().some(function (p) { return p.n === 'Swim Shorts - Turtles'; });
+  })());
+  check('recently viewed: guest trail stays separate from a signed-in profile', (function () {
+    var signed = sandbox.EL.viewedItems().slice(0);
+    sandbox.ELSEG.signOut();
+    var guest = sandbox.EL.viewedItems();
+    sandbox.ELSEG.signIn('viewer-demo');
+    return signed.indexOf('Swim Shorts - Turtles') >= 0 && guest.indexOf('Swim Shorts - Turtles') < 0;
+  })());
+  check('recently viewed: chips + home rail + PDP row render it, never the current PDP product', (function () {
+    sandbox.EL.applySegmentState();   /* the sign-in/out re-render hook */
+    var chips = registry['#viewedChips']._html || '';
+    var rail = registry['#viewedGrid']._html || '';
+    var pdpRow = registry['#pdpViewedGrid']._html || '';
+    return /Swim Shorts - Turtles/.test(chips) && /Swim Shorts - Turtles/.test(rail) && /Swim Shorts - Turtles/.test(pdpRow) &&
+      (registry['#viewedRail'].style.display || '') !== 'none' &&
+      registry['#pdpViewed'].hidden === false &&
+      !/Beary Personalisable Baby Gift Set/.test(chips);
+  })());
+  sandbox.ELSEG.signOut();
+  sandbox.EL_ACCOUNTS.pop();
+
+  /* ---------- cross-sell (basket-building) ----------
+     Scored from signals the catalog already carries (shared character, complementary
+     type, intent, collection). Shares the recently-viewed exclusion rule, so no
+     surface can recommend the seed, a bag item or a past purchase. */
+  check('cross-sell: complementary type outranks another of the same category', (function () {
+    var s = { n: 'Synthetic Seed Tee', k: 'disney', type: 'Tops & tees', characters: ['Mickey'], int: ['park'] };
+    var list = sandbox.EL.crossSellFor(s, 4).map(function (p) { return p.n; });
+    var swim = list.indexOf('Mickey Swim Shorts'), tee = list.indexOf('Kids Tee - Doodle Mickey Twin');
+    return swim >= 0 && (tee < 0 || swim < tee);
+  })());
+  check('cross-sell: excludes the seed product and anything already in the bag', (function () {
+    sandbox.EL.setBag(0);
+    sandbox.EL.addToBag('Mickey Swim Shorts');
+    var s = { n: 'Synthetic Seed Tee', k: 'disney', type: 'Tops & tees', characters: ['Mickey'], int: ['park'] };
+    var names = sandbox.EL.crossSellFor(s, 6).map(function (p) { return p.n; });
+    sandbox.EL.removeFromBag('Mickey Swim Shorts');
+    return names.indexOf('Mickey Swim Shorts') < 0 && names.indexOf('Synthetic Seed Tee') < 0;
+  })());
+  check('cross-sell: pets only pair with pets (no consumer-catalog bleed)', (function () {
+    var pets = sandbox.EL_PRODUCTS.filter(function (p) { return p.k === 'furkids'; });
+    var list = sandbox.EL.crossSellFor(pets[0], 6);
+    return list.length > 0 && list.every(function (p) { return p.k === 'furkids'; });
+  })());
+  check('cross-sell: PDP rail stays product-derived while recently viewed gets its own row', (function () {
+    sandbox.ELSEG.signOut();          /* guest: no trail yet */
+    sandbox.EL.setBag(0);
+    sandbox.EL.renderViewedSurfaces();
+    var noTrail = (registry['#pdpXsellTitle'].textContent || '') === 'Complete the look' &&
+      (registry['#pdpXsellKicker'].textContent || '') === 'Goes well with this' &&
+      registry['#pdpViewed'].hidden === true;
+    sandbox.EL.recordView('Mickey Swim Shorts');
+    sandbox.EL.renderViewedSurfaces();
+    var both = registry['#pdpViewed'].hidden === false &&
+      /data-p="Mickey Swim Shorts"/.test(registry['#pdpViewedGrid']._html || '') &&
+      /* the cross-sell rail is NOT taken over by the trail any more */
+      (registry['#pdpXsellTitle'].textContent || '') === 'Complete the look' &&
+      (registry['#pdpXsellKicker'].textContent || '') === 'Goes well with this' &&
+      (registry['#pdpXsellLink'].style.display || '') === '';
+    return noTrail && both;
+  })());
+  check('cross-sell: cart block renders basket picks and hides when empty', (function () {
+    sandbox.EL.setBag(0);
+    sandbox.EL.populateCartLines();
+    var hiddenEmpty = registry['#cartXsell'].hidden === true;
+    sandbox.EL.addToBag('Kids Tee - Doodle Mickey');
+    sandbox.EL.populateCartLines();
+    var html = registry['#cartXsellGrid']._html || '';
+    var shown = registry['#cartXsell'].hidden === false &&
+      /data-p="Kids Tee - Doodle Mickey Twin"/.test(html) &&
+      !/data-p="Kids Tee - Doodle Mickey"/.test(html);   /* the bag item itself never returns */
+    sandbox.EL.setBag(0);
+    sandbox.EL.populateCartLines();
+    return hiddenEmpty && shown;
   })());
 
   /* ---------- visitor segments (PRD §5.1) — real signals ---------- */

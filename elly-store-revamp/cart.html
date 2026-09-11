@@ -34,10 +34,26 @@
           <!-- bag lines are rebuilt by app.js from the shared elly-bag-items source, so the
                header badge and these lines always show the same items (empty state if none) -->
           </div>
+          <!-- inline personalisation editor: app.js injects the shared configurator markup
+               here and opens it for one bag line at a time -->
+          <div id="persEditor" hidden style="margin-top:20px"></div>
           <div class="empty-slot" id="cartEmpty" style="margin-top:22px;display:none">
             <strong>Your bag is empty</strong>
             <span>Add something from the collections — the badge in the header and these lines stay in sync (demo counter).</span>
           </div>
+
+          <!-- cross-sell: scored against everything in the bag at once, so the picks
+               complement the whole basket. Rebuilt by app.js whenever the bag changes,
+               and hidden when there's nothing relevant (or the bag is empty). -->
+          <section id="cartXsell" hidden style="margin-top:26px;background:var(--cream-2);border:1px solid var(--line-soft);border-radius:var(--radius);padding:22px">
+            <div class="occ-head" style="margin-bottom:16px">
+              <div>
+                <span class="kicker kicker--coral">Goes well with this</span>
+                <h2 class="sec" style="font-size:clamp(20px,2.2vw,26px)">Complete the set</h2>
+              </div>
+            </div>
+            <div class="product-grid" id="cartXsellGrid"></div>
+          </section>
 
           <p style="margin-top:18px">
             <a class="link-arrow" href="elly-label.html">Continue shopping</a>
@@ -55,8 +71,8 @@
           <div class="s-row"><span>Shipping (SG standard)</span><b id="cartShip">S$0.00</b></div>
           <div class="s-row"><span>Estimated taxes</span><b>Included</b></div>
           <div class="s-row s-row--total"><span>Total</span><span class="price" id="cartTotal">S$0.00</span></div>
-          <button type="button" class="btn btn--coral btn--block js-go-checkout" style="margin-top:18px">Checkout — 3 fulfilment options</button>
-          <p class="small muted center" style="margin-top:12px;font-size:11.5px">Demo checkout · no live payments</p>
+          <button type="button" class="btn btn--coral btn--block js-go-checkout" style="margin-top:18px">Checkout — <span id="cartCount">0</span> <span id="cartCountWord">items</span></button>
+          <p class="small muted center" style="margin-top:8px;font-size:11.5px">3 fulfilment options — ship to SG/hotel · ship home · collect in store. Demo checkout, no live payments.</p>
         </aside>
       </div>
     </div>

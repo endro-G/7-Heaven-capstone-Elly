@@ -105,14 +105,15 @@
      font/size/colour that was approved for it. KR/CN/EN seeded per
      the PRD; more scripts land here as the business confirms them
      (Open Items). `lang` maps onto the configurator's language ids
-     (en/jp/kr — native scripts share the non-Latin rendering path). */
+     (en/cn/jp/kr) — a chip is only lit when the id really exists, so a
+     Chinese name must carry lang 'cn', never 'kr'. */
   var LIBRARY = [
     { text: 'Amelia',  script: 'EN', lang: 'en', font: 'serif',  size: 'md', colour: 'Coral', note: 'Approved · common English name' },
     { text: 'Olivia',  script: 'EN', lang: 'en', font: 'script', size: 'md', colour: 'Navy',  note: 'Approved · common English name' },
     { text: 'Mina',    script: 'EN', lang: 'en', font: 'caps',   size: 'sm', colour: 'Gold',  note: 'Approved · short name, chest placement' },
     { text: '미나',     script: 'KR', lang: 'kr', font: 'serif',  size: 'md', colour: 'Navy',  note: 'Approved · Korean · Jan 2026' },
     { text: '하린',     script: 'KR', lang: 'kr', font: 'serif',  size: 'sm', colour: 'Black', note: 'Approved · Korean · Jan 2026' },
-    { text: '美娜',     script: 'CN', lang: 'kr', font: 'serif',  size: 'md', colour: 'Coral', note: 'Approved · Chinese · Feb 2026' },
+    { text: '美娜',     script: 'CN', lang: 'cn', font: 'serif',  size: 'md', colour: 'Coral', note: 'Approved · Chinese · Feb 2026' },
     { text: 'Emma',    script: 'EN', lang: 'en', font: 'serif',  size: 'md', colour: 'Cream', note: 'Approved · common English name' }
   ];
 
@@ -269,8 +270,6 @@
      (DAO + helpers); this section is guarded by #staffApp so the
      module can load on account.html too without side effects.
      ============================================================ */
-  var SIZES = ['3M','6M','12M','18M','24M','2Y','3Y','4Y','5Y','6Y','8Y','10Y','12Y','14Y','XS','S','M','L','XL','XXL'];
-
   var state = {
     customer: null,            /* matched EL_ACCOUNTS record, or walk-in */
     occasion: '',
@@ -278,7 +277,8 @@
     rows: [],                  /* basket: { id, name, size, qty, img, pers, wearer } */
     lost: [],                  /* lost-sale log: { name, size } */
     fulfilment: 'Pick up at One Holland Village',
-    persIndex: -1              /* basket row the drawer is personalising */
+    persIndex: -1,             /* basket row the drawer is personalising */
+    drawerSeq: [1, 2, 3]       /* the drawer steps that APPLY to the item being personalised */
   };
 
   function $(id) { return document.getElementById(id); }
@@ -292,8 +292,13 @@
     for (var i = 0; i < window.EL_PRODUCTS.length; i++) if (window.EL_PRODUCTS[i].id === id) return window.EL_PRODUCTS[i];
     return null;
   }
+  /* delegate to the site's one predicate (window.EL.isPersonalisable, defined in
+     products.js and re-exported by app.js) — the staff tablet must open the
+     configurator for exactly the items the website treats as personalisable */
   function isPersonalisable(prod) {
-    return !!(prod && prod.custom && prod.custom.methods && prod.custom.methods.length);
+    return (window.EL && typeof window.EL.isPersonalisable === 'function')
+      ? window.EL.isPersonalisable(prod)
+      : !!(prod && prod.custom && prod.custom.methods && prod.custom.methods.length);
   }
   function prodPhoto(prod) {
     return (prod && ((prod.imgs && prod.imgs[0]) || prod.img)) || '';
@@ -376,7 +381,13 @@
   }
 
   function sizeOptions(prod) {
-    var run = (prod && prod.sizes && prod.sizes.length) ? prod.sizes : SIZES;
+    /* the item's own size run always wins; fall back to the pet / shoe run, then
+       to a single "One size" — a gift, plush or pet item must never offer baby
+       months as if they were sizes */
+    var run = (prod && prod.sizes && prod.sizes.length) ? prod.sizes
+      : (prod && prod.petSize && prod.petSize.length) ? prod.petSize
+      : (prod && prod.shoeSizes && prod.shoeSizes.length) ? prod.shoeSizes
+      : ['One size'];
     return '<option value="">Any size</option>' + run.map(function (s) { return '<option>' + esc(s) + '</option>'; }).join('');
   }
 
@@ -484,18 +495,27 @@
 
   /* ---------- per-customer set = the customer's bag (step 1 → step 2) ---------- */
   function productByName(nm) {
-    if (typeof window.EL_PRODUCTS !== 'object') return null;
-    for (var i = 0; i < window.EL_PRODUCTS.length; i++) {
-      if (window.EL_PRODUCTS[i].n === nm) return window.EL_PRODUCTS[i];
+    if (typeof window.EL_PRODUCTS === 'object') {
+      for (var i = 0; i < window.EL_PRODUCTS.length; i++) {
+        if (window.EL_PRODUCTS[i].n === nm) return window.EL_PRODUCTS[i];
+      }
     }
+    /* app.js also resolves picked Pre-Order designs ("<product> — <design>") to
+       the design's artwork; reuse it so staff rows show the same image */
+    if (window.EL && typeof window.EL.productByName === 'function') return window.EL.productByName(nm);
     return null;
   }
   /* the shared bag holds names (the site's cart reads names); materialise the
      richer staff rows from the catalog */
-  function rowsFromNames(names) {
+  function rowsFromNames(names, accId) {
+    /* the customer's saved personalisation lives in the shared store keyed by their
+       account id, so attach it here — the drawer then opens on the spec they chose */
+    var saved = (typeof window.EL === 'object' && window.EL && typeof window.EL.persForAccount === 'function')
+      ? function (nm) { return window.EL.persForAccount(accId, nm); }
+      : function () { return null; };
     return (names || []).map(function (nm) {
       var prod = productByName(nm);
-      return { id: prod ? prod.id : '', name: nm, size: '', qty: 1, img: prod ? prodPhoto(prod) : '', pers: null, wearer: null };
+      return { id: prod ? prod.id : '', name: nm, size: '', qty: 1, img: prod ? prodPhoto(prod) : '', pers: saved(nm), wearer: null };
     });
   }
   function resetSearchUI() {
@@ -508,7 +528,7 @@
   }
   function loadBasket(accId) {
     var map = readBags();
-    state.rows = rowsFromNames(map[accId]);
+    state.rows = rowsFromNames(map[accId], accId);
     state.lost = [];
     resetSearchUI();
     renderBasket();
@@ -566,24 +586,43 @@
      follow, and the dots/Back/Next walk the same order. */
   var DRAWER_STEPS = ['Details', 'Name', 'Preview'];
 
-  function renderDots(active) {
+  /* the drawn steps are only the APPLICABLE ones: an item that takes patches but not
+     embroidery has no Name library to browse, so that tab never appears and Next walks
+     straight from Details to Preview */
+  function drawerStepsFor(prod) {
+    return (prod && prod.custom && (prod.custom.methods || []).indexOf('embroidered') >= 0) ? [1, 2, 3] : [1, 3];
+  }
+  function drawerSeq() { return (state.drawerSeq && state.drawerSeq.length) ? state.drawerSeq : [1, 2, 3]; }
+  function renderDots(stepNo) {
     var box = $('drawerDots');
     if (!box) return;
-    box.innerHTML = DRAWER_STEPS.map(function (label, i) {
-      return '<button type="button" class="drawer-dot' + (i === active ? ' is-on' : '') + '" data-ds="' + (i + 1) + '"><span class="no">' + (i + 1) + '</span>' + label + '</button>';
+    var seq = drawerSeq(), active = seq.indexOf(stepNo);
+    box.innerHTML = seq.map(function (s, i) {
+      return '<button type="button" class="drawer-dot' + (i === active ? ' is-on' : '') + '" data-ds="' + s + '"><span class="no">' + (i + 1) + '</span>' + DRAWER_STEPS[s - 1] + '</button>';
     }).join('');
+  }
+
+  /* prev/next walk the applicable steps, skipping any that don't apply */
+  function drawerMove(delta) {
+    var seq = drawerSeq();
+    var i = seq.indexOf(currentDrawerStep());
+    if (i < 0) i = 0;
+    var j = Math.min(seq.length - 1, Math.max(0, i + delta));
+    if (j !== i) drawerStep(seq[j]);
   }
 
   function drawerStep(n) {
     all('.drawer-step', $('staffDrawer')).forEach(function (el) {
       el.hidden = String(el.getAttribute('data-step')) !== String(n);
     });
-    renderDots(n - 1);
+    var seq = drawerSeq();
+    var at = seq.indexOf(n); if (at < 0) at = 0;
+    renderDots(n);
     var next = $('drawerNext');
-    if (next) next.textContent = n === 3 ? 'Save personalisation' : 'Next';
+    if (next) next.textContent = at === seq.length - 1 ? 'Save personalisation' : 'Next';
     var prev = $('drawerPrev');
-    if (prev) prev.textContent = n === 1 ? '' : '← Back';
-    if (prev) prev.hidden = n === 1;
+    if (prev) prev.textContent = at === 0 ? '' : '← Back';
+    if (prev) prev.hidden = at === 0;
     /* keep the Live Look fresh when the preview step becomes visible */
     if (n === 3 && typeof window.EL === 'object' && typeof window.EL.initConfigurator === 'function') {
       var cfg = $('configurator');
@@ -612,6 +651,8 @@
     var prod = productById(row.id);
     if (!prod || !isPersonalisable(prod)) return;
     state.persIndex = i;
+    /* items that don't take embroidery skip the Name library step entirely */
+    state.drawerSeq = drawerStepsFor(prod);
     var title = $('drawerTitle');
     if (title) title.textContent = row.name;
     /* single global configurator instance — reset for this product, then
@@ -703,6 +744,11 @@
     if (!row) { closeDrawer(); return; }
     var pers = snapshotPers();
     row.pers = (pers.method && (pers.text || pers.patches.length)) ? pers : null;
+    /* a matched customer's online cart reads the SAME store, so a capture here lands in
+       their bag (and an explicit removal clears it) — exactly like the shared bag */
+    if (state.customer && typeof window.EL === 'object' && window.EL && typeof window.EL.savePersForAccount === 'function') {
+      window.EL.savePersForAccount(state.customer.id, row.name, row.pers);
+    }
     var wName = ($('wearerName') || {}).value || '';
     row.wearer = wName.trim()
       ? { name: wName.trim(), ageSize: ($('wearerAge') || {}).value || '', rel: ($('wearerRel') || {}).value || '' }
@@ -943,7 +989,7 @@
       }
       var neu = e.target.closest('.js-new-order');
       if (neu) {
-        state = { customer: null, occasion: '', travelDate: '', rows: [], lost: [], fulfilment: 'Pick up at One Holland Village', persIndex: -1 };
+        state = { customer: null, occasion: '', travelDate: '', rows: [], lost: [], fulfilment: 'Pick up at One Holland Village', persIndex: -1, drawerSeq: [1, 2, 3] };
         var res2 = $('handoffResult'); if (res2) res2.innerHTML = '';
         var box3 = $('draftReview'); if (box3) box3.innerHTML = '';
         var custBox = $('staffCustResults'); if (custBox) custBox.innerHTML = '';
@@ -956,15 +1002,12 @@
 
     /* drawer nav */
     var prevBtn = $('drawerPrev');
-    if (prevBtn) prevBtn.addEventListener('click', function () {
-      var cur = currentDrawerStep();
-      if (cur > 1) drawerStep(cur - 1);
-    });
+    if (prevBtn) prevBtn.addEventListener('click', function () { drawerMove(-1); });
     var nextBtn = $('drawerNext');
     if (nextBtn) nextBtn.addEventListener('click', function () {
-      var cur = currentDrawerStep();
-      if (cur < 3) drawerStep(cur + 1);
-      else saveDrawer();
+      var seq = drawerSeq();
+      if (currentDrawerStep() === seq[seq.length - 1]) saveDrawer();
+      else drawerMove(1);
     });
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') closeDrawer();
@@ -1078,6 +1121,7 @@
       all: readBags
     },
     rowsFromNames: rowsFromNames,
+    drawerStepsFor: drawerStepsFor,
     state: state
   };
 })();

@@ -14,11 +14,39 @@ clearly-labelled structure/demo.
 metadata + tags so the catalog can be filtered and searched:
 
 - **Pillars** — `k` (primary) + `kinds` (extra memberships, e.g. a Disney tee that is also customisable).
+- **Personalisable** — ONE field decides it: a non-empty `custom.methods` (`embroidered` / `patches`).
+  `products.js` derives everything else from it at load — the `custom` pillar membership (`k`/`kinds`), the
+  `custom` intent tag (`int`) and the card overlay — and `window.EL.isPersonalisable` is the single predicate
+  asked by the Customization grid, the Gifting "Personalisable" filter, search/listings and the staff tablet.
+  There is no stored `method` facet and no `giftStyle: 'Personalisable'` flag to drift out of sync.
+- **Options are item-shaped, not global** — `custom.placements` is the only placement a configurator may
+  offer, so **"only placements that work on this item" is enforced by data, not copy**: a blanket offers
+  just Blanket corner, a keepsake box just its lid, a swim robe just Hood. Every placement key resolves to a
+  label + character booking in `CUSTOM_PLACEMENTS`, and for **non-Latin scripts the booking scales with the
+  placement** (`cfgLangMaxFor` — 9 characters on a 12-character corner or lid, 11 on a full back, and never
+  below the 8 the site already shipped, so no existing booking got tighter) instead of a flat 8-character
+  ceiling that clipped the roomier surfaces. **Scripts are EN / 中文 / 日本語 / 한국어**,
+  matching the approved-character library (PRD §12: Korean, Chinese, English); the staff library's Chinese
+  entry carries `lang: 'cn'` so tapping *Use* lights the Chinese chip, never the Korean one, and a script
+  added to `CUSTOM_LANGS` is immediately selectable on the PDP, the cart editor, the staff drawer and the
+  B2B quote form because they all read that one table.
+- **Where the badge shows** — the `Personalisable` chip is overlaid on every listing card (category, intent,
+  occasion and search grids, and the curated rails) so eligibility is visible **before** the shopper opens a
+  product. The **PDP deliberately carries no badge** — the configurator and the "Add a name / initials"
+  button are the signal there. The PDP's "Personalisation" accordion is rendered only for eligible items,
+  with its copy built from that item's own methods/placements (a patches-only tee never advertises
+  embroidery). Searching "personalisable" (or personalised / embroidery / initials / patches) resolves to
+  the Personalisation intent and returns all eligible items.
 - **Facets** — `type` (product type), `age`, `characters` (Disney franchise), `colours`, `price` (numeric),
   `occasion`/`recipient`/`giftStyle` (gifting), `petSize` (FurKids), `shoeStage`/`shoeType`/`brand`/`shoeSizes`,
-  and customization `method`/`custom` (embroidered vs iron-on patches, placements).
+  and customization `custom` (embroidered vs iron-on patches, placements — see **Personalisable** above).
+  Every item also carries a
+  `sizes` run matching its kind — baby months, kid years, adult XS–XXL, `One size`/`Set` for
+  blankets, gifts, plush and toys, pet S/M/L for FurKids — so a gift never shows baby months as a size
+  (drives the PDP chips and the staff tablet size selector; B2B uses `b2b.sizes`).
 - **Availability** — `in-stock` · `concept` (FurKids concepts + Pre-Order art, flagged `concept` with a
-  `conceptNote` disclosure) · `pre-order` (the 3 Singapore Pre-Order designs) · `b2b-only` (varsity tee —
+  `conceptNote` disclosure) · `pre-order` (the Singapore Pre-Order item — one catalog entry with 3
+  selectable designs, chosen on the Pre-Order PDP) · `b2b-only` (varsity tee —
   never surfaces in consumer browsing). Adult family-matching tees are real in-stock consumer items
   AND quotable in B2B (their `b2b.available` flag keeps them in the quote flow).
 - **B2B** — `b2b: { available, unit, sizes, meta }` on B2B-applicable items. The B2B quote wizard
@@ -98,11 +126,11 @@ in either environment.
 | `elly-label.html` … `furkids.html` | The 6 category listings: grids populated from the live catalog; **facet UI wired** (filters, colour swatches, clear-all, empty states) but filtering/sort connect in a later step |
 | `disney-elly.html` | Disney | elly listing + Pre-Order strip |
 | `furkids.html` | FurKids: 5 **real pet accessories** from the store's Pet Accessories collection (photos/prices from theellystore.com) beside **6 concept pieces** (blankets, mat, apparel — Elly FurKids concept renders shipped under `assets/furkids/`), persistent **“Concept only — not a Disney-licensed product”** disclosure |
-| `customization.html` | Embroidered (initial + placement + thread colour + curated **font range, font size, language EN/JP/KR**) / iron-on patches (up to 3 free from the item's range — Disney patches for Disney products, non-Disney otherwise — each on a **pre-selected spot**) methods, live PDP configurator with on-image + in-configurator **live look** preview |
+| `customization.html` | Embroidered (initial + placement + thread colour + curated **font range, font size, script EN/CN/JP/KR** — the approved-character library's scripts, PRD §12) / iron-on patches (up to 3 free from the item's range — Disney patches for Disney products, non-Disney otherwise — each on a **pre-selected spot**) methods, live PDP configurator with on-image + in-configurator **live look** preview |
 | `pre-order.html` | Disney Pre-Order PDP: design selector (3 Singapore concepts), full-payment model, 8-week timeline, disclosure tags |
-| `pdp.html` | Product detail with the **personalisation configurator** (embroidered initial — font/size/language/thread/placement; iron-on patches — up to 3, pre-set spots) + sizes, qty, add-to-bag demo, accordions, cross-sell |
+| `pdp.html` | Product detail with a **click-to-swap image gallery** (thumbnails built from the item's own images; a single-image item collapses the rail instead of showing placeholders) + the **personalisation configurator** (embroidered initial — font/size/script/thread/placement; iron-on patches — up to 3, pre-set spots) + sizes, qty, add-to-bag demo, accordions, cross-sell |
 | `cart.html` / `checkout.html` | Bag + checkout with **all 3 tourist fulfilment options** (ship to SG/hotel · ship home · buy in-store/pop-up) |
-| `b2b.html` | B2B landing (use-case cards) → 5-step RFQ: order type/date → **item rows with a product dropdown** (sizes + decoration options appear under the selected item; add/remove rows) → artwork/shipping → your details → **review & confirm** (the validated details are frozen and echoed back; Request and printable Download live on this step) → two-stage confirmation + printable quote sheet |
+| `b2b.html` | B2B landing (use-case cards) → 5-step RFQ: order type/date → **item rows with a product dropdown** (sizes + **per-item decoration options** appear under the selected item — gated to what that item can take, with a shape-correct placement diagram; add/remove rows) → artwork/shipping → your details → **review & confirm** (the validated details are frozen and echoed back; Request and printable Download live on this step) → two-stage confirmation + printable quote sheet |
 | `account.html` | Unified profile: in-store + online order history merged, loyalty points (Smile placeholder rules), and **Personalisation orders & wearers** fed by the staff tablet (PRD §12) |
 | `staff.html` | **In-store staff assist tablet (PRD §12)**: a 4-stage loop — greet/occasion capture → **build the set** (search the catalog → tap a result to show the item photo for customer confirmation → add; the basket mixes personalisable and plain items, and each eligible item opens the configurator in a slide-over drawer with its own name, placement, font, colour **and wearer**, PRD §12; **the set is the matched customer's bag** — ONE store with the online site (per-account, localStorage): items added online show up on the staff tablet, staff additions land in the customer's bag, switching customers swaps sets, and walk-in/new customers start empty) → fulfilment (pickup or gift-from-counter reusing checkout ship-to) → draft-order handoff to POS. Stock is two-tier: **One Holland Village first** (the shelf carries the popular edit in sufficient quantity, ~35% of sales) with **warehouse fallback** (more SKUs popular + niche, larger quantities, ~65% of sales are online; wait-time estimate, pop-up excluded, lost-sale logging). The left rail is clickable to jump between stages, and the order-status ladder tracks back in the customer's account |
 | `admin.html` | Demo dashboard: 3 KPI families + interactive **demand vs MOQ** per Pre-Order design |
@@ -136,6 +164,44 @@ in either environment.
   ("🇸🇬 Singapore · ships worldwide") and preselects the checkout country for
   non-SG visitors (skipped once the shopper touches the field, and for SG where
   ship-to-Singapore is already the default).
+- **Recently viewed (per profile)**: recording starts on any PDP view and is stored the same way as
+  the bag — a `localStorage` map keyed by the signed-in account id (`__guest` when anonymous). Each
+  profile therefore keeps its own trail, signing in/out swaps the bucket, and nothing needs a server.
+  It surfaces in three places — **search-panel chips**, the **homepage rail** and a dedicated
+  **"Recently viewed" row on the PDP** — and all three read the one filtered list,
+  `viewedRecommendations()`, so it **never recommends an item already in the bag or already bought
+  by that profile**. A signed-in trail is seeded from the profile's own `browse` array in
+  `accounts.js`, and matching stays exact so a purchase can't exclude the wrong product.
+- **Cross-sell (basket-building)**: the **PDP "Complete the look"** rail and the **cart
+  "Complete the set"** block are filled by `crossSellFor()` / `crossSellPool()` in `assets/app.js`,
+  which score every catalog item against the product on screen (or against the whole bag) on
+  **shared character, a complementary product type (tee → bottoms/shoes/hat, never more tees),
+  shared intent and collection**, with pillar and overlapping age as tie-breakers. Pet items only
+  pair with pet items, b2b-only products never surface, and both rails share the recently-viewed
+  exclusion rule — the seed, anything in the bag and anything already bought are left out. The PDP
+  cross-sell is **always product-derived** (its own row), so a browsing history can never push it
+  off the page.
+- **B2B decoration is item-aware, and specced like the store**: the method chips, the placement
+  list, the diagram, the thread palette, the font/script ranges and the per-placement character
+  limit all come from the same tables the PDP configurator uses. A tee gets
+  Embroidery/Iron-on/Screen print/DTG with its own chest/sleeve/full-back placements; a keepsake
+  box or gift set gets **lid embroidery only**; a blanket or pet mat gets **corner only**; a beanie
+  or pet bandana gets a front patch; a pet bow-tie is offered **no decoration at all** and says so.
+  The embroidery pane takes per-unit names (one per line, counted live against the line's
+  quantities, and carried on the quote sheet as `decorationParams.names`) so a 50-tee named run is
+  capturable in one line — the copy already promised "per-group names for personalisation".
+- **Personalisation on a bag line (edit it from the cart)**: the configurator's spec — method,
+  placement, text, thread colour, font, size, script, or the picked patches — is stored with the
+  bag as a `localStorage` map keyed by account id then **product name** (the same key the cart
+  aggregates lines on), mirroring `elly-bags`. So a personalisable item already in the bag can be
+  **edited in place** from the cart (an inline editor reopens the same configurator on that line and
+  re-populates it), its personalisation can be **removed without dropping the item**, and a
+  quick-added personalisable item offers **"Add a name / initials"** right on its line. Removing the
+  line drops its spec, and specs follow the signed-in profile exactly like the bag. The **staff
+  tablet** reads and writes the same map **by account id**, so opening a customer's item pre-fills
+  the drawer with the spec they already chose, and an in-store capture lands back in their cart. The
+  drawer only lists the steps that APPLY to the item — one that takes patches but not embroidery has
+  no **Name** step.
 - **Interactions**: `assets/app.js` (live-rotating hero with dots/arrows + animated
   progress fill on the active dot, search open/close/typing, recommender engine per segment,
   visitor demo toggle, search chips, catalog-populated grids, facets (UI only), tabs, qty
@@ -153,7 +219,7 @@ in either environment.
 
 - Build the guided-gifting flow on `gifting-hub.html` (currently structure-only).
 - Wire the reserved third-party hooks: Smile loyalty + POS sync, Klaviyo flows, Judge.me
-  reviews, live payments, and fill Pre-Order PDP pricing.
+  reviews, and live payments.
 - Swap B2B illustrative decoration add-ons / tier discounts for confirmed quote pricing.
 - Replace the staff tablet's placeholder inventory + wait times (PRD §12 Open Items) with
   real warehouse-to-store transfer data, and swap the sessionStorage draft-order store

@@ -177,6 +177,23 @@
     </div>
   </section>
 
+  <!-- ============ Recently viewed (per profile; hidden until the visitor has a trail) ============
+       Reads the same filtered list as the search panel and the PDP cross-sell: items already
+       in the bag, or already bought on this profile, are left out. -->
+  <section class="block block--tight" id="viewedRail" style="display:none;border-block:1px solid var(--line-soft)">
+    <div class="wrap">
+      <div class="occ-head">
+        <div>
+          <span class="kicker">Your history</span>
+          <h2 class="sec">Recently viewed</h2>
+          <p class="muted small" style="margin-top:8px;max-width:64ch">Picked up from your own browsing \u2014 on this profile. Items already in your bag or already bought are left out, so nothing here is a repeat recommendation.</p>
+        </div>
+        <a class="link-arrow" href="search.html">Search the store</a>
+      </div>
+      <div class="product-grid" id="viewedGrid"></div>
+    </div>
+  </section>
+
   <!-- ============ Pre-order spotlight ============ -->
   <section class="band band--blue" data-bump>
     <div class="wrap band__in">

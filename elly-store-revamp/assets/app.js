@@ -86,9 +86,14 @@
 
   /* ---------- Real product card (image, price, rating) ---------- */
   function productCard(p) {
-    var badge = p.badge ? '<div class="ph-card__badges"><span class="badge ' + p.badgeCls + '">' + esc(p.badge) + '</span></div>' : '';
+    /* DERIVED from custom.methods (never stored), so the grid can never disagree with
+       the PDP or the Customization filter. Rendered as the same overlay chip the staff
+       tablet puts on its result thumbs, sitting on top of any editorial ribbon. */
+    var badges = cfgEligible(p) ? '<span class="badge badge--coral">Personalisable</span>' : '';
+    if (p.badge) badges += '<span class="badge ' + p.badgeCls + '">' + esc(p.badge) + '</span>';
+    var badge = badges ? '<div class="ph-card__badges">' + badges + '</div>' : '';
     var stars = p.stars ? '<span class="rev">' + icon('star') + ' ' + esc(p.stars) + '</span>' : '<span class="rev" style="color:var(--line)">\u2605\u2605\u2605\u2605\u2605</span>';
-    return '<article class="ph-card ph-card--real" data-kind="' + p.k + '" data-p="' + esc(p.n) + '">' +
+    return '<article class="ph-card ph-card--real" data-kind="' + p.k + '" data-p="' + esc(p.n) + '"' + (p.pdp ? ' data-href="' + esc(p.pdp) + '"' : '') + '>' +
       '<div class="ph-card__media">' + badge +
       '<img src="' + esc(p.img) + '" alt="' + esc(p.n) + '" loading="lazy">' +
       '<button type="button" class="quick-add js-add-demo">Add to bag</button></div>' +
@@ -136,6 +141,8 @@
          (never reveal items that weren't already shown). Curated rails (home,
          PDP cross-sell) still get the capped, rotating fill below. */
       if ($('#facetPanel')) return;
+      /* the PDP cross-sell has its own product-derived fill (renderViewedSurfaces) */
+      if (grid.id === 'pdpXsellGrid') return;
       var n = parseInt(grid.getAttribute('data-ghost-grid'), 10) || 8;
       var kind = grid.getAttribute('data-kind') || 'elly';
       var intent = grid.getAttribute('data-intent') || '';
@@ -222,18 +229,36 @@
     var c = $('#bagCount');
     if (c) { c.textContent = n; c.hidden = n <= 0; }
   }
-  function addToBag(name) {
+  /* one entry per unit: adding qty 3 stores the name three times. The cart
+     aggregates repeats back into a single line with a quantity, so the badge
+     (total units) and the cart totals can never disagree. */
+  function addToBag(name, qty) {
     var items = bagItems();
-    items.push(name);
+    var n = Math.max(1, parseInt(qty, 10) || 1);
+    for (var i = 0; i < n; i++) items.push(name);
     saveBagItems(items);
   }
   function removeFromBag(name) {
     var items = bagItems();
-    var i = items.indexOf(name);
-    if (i < 0) return false;
-    items.splice(i, 1);
-    saveBagItems(items);
+    var next = items.filter(function (x) { return x !== name; });
+    if (next.length === items.length) return false;
+    saveBagItems(next);
+    /* the line is gone, so its personalisation spec goes with it */
+    if (next.indexOf(name) < 0) savePers(name, null);
     return true;
+  }
+  /* set a line's quantity (cart stepper) — keeps the first occurrence's position */
+  function setBagQty(name, qty) {
+    var items = bagItems();
+    var n = Math.max(1, parseInt(qty, 10) || 1);
+    var next = [], placed = false;
+    items.forEach(function (x) {
+      if (x !== name) { next.push(x); return; }
+      if (placed) return;
+      placed = true;
+      for (var i = 0; i < n; i++) next.push(x);
+    });
+    saveBagItems(next);
   }
   function setBag(n) {
     /* demo-only override used by the smoke harness; keep items in sync by padding/trimming */
@@ -244,6 +269,199 @@
   }
   function refreshBag() { saveBagItems(bagItems()); }
 
+  /* ---------- Recently viewed (per profile, persistent, no server) ----------
+     Exactly the bag's shape: a localStorage MAP keyed by the signed-in account id
+     (guest = '__guest'), so every profile keeps its own trail, signing in/out swaps
+     the bucket, and nothing needs a backend — it works locally and on a static
+     deploy. A signed-in trail starts from the profile's own `browse` array
+     (accounts.js) so the demo accounts aren't empty on first look. */
+  var VIEWED_MAP_KEY = 'elly-viewed';
+  var VIEWED_MAX = 8;
+
+  function readViewedMap() {
+    try {
+      var raw = lsGet(VIEWED_MAP_KEY);
+      var map = raw ? JSON.parse(raw) : {};
+      return (map && typeof map === 'object') ? map : {};
+    } catch (e) { return {}; }
+  }
+  function currentAccount() {
+    try {
+      return (typeof window.ELSEG === 'object' && window.ELSEG && typeof window.ELSEG.current === 'function')
+        ? window.ELSEG.current().account : null;
+    } catch (e) { return null; }
+  }
+  /* the profile's own trail, reduced to real catalog names */
+  function viewedItems() {
+    var arr = readViewedMap()[bagAccountKey()];
+    if (!arr || !arr.length) {
+      var acc = currentAccount();
+      if (acc && acc.browse && acc.browse.length) arr = acc.browse.slice(0);
+    }
+    return (arr || []).filter(function (n) { return !!productByName(n); });
+  }
+  function recordView(name) {
+    if (!name || !productByName(name)) return;   /* only real catalog items */
+    var map = readViewedMap();
+    var key = bagAccountKey();
+    var arr = map[key] || [];
+    if (!arr.length) {
+      /* first recorded view for this profile: keep the seeded trail behind it */
+      var acc = currentAccount();
+      if (acc && acc.browse && acc.browse.length) arr = acc.browse.slice(0);
+    }
+    map[key] = [name].concat(arr.filter(function (n) { return n !== name; })).slice(0, VIEWED_MAX);
+    lsSet(VIEWED_MAP_KEY, JSON.stringify(map));
+  }
+  /* the signed-in profile's purchases, reduced to catalog names. History rows carry
+     size/wearer suffixes ('\u2026 \u00b7 M (him)'), so only the base name is compared. */
+  function purchasedNames() {
+    var acc = currentAccount();
+    var out = {};
+    if (!acc || !acc.history) return out;
+    acc.history.forEach(function (h) {
+      var raw = String(h.item || '');
+      /* History rows carry size/wearer suffixes ('\u2026 \u00b7 M (him)'), and some catalog
+         names legitimately contain parentheses, so try the full string first and only
+         then the trimmed forms. Matching stays EXACT, so a purchase can never exclude
+         the wrong product \u2014 at worst an unmatched illustrative row excludes nothing. */
+      var afterDot = raw.split(' \u00b7 ')[0];
+      [raw, afterDot, raw.split(' \u2014 ')[0], afterDot.split('(')[0]].forEach(function (cand) {
+        var c = String(cand).trim().toLowerCase();
+        if (!c) return;
+        for (var i = 0; i < PRODUCTS.length; i++) {
+          if (PRODUCTS[i].n.toLowerCase() === c) { out[PRODUCTS[i].n] = true; return; }
+        }
+      });
+    });
+    return out;
+  }
+  /* THE filtered list every recently-viewed surface reads: the visitor's own trail,
+     minus anything already in the bag, minus anything this profile already bought
+     (don't re-recommend either), and never the product currently on screen. It shares
+     the one exclusion helper with cross-sell, so both agree on what's "already had". */
+  function viewedRecommendations(limit) {
+    var ex = xsellExcluded(CURRENT_PDP ? [CURRENT_PDP] : []);
+    var seen = {}, out = [];
+    viewedItems().forEach(function (n) {
+      if (seen[n] || ex[n]) return;
+      var p = productByName(n);
+      if (!p) return;
+      seen[n] = true;
+      out.push(p);
+    });
+    return limit ? out.slice(0, limit) : out;
+  }
+
+  /* tapping a recently-viewed chip opens that product's own PDP route */
+  document.addEventListener('click', function (e) {
+    var v = e.target.closest('.js-viewed-chip');
+    if (!v) return;
+    var p = productByName(v.getAttribute('data-p') || '');
+    if (p) window.location.href = p.pdp || ('pdp.html?p=' + encodeURIComponent(p.n));
+  });
+
+  /* ---------- Cross-sell (basket-building) ----------
+     Scores every catalog item against a seed product (the PDP you're on) or a seed
+     SET (everything in the bag) using signals the catalog already carries:
+       \u00b7 shared Disney character/franchise \u2014 a Mickey tee \u2192 other Mickey pieces
+       \u00b7 a COMPLEMENTARY product type          \u2014 tee \u2192 bottoms/shoes/hat, not more tees
+       \u00b7 shared intent/occasion               \u2014 park, swim, newborn\u2026
+       \u00b7 same editorial collection             \u2014 Swim, Disney Classics, Bamboo\u2026
+       \u00b7 same pillar + overlapping age group   \u2014 soft tie-breakers
+     It reads the SAME exclusions as recently-viewed (seed + bag + purchased), so no
+     surface can recommend something the customer already has, and b2b-only products
+     never surface in consumer browsing. */
+  var XSELL_COMPLEMENTS = {
+    'Tops & tees': ['Bottoms & shorts', 'Swimwear', 'Shoes', 'Accessories', 'Bows'],
+    'Bottoms & shorts': ['Tops & tees', 'Shoes', 'Accessories'],
+    'Dresses': ['Shoes', 'Bows', 'Accessories', 'Swimwear'],
+    'Onesies & rompers': ['Blankets & swaddles', 'Sleepwear', 'Shoes', 'Accessories', 'Plush'],
+    'Sleepwear': ['Blankets & swaddles', 'Plush', 'Accessories'],
+    'Swimwear': ['Accessories', 'Blankets & mats', 'Shoes', 'Tops & tees'],
+    'Blankets & swaddles': ['Onesies & rompers', 'Sleepwear', 'Plush', 'Accessories'],
+    'Blankets & mats': ['Onesies & rompers', 'Plush', 'Accessories'],
+    'Gift set': ['Plush', 'Accessories', 'Keepsake box', 'Blankets & swaddles', 'Toy'],
+    'Keepsake box': ['Gift set', 'Plush', 'Accessories'],
+    'Plush': ['Accessories', 'Gift set', 'Blankets & swaddles', 'Toy'],
+    'Shoes': ['Tops & tees', 'Dresses', 'Bottoms & shorts', 'Accessories'],
+    'Accessories': ['Tops & tees', 'Dresses', 'Shoes', 'Swimwear', 'Blankets & swaddles'],
+    'Bows': ['Dresses', 'Tops & tees', 'Accessories'],
+    'Toy': ['Plush', 'Gift set', 'Accessories'],
+    'Pet apparel': ['Pet apparel']
+  };
+  var XSELL_PILLAR_HREF = {
+    elly: 'elly-label.html', disney: 'disney-elly.html', gift: 'gifting-hub.html',
+    custom: 'customization.html', shoe: 'shoe-boutique.html', furkids: 'furkids.html'
+  };
+
+  /* names a recommendation must never surface: everything in the bag, everything this
+     profile already bought, and the seed product(s) themselves */
+  function xsellExcluded(seeds) {
+    var ex = {};
+    bagItems().forEach(function (n) { ex[n] = true; });
+    var bought = purchasedNames();
+    Object.keys(bought).forEach(function (n) { ex[n] = true; });
+    (seeds || []).forEach(function (s) { if (s && s.n) ex[s.n] = true; });
+    return ex;
+  }
+
+  function xsellScore(seed, cand) {
+    if (!seed || !cand || cand.n === seed.n) return 0;
+    if (cand.availability === 'b2b-only') return 0;
+    /* pets only cross-sell to pets \u2014 never a Mickey hat for a dog bandana */
+    if ((seed.k === 'furkids') !== (cand.k === 'furkids')) return 0;
+    var score = 0;
+    var chars = (seed.characters || []).filter(function (c) { return (cand.characters || []).indexOf(c) >= 0; });
+    score += Math.min(chars.length, 2) * 3;
+    if ((XSELL_COMPLEMENTS[seed.type] || []).indexOf(cand.type) >= 0) score += 7;
+    else if (cand.type === seed.type) score -= 3;   /* don't just stack the same category */
+    var ints = (seed.int || []).filter(function (i) { return (cand.int || []).indexOf(i) >= 0; });
+    score += Math.min(ints.length, 2) * 2;
+    var cols = (seed.collection || []).filter(function (c) { return (cand.collection || []).indexOf(c) >= 0; });
+    score += Math.min(cols.length, 2) * 2;
+    if (cand.k === seed.k) score += 1;
+    var ages = (seed.age || []).filter(function (a) { return (cand.age || []).indexOf(a) >= 0; });
+    score += Math.min(ages.length, 1);
+    /* the PRD \u00a75.3 "add a name to this" hook: a personalisable piece in the same
+       character/collection is a natural match for the item on screen */
+    if (cfgEligible(cand) && (chars.length || cols.length)) score += 2;
+    return score;
+  }
+
+  /* best complementary items for a seed SET (the PDP passes one product, the cart
+     passes the whole bag). Sorted by score, stable on catalog order for determinism. */
+  function crossSellPool(seeds, limit) {
+    seeds = (seeds || []).filter(Boolean);
+    if (!seeds.length) return [];
+    var ex = xsellExcluded(seeds), scored = [];
+    PRODUCTS.forEach(function (cand) {
+      if (ex[cand.n]) return;
+      var best = 0;
+      seeds.forEach(function (s) { var v = xsellScore(s, cand); if (v > best) best = v; });
+      if (best > 0) scored.push({ p: cand, s: best });
+    });
+    scored.sort(function (a, b) { return b.s - a.s; });
+    return scored.slice(0, limit || 4).map(function (x) { return x.p; });
+  }
+  function crossSellFor(seed, limit) { return crossSellPool(seed ? [seed] : [], limit); }
+
+  /* cart "complete the set" \u2014 scored against everything in the bag at once, so the
+     suggestion complements the whole basket; bag + purchased + b2b-only excluded */
+  function renderCartCrossSell() {
+    var grid = $('#cartXsellGrid');
+    if (!grid) return;
+    var seeds = [], seen = {};
+    bagItems().forEach(function (n) {
+      var p = productByName(n);
+      if (p && !seen[p.n]) { seen[p.n] = true; seeds.push(p); }
+    });
+    var list = crossSellPool(seeds, 4);
+    grid.innerHTML = list.map(productCard).join('');
+    var sec = $('#cartXsell');
+    if (sec) sec.hidden = !list.length;
+  }
+
   document.addEventListener('click', function (e) {
     var add = e.target.closest('.js-add-demo');
     if (add) {
@@ -251,6 +469,10 @@
       var name = card ? (card.getAttribute('data-p') || REP_PRODUCT[card.getAttribute('data-kind')] || '') : '';
       if (!name) name = 'Beary Personalisable Baby Gift Set';
       addToBag(name);
+      /* keep the cart lines and the recommendation rails honest the moment something
+         is added: the new item drops out of both (they share the bag exclusion) */
+      populateCartLines();
+      renderViewedSurfaces();
       toast('Added to bag \u2014 <b>demo</b>. <a href="cart.html" style="text-decoration:underline;color:#fff">View bag</a>');
     }
   });
@@ -444,6 +666,16 @@
           return '<button type="button" class="chip chip--coral js-search-chip">' + icon('search') + q + '</button>';
         }).join('');
       } else rw.hidden = true;
+    }
+    /* recently viewed — same filtered list and exclusion rules as the rails */
+    var vw = $('#viewedChipsWrap'), vc = $('#viewedChips');
+    if (vw && vc) {
+      var viewed = viewedRecommendations(6);
+      vw.hidden = !viewed.length;
+      vc.innerHTML = viewed.map(function (p) {
+        return '<button type="button" class="chip js-viewed-chip" data-p="' + esc(p.n) + '">' +
+          icon('search') + esc(p.n) + '</button>';
+      }).join('');
     }
     /* most searched keywords — chips run a real keyword search */
     var kw = $('#popularKeywords');
@@ -880,8 +1112,20 @@
     }
     var thumb = e.target.closest('.pdp__thumb');
     if (thumb) {
-      $$('.pdp__thumb', thumb.parentElement).forEach(function (t) { t.classList.remove('is-on'); });
+      $$('.pdp__thumb', thumb.parentElement).forEach(function (t) {
+        t.classList.remove('is-on');
+        t.setAttribute('aria-selected', 'false');
+      });
       thumb.classList.add('is-on');
+      thumb.setAttribute('aria-selected', 'true');
+      /* swap the main photo to the image this thumbnail represents (data-img is set
+         by populatePDP; a placeholder thumb has none, so nothing would change) */
+      var src = thumb.getAttribute('data-img');
+      var mainImg = $('.pdp__main .pdp-img');
+      if (src && mainImg) {
+        mainImg.src = src;
+        mainImg.alt = (thumb.getAttribute('aria-label') || '') + ' \u2014 ' + (mainImg.alt || '');
+      }
     }
     var q = e.target.closest('.qty-row button[data-step]');
     if (q) {
@@ -907,9 +1151,20 @@
       var sizeSel = buy.closest('.pdp__info, .ph-info, form, .card');
       var picked = sizeSel ? $('.size-chip.is-on', sizeSel) : null;
       if (picked) {
-        var name = (CURRENT_PDP && CURRENT_PDP.n) || (($('#preTitle') && $('#preTitle').textContent) || 'Beary Personalisable Baby Gift Set');
-        addToBag(name);
-        var pers = cfgSummaryText();
+        /* the Pre-Order PDP carries its catalog product + selected design on the
+           button, so one click adds the picked quantity with the right artwork */
+        var pName = buy.getAttribute('data-p');
+        var dName = buy.getAttribute('data-design');
+        var name = pName
+          ? (dName ? pName + ' \u2014 ' + dName : pName)
+          : ((CURRENT_PDP && CURRENT_PDP.n) || (($('#preTitle') && $('#preTitle').textContent) || 'Beary Personalisable Baby Gift Set'));
+        var qtyEl = sizeSel ? $('.qty-row output', sizeSel) : null;
+        var qty = qtyEl ? (parseInt(qtyEl.value, 10) || 1) : 1;
+        addToBag(name, qty);
+        /* store the spec with the bag, so the cart can show it and edit it later */
+        var spec = (CURRENT_PDP && cfgEligible(CURRENT_PDP)) ? cfgSpec() : null;
+        if (spec) savePers(name, spec);
+        var pers = spec ? spec.summary : '';
         toast('Added to bag \u2014 <b>demo</b>' + (pers ? ' \u00b7 ' + esc(pers) : '') + '. <a href="cart.html" style="text-decoration:underline;color:#fff">View bag</a>');
       } else {
         toast('Please pick a size first (demo checkout flow)');
@@ -984,7 +1239,8 @@
     $$('.js-cart-line').forEach(function (line) {
       var out = $('.qty-row output', line);
       var price = parseFloat(line.getAttribute('data-price')) || 0;
-      var n = out ? (parseInt(out.value, 10) || 0) : 1;
+      /* cart lines carry a stepper; checkout summary lines carry data-qty only */
+      var n = out ? (parseInt(out.value, 10) || 0) : (parseInt(line.getAttribute('data-qty'), 10) || 1);
       qty += n;
       subtotal += price * n;
       var lp = $('.line-price', line);
@@ -992,15 +1248,25 @@
     });
     var st = $('#cartSubtotal'); if (st) st.textContent = 'S$' + subtotal.toFixed(2);
     var tot = $('#cartTotal'); if (tot) tot.textContent = 'S$' + subtotal.toFixed(2);
+    var countEl = $('#cartCount'); if (countEl) countEl.textContent = qty;
+    var wordEl = $('#cartCountWord'); if (wordEl) wordEl.textContent = qty === 1 ? 'item' : 'items';
     var meter = $('#shipMeter'); if (meter) meter.style.width = Math.min(100, subtotal / 100 * 100) + '%';
     var lbl = $('#shipMeterLabel');
     if (lbl) lbl.textContent = subtotal >= 100 ? 'You\u2019ve unlocked free standard shipping' : 'S$' + (100 - subtotal).toFixed(2) + ' away from free standard shipping';
     return subtotal;
   }
   document.addEventListener('qtychange', function (e) {
-    if (e.target.closest('.js-cart-line')) {
-      cartTotals();
+    var line = e.target.closest('.js-cart-line');
+    if (!line) return;
+    /* persist the line's new quantity so the badge + checkout summary agree */
+    var out = $('.qty-row output', line);
+    var name = line.getAttribute('data-name');
+    if (name && out) {
+      var n = parseInt(out.value, 10) || 1;
+      line.setAttribute('data-qty', n);
+      setBagQty(name, n);
     }
+    cartTotals();
   });
   document.addEventListener('DOMContentLoaded', function () {
     if ($('.js-cart-line')) cartTotals();
@@ -1028,22 +1294,66 @@
      run; B2B-only items (adult/varsity tees) live in the same database but are
      excluded from consumer browsing (PRD §10: same catalog, B2B-eligible subset). */
   var B2B_KIND_LABEL = { elly: 'Elly Label', disney: 'Disney | elly', custom: 'Customization', gift: 'Gifting Hub', furkids: 'Elly FurKids' };
+  /* ---------- per-item decoration capability (PRD §10) ----------
+     The bulk flow used to offer all five decoration methods — and the same
+     tee-chest placement diagram — on every line, so a keepsake box, a pet
+     sleeping mat or a bow-tie could be "embroidered at the left chest".
+     What an item can actually take is derived here, from the same data the
+     consumer configurator uses:
+       · the item's own `custom.placements` when it has them (a box lid, a
+         blanket corner, a beanie front) instead of garment placements;
+       · otherwise the garment/bulk defaults, which is where the PRD's
+         "left chest, full back" logo placements live;
+       · no decoration at all for items too small to carry any (pet bow-ties). */
+  var B2B_GARMENT_TYPES = ['Tops & tees', 'Onesies & rompers', 'Bottoms & shorts', 'Sleepwear', 'Swimwear', 'Dresses'];
+  function b2bCapability(p) {
+    var t = p.type || '';
+    var own = ((p.custom && p.custom.placements) || []).slice();
+    var isPet = (p.int || []).indexOf('pets') >= 0 || p.k === 'furkids';
+    if (t === 'Bows') return { deco: [], places: [], diagram: 'bandana' };
+    if (t === 'Gift set' || t === 'Keepsake box') {
+      return { deco: ['Embroidery'], places: own.length ? own : ['keepsake box lid'], diagram: 'box' };
+    }
+    if (t === 'Blankets & swaddles' || t === 'Blankets & mats') {
+      return { deco: ['Embroidery'], places: own.length ? own : ['corner'], diagram: 'blanket' };
+    }
+    if (t === 'Accessories') {
+      /* beanies take a front patch of embroidery, never a chest logo; a pet
+         bandana shares the Accessories type in the catalog but not the shape */
+      return { deco: ['Embroidery'], places: own.length ? own : ['front'], diagram: isPet ? 'bandana' : 'beanie' };
+    }
+    if (t === 'Pet apparel' || isPet) {
+      return { deco: ['Embroidery', 'Iron-on'], places: own.length ? own : ['front'], diagram: 'tee' };
+    }
+    if (B2B_GARMENT_TYPES.indexOf(t) >= 0) {
+      var places = own.slice();
+      ['left chest', 'full back'].forEach(function (k) { if (places.indexOf(k) < 0) places.push(k); });
+      return { deco: ['Embroidery', 'Iron-on', 'Screen print', 'DTG'], places: places, diagram: 'tee' };
+    }
+    return { deco: [], places: [], diagram: 'tee' };
+  }
   var B2B_ITEMS = [];
   ALL_PRODUCTS.forEach(function (p) {
     if (!p.b2b || !p.b2b.available) return;
+    var cap = b2bCapability(p);
     B2B_ITEMS.push({
-      kind: p.k,
+      kind: (p.b2b && p.b2b.kind) || p.k,   /* b2b.kind groups an item in the quote flow when it differs from its consumer pillar */
       name: p.n,
       meta: p.b2b.meta || (B2B_KIND_LABEL[p.k] || 'Elly Label') + ' \u00b7 ' + ((p.age || []).join('/')),
       unit: (p.b2b.unit != null ? p.b2b.unit : (p.price || 0)),
       img: p.img,
       sizes: (p.b2b.sizes && p.b2b.sizes.length) ? p.b2b.sizes : ((p.sizes && p.sizes.length) ? p.sizes : ['Set']),
-      glyph: 'tee'
+      glyph: 'tee',
+      deco: cap.deco,
+      places: cap.places,
+      diagram: cap.diagram
     });
   });
 
-  /* SVG artwork — fallback only; B2B_ITEMS[].img (real store photo) is used when present */
-  var B2B_THREADS = [['Coral', '#FF6070'], ['Blue', '#4D6EB5'], ['Ink', '#1a1a1a'], ['White', '#ffffff'], ['Gold', '#C9A227'], ['Forest', '#2F6B4F']];
+  /* SVG artwork — fallback only; B2B_ITEMS[].img (real store photo) is used when present.
+     NB: the thread palette is NOT defined here — the embroidery pane reads the
+     consumer table (CUSTOM_COLOURS) at render time, so a bulk run and a single
+     order can never be offered two different sets of thread names. */
   function b2bArtSVG(it) {
     var glyph = it.glyph || 'tee';
     var d;
@@ -1059,18 +1369,50 @@
   function b2bArtSrc(it) {
     return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(b2bArtSVG(it));
   }
-  function b2bShirtBase() {
+  /* One silhouette per item shape, so the placement diagram shows the item the
+     buyer actually picked — a lid for a keepsake box, a corner for a blanket,
+     a cuff for a beanie — rather than a t-shirt every time. */
+  var B2B_BASES = {
+    tee:     { body: 'M46 6L33 15 17 21 10 29 18 41 26 39 27 84 73 84 74 39 82 41 90 29 83 21 67 15 54 6Z',
+               extra: '<ellipse cx="50" cy="7" rx="8" ry="3" fill="#FCF6EE" stroke="#1a1a1a" stroke-width="1"/>' },
+    box:     { body: 'M20 28 L80 28 L80 80 L20 80 Z',
+               extra: '<path d="M26 34 L74 34 L74 74 L26 74 Z" fill="none" stroke="#c9c9c9" stroke-width="1.2"/><path d="M20 45 L80 45" stroke="#c9c9c9" stroke-width="1.2"/>' },
+    blanket: { body: 'M14 20 L86 20 L86 80 L14 80 Z',
+               extra: '<circle cx="24" cy="30" r="2" fill="#dcdcdc"/><circle cx="50" cy="30" r="2" fill="#dcdcdc"/><circle cx="76" cy="30" r="2" fill="#dcdcdc"/>' },
+    beanie:  { body: 'M28 60 C28 34 38 22 50 22 C62 22 72 34 72 60 Z', extra: '<rect x="25" y="60" width="50" height="15" rx="5" fill="#f2f2f2" stroke="#1a1a1a" stroke-width="2"/>' },
+    bandana: { body: 'M50 24 L84 72 L16 72 Z', extra: '' }
+  };
+  /* where the embroidery lands on each silhouette, keyed by the SAME placement
+     keys the consumer configurator uses ('left chest', 'corner', …) */
+  var B2B_ZONES = {
+    tee: {
+      'left chest':    { x: 31, y: 44, w: 14, h: 18 },
+      'front':         { x: 41, y: 43, w: 18, h: 22 },
+      'full back':     { x: 31, y: 44, w: 38, h: 34, c: '#4D6EB5' },
+      'sleeve / cuff': { x: 14, y: 24, w: 20, h: 14 }
+    },
+    box:     { 'keepsake box lid': { x: 34, y: 32, w: 32, h: 18 }, 'front': { x: 34, y: 56, w: 32, h: 14 } },
+    blanket: { 'corner': { x: 20, y: 60, w: 24, h: 14 }, 'front': { x: 38, y: 44, w: 24, h: 14 } },
+    beanie:  { 'front': { x: 39, y: 38, w: 22, h: 14 }, 'left chest': { x: 39, y: 38, w: 22, h: 14 } },
+    bandana: { 'front': { x: 37, y: 48, w: 26, h: 14 }, 'left chest': { x: 37, y: 48, w: 26, h: 14 } }
+  };
+  function b2bBaseSVG(diagram) {
+    var b = B2B_BASES[diagram] || B2B_BASES.tee;
     return '<rect width="100" height="100" fill="#FCF6EE"/>' +
-      '<path d="M46 6L33 15 17 21 10 29 18 41 26 39 27 84 73 84 74 39 82 41 90 29 83 21 67 15 54 6Z" fill="#ffffff" stroke="#1a1a1a" stroke-width="2" stroke-linejoin="round"/>' +
-      '<ellipse cx="50" cy="7" rx="8" ry="3" fill="#FCF6EE" stroke="#1a1a1a" stroke-width="1"/>';
+      '<path d="' + b.body + '" fill="#ffffff" stroke="#1a1a1a" stroke-width="2" stroke-linejoin="round"/>' + (b.extra || '');
   }
-  function b2bPlaceDiag(place) {
-    var zone = '';
-    if (place === 'Left chest') zone = '<rect x="31" y="44" width="14" height="18" rx="2" fill="rgba(255,96,112,.22)" stroke="#FF6070" stroke-width="1.5" stroke-dasharray="3 2"/>';
-    else if (place === 'Centre front') zone = '<rect x="41" y="43" width="18" height="22" rx="2" fill="rgba(255,96,112,.22)" stroke="#FF6070" stroke-width="1.5" stroke-dasharray="3 2"/>';
-    else if (place === 'Full back') zone = '<rect x="31" y="44" width="38" height="34" rx="3" fill="rgba(77,110,181,.18)" stroke="#4D6EB5" stroke-width="1.5" stroke-dasharray="4 3"/>';
-    else zone = '<polygon points="15,29 24,23 32,28 30,38 19,37" fill="rgba(255,96,112,.22)" stroke="#FF6070" stroke-width="1.5" stroke-dasharray="3 2"/>';
-    return '<figure class="b2b-fig"><svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">' + b2bShirtBase() + zone + '</svg><figcaption>' + esc(place || '') + (place === 'Full back' ? ' \u2014 larger coverage' : '') + '</figcaption></figure>';
+  function b2bShirtBase() { return b2bBaseSVG('tee'); }
+  function b2bZoneRect(z) {
+    return '<rect x="' + z.x + '" y="' + z.y + '" width="' + z.w + '" height="' + z.h + '" rx="2" fill="' +
+      (z.c ? 'rgba(77,110,181,.18)' : 'rgba(255,96,112,.22)') + '" stroke="' + (z.c || '#FF6070') + '" stroke-width="1.5" stroke-dasharray="3 2"/>';
+  }
+  function b2bPlaceDiag(placeKey, diagram) {
+    var zones = B2B_ZONES[diagram] || B2B_ZONES.tee;
+    var z = zones[placeKey] || firstVal(zones);
+    var label = cfgPlacementCfg(placeKey).label;
+    return '<figure class="b2b-fig"><svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">' +
+      b2bBaseSVG(diagram) + b2bZoneRect(z) + '</svg><figcaption>' + esc(label) +
+      (placeKey === 'full back' ? ' \u2014 larger coverage' : '') + '</figcaption></figure>';
   }
   function b2bIronDiag(key) {
     var size = { 'Small (A6)': [14, 18], 'Medium (A5)': [22, 27], 'Large (A4)': [32, 36] }[key] || [22, 27];
@@ -1079,10 +1421,86 @@
       '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="1.5" fill="rgba(77,110,181,.18)" stroke="#4D6EB5" stroke-width="1.5" stroke-dasharray="3 2"/>' +
       '</svg><figcaption>' + esc(key || '') + ' transfer</figcaption></figure>';
   }
+  /* thread swatches come from the consumer table (CUSTOM_COLOURS) so both flows
+     name and show the same threads; Coral is the default in both. */
   function b2bThreadSwatchesHTML() {
-    return B2B_THREADS.map(function (t, i) {
-      return '<button type="button" class="b2b-colour' + (i === 0 ? ' is-on' : '') + '" style="background:' + t[1] + '" data-col="' + t[0] + '" aria-label="' + t[0] + ' thread" aria-pressed="' + (i === 0 ? 'true' : 'false') + '" title="' + t[0] + '"></button>';
+    return CUSTOM_COLOURS.map(function (c) {
+      var on = c.name === 'Coral';
+      return '<button type="button" class="b2b-colour' + (on ? ' is-on' : '') + '" style="background:' + c.hex + '" data-col="' + c.name + '" aria-label="' + c.name + ' thread" aria-pressed="' + (on ? 'true' : 'false') + '" title="' + c.name + '"></button>';
     }).join('');
+  }
+  /* placement labels are shared with the consumer configurator, so 'Sleeve' vs
+     'Sleeve / cuff' can't drift. The select carries the human label as its value
+     (it reaches the quote sheet) — this maps it back to the key. */
+  function b2bPlaceKey(label) {
+    var keys = Object.keys(CUSTOM_PLACEMENTS);
+    for (var i = 0; i < keys.length; i++) if (CUSTOM_PLACEMENTS[keys[i]].label === label) return keys[i];
+    return null;
+  }
+  function b2bLangId(label) {
+    for (var i = 0; i < CUSTOM_LANGS.length; i++) if (CUSTOM_LANGS[i].label === label) return CUSTOM_LANGS[i].id;
+    return 'en';
+  }
+  /* the per-unit character allowance for a decorated line: the placement's own
+     limit, tightened for non-Latin scripts by the same rule the PDP uses (so a
+     name approved on the site fits the bulk run too) */
+  function b2bLimitNote(line) {
+    if (!line) return;
+    var note = $('.js-limit-note', line);
+    if (!note) return;
+    var sel = $('select[data-param="placement"]', line);
+    var lang = $('select[data-param="lang"]', line);
+    var key = sel ? (b2bPlaceKey(sel.value) || 'left chest') : 'left chest';
+    var max = cfgPlacementCfg(key).max;
+    var langId = lang ? b2bLangId(lang.value) : 'en';
+    var lim = cfgLangMaxFor(max, langId);
+    note.textContent = 'Up to ' + lim + ' characters in thread (' + cfgPlacementCfg(key).label.toLowerCase() +
+      (langId === 'en' ? ').' : ') \u2014 native script takes more room, so fewer characters fit.');
+  }
+  /* per-unit names: a bulk run of 50 named tees needs 50 names, which a single
+     "name" field can't hold. One per line, counted against the line's units. */
+  function b2bNames(line) {
+    var ta = $('.js-dp-names', line);
+    if (!ta || !ta.value) return [];
+    return String(ta.value).split('\n').map(function (s) { return s.trim(); }).filter(function (s) { return !!s; });
+  }
+  function b2bNamesNote(line) {
+    if (!line) return;
+    var note = $('.js-names-note', line);
+    if (!note) return;
+    var names = b2bNames(line);
+    var units = lineTotals(line).qty;
+    if (names.length && units && names.length > units) {
+      note.textContent = names.length + ' names for ' + units + ' units \u2014 remove ' + (names.length - units) + ' name' + (names.length - units > 1 ? 's' : '') + ' or add the units.';
+      note.className = 'small b2b-moq-warn js-names-note';
+      return;
+    }
+    note.textContent = !names.length
+      ? (units ? units + ' units \u2014 no names yet: this line is embroidered from your artwork instead.' : 'Add one name per unit \u2014 each is embroidered separately.')
+      : names.length + ' name' + (names.length > 1 ? 's' : '') + ' for ' + units + ' unit' + (units === 1 ? '' : 's') +
+        (units > names.length ? ' \u2014 ' + (units - names.length) + ' left plain.' : '.');
+    note.className = 'small muted js-names-note';
+  }
+  /* one place that renders a line's decoration for the review + printable sheet,
+     so a B2B spec reads the same as the PDP's personalisation summary */
+  function b2bDecoDetail(it) {
+    var ps = it.decorationParams || {};
+    var out = [];
+    if (ps.placement) out.push(ps.placement);
+    if (ps.thread) out.push(ps.thread + ' thread');
+    if (ps.font) out.push(ps.font);
+    if (ps.fontSize) out.push(ps.fontSize);
+    if (ps.lang && ps.lang !== 'English') out.push(ps.lang);
+    if (ps.transfer) out.push(ps.transfer + ' transfer');
+    if (ps.inks) out.push(ps.inks);
+    if (ps.namesCount) out.push(ps.namesCount + ' name' + (ps.namesCount > 1 ? 's' : ''));
+    return out;
+  }
+  function b2bDecoText(it) {
+    var m = (it.decoration || {}).method || 'Standard';
+    if (m === 'Standard') return '\u2014';
+    var detail = b2bDecoDetail(it);
+    return m + (detail.length ? ' \u00b7 ' + detail.join(' \u00b7 ') : '');
   }
   /* decoration methods — the add-on is per unit; only Standard has no extra fields */
   var B2B_METHODS = [
@@ -1092,29 +1510,58 @@
     { key: 'Screen print', label: 'Screen print', add: 6 },
     { key: 'DTG', label: 'DTG (full colour)', add: 12 }
   ];
-  /* conditional fields shown per line when a decoration method is picked */
-  var B2B_PARAM_HTML = {
-    'Embroidery': '<div class="form-grid" style="max-width:520px">' +
-      '<div class="field emb-field">' +
-      '<label>Placement</label>' +
-      '<select class="js-dp" data-param="placement">' +
-      '<option>Left chest</option><option>Sleeve</option><option>Full back</option><option>Centre front</option></select>' +
-      '<div class="js-diag-place b2b-diag">' + b2bPlaceDiag('Left chest') + '</div></div>' +
-      '<div class="field emb-field">' +
-      '<label>Thread colour</label>' +
-      '<div class="b2b-colours" data-param="thread" role="radiogroup" aria-label="Thread colour">' + b2bThreadSwatchesHTML() + '</div>' +
-      '<p class="small muted" style="margin:12px 0 0">Adds <b>S$8.00 per unit</b>. Names, initials or a small logo \u2014 up to ~12 characters for the chest.</p>' +
-      '</div>' +
-      '</div>',
-    'Iron-on': '<div class="field" style="max-width:360px;margin:0"><label>Transfer size</label>' +
-      '<select class="js-dp" data-param="transfer"><option>Small (A6)</option><option>Medium (A5)</option><option>Large (A4)</option></select>' +
-      '<div class="js-diag-iron b2b-diag">' + b2bIronDiag('Small (A6)') + '</div></div>' +
-      '<p class="small muted" style="margin-top:10px">Adds <b>S$4.00 per unit</b>. Heat-transfer name or design \u2014 fastest turnaround for events.</p>',
-    'Screen print': '<div class="form-grid" style="max-width:340px"><div class="field"><label>Ink colours</label>' +
-      '<select class="js-dp" data-param="inks"><option>1 colour</option><option>2 colours</option><option>3 colours</option></select></div></div>' +
-      '<p class="small muted" style="margin-top:10px">Adds <b>S$6.00 per unit</b> (1 colour). Best for large single-colour logos \u2014 vector artwork required.</p>',
-    'DTG': '<p class="small muted">Adds <b>S$12.00 per unit</b>. Full-colour photo-style prints \u2014 upload your artwork in the Artwork &amp; shipping step. Great for corporate keepsakes and event merchandise.</p>'
-  };
+  /* Conditional fields shown per line when a decoration method is picked. Built
+     lazily and PER ITEM, so the placement list, its diagram, the thread palette,
+     the script/font ranges and the character limit all come from the same tables
+     the consumer configurator uses \u2014 a bulk run can be specced exactly like a
+     single order. */
+  function b2bParamHTML(method, it) {
+    it = it || { places: [], diagram: 'tee' };
+    var diagram = it.diagram || 'tee';
+    if (method === 'Embroidery') {
+      var places = (it.places && it.places.length) ? it.places : ['left chest'];
+      var firstKey = places[0];
+      var label = function (k) { return esc(cfgPlacementCfg(k).label); };
+      return '<div class="form-grid" style="max-width:640px">' +
+        '<div class="field emb-field"><label>Placement</label>' +
+        '<select class="js-dp" data-param="placement" data-diagram="' + esc(diagram) + '" data-limit="' + cfgPlacementCfg(firstKey).max + '">' +
+        places.map(function (k) { return '<option value="' + label(k) + '">' + label(k) + '</option>'; }).join('') +
+        '</select>' +
+        '<div class="js-diag-place b2b-diag">' + b2bPlaceDiag(firstKey, diagram) + '</div></div>' +
+        '<div class="field emb-field"><label>Thread colour</label>' +
+        '<div class="b2b-colours" data-param="thread" role="radiogroup" aria-label="Thread colour">' + b2bThreadSwatchesHTML() + '</div></div>' +
+        '<div class="field"><label>Script</label><select class="js-dp" data-param="lang">' +
+        CUSTOM_LANGS.map(function (l) { return '<option value="' + esc(l.label) + '"' + (l.id === 'en' ? ' selected' : '') + '>' + esc(l.label) + '</option>'; }).join('') +
+        '</select></div>' +
+        '<div class="field"><label>Font type</label><select class="js-dp" data-param="font">' +
+        CUSTOM_FONTS.map(function (fo) { return '<option value="' + esc(fo.label) + '" style="font-family:' + fo.family + '"' + (fo.id === 'serif' ? ' selected' : '') + '>' + esc(fo.label) + '</option>'; }).join('') +
+        '</select></div>' +
+        '<div class="field"><label>Font size</label><select class="js-dp" data-param="fontSize">' +
+        CUSTOM_FONT_SIZES.map(function (si) { return '<option value="' + esc(si.label) + '"' + (si.id === 'md' ? ' selected' : '') + '>' + esc(si.label) + '</option>'; }).join('') +
+        '</select></div>' +
+        '<p class="small muted js-limit-note" style="grid-column:1 / -1;margin:0"></p>' +
+        '<div class="field" style="grid-column:1 / -1"><label>Names for personalisation <b>(optional)</b></label>' +
+        '<textarea class="js-dp-names" rows="3" placeholder="One name per line \u2014 e.g. Olivia, Noah, Amelia\u2026"></textarea>' +
+        '<p class="small muted js-names-note" style="margin:8px 0 0"></p></div>' +
+        '</div>' +
+        '<p class="small muted" style="margin:12px 0 0">Embroidery adds <b>S$8.00 per unit</b> \u2014 names, initials or a small logo, with the same placement, thread, font and script options as the store.</p>';
+    }
+    if (method === 'Iron-on') {
+      return '<div class="field" style="max-width:360px;margin:0"><label>Transfer size</label>' +
+        '<select class="js-dp" data-param="transfer"><option>Small (A6)</option><option>Medium (A5)</option><option>Large (A4)</option></select>' +
+        '<div class="js-diag-iron b2b-diag">' + b2bIronDiag('Small (A6)') + '</div></div>' +
+        '<p class="small muted" style="margin-top:10px">Adds <b>S$4.00 per unit</b>. Heat-transfer name or design \u2014 fastest turnaround for events.</p>';
+    }
+    if (method === 'Screen print') {
+      return '<div class="form-grid" style="max-width:340px"><div class="field"><label>Ink colours</label>' +
+        '<select class="js-dp" data-param="inks"><option>1 colour</option><option>2 colours</option><option>3 colours</option></select></div></div>' +
+        '<p class="small muted" style="margin-top:10px">Adds <b>S$6.00 per unit</b> (1 colour). Best for large single-colour logos \u2014 vector artwork required.</p>';
+    }
+    if (method === 'DTG') {
+      return '<p class="small muted">Adds <b>S$12.00 per unit</b>. Full-colour photo-style prints \u2014 upload your artwork in the Artwork &amp; shipping step. Great for corporate keepsakes and event merchandise.</p>';
+    }
+    return '';
+  }
   var B2B_OTYPE_ALIAS = { bulk: 'Bulk / wholesale', corporate: 'Corporate', event: 'Corporate event' };
   var b2bArtName = '';
   /* Frozen, validated quote draft — set when the customer confirms details on the
@@ -1156,8 +1603,12 @@
     return out;
   }
   function b2bItemPanelHTML(it) {
-    var chips = B2B_METHODS.map(function (m, mi) {
-      return '<button type="button" class="chip js-b2b-deco' + (mi === 0 ? ' is-active' : '') + '" data-method="' + m.key + '" data-add="' + m.add + '">' + m.label + '</button>';
+    /* only the methods this item can actually take, in the page's own order —
+       Standard is always offered, and an item that can't carry any decoration
+       (a pet bow-tie) says so instead of showing five unusable chips */
+    var available = ['Standard'].concat(it.deco || []);
+    var chips = B2B_METHODS.filter(function (m) { return available.indexOf(m.key) >= 0; }).map(function (m) {
+      return '<button type="button" class="chip js-b2b-deco' + (m.key === 'Standard' ? ' is-active' : '') + '" data-method="' + m.key + '" data-add="' + m.add + '">' + m.label + '</button>';
     }).join('');
     var szq = it.sizes.map(function (s) {
       return '<span class="szq"><span class="szq-lbl">' + esc(s) + '</span>' +
@@ -1171,8 +1622,9 @@
       '<span class="tally">Line: <b class="js-line-qty">0</b> units \u00b7 <b class="js-line-sub">S$0.00</b> \u00b7 deco <b class="js-line-deco">S$0.00</b></span></div>' +
       '<div class="szq-wrap">' + szq + '</div>' +
       '<div class="chip-row" role="radiogroup" aria-label="Decoration for ' + esc(it.name) + '" style="margin-bottom:10px">' + chips + '</div>' +
+      ((it.deco && it.deco.length) ? '' : '<p class="line-note small muted js-deco-note" style="color:var(--ink-soft)">Decoration isn\u2019t available on this item \u2014 the quote covers plain stock.</p>') +
       '<div class="js-dp-wrap"></div>' +
-      '<p class="line-note small muted" style="color:var(--ink-soft)"></p>';
+      '<p class="line-note small muted js-line-moq" style="color:var(--ink-soft)"></p>';
   }
   function b2bRowHTML() {
     return '<div class="b2b-row js-b2b-row">' +
@@ -1269,14 +1721,19 @@
       var dd = $('.js-line-deco', line); if (dd) dd.textContent = 'S$' + t.deco.toFixed(2);
       var note = $('.js-line-moq', line);
       if (note) {
+        /* the class IS the lookup key for the next pass, so it has to survive the
+           re-styling (dropping it left this wholesale hint write-once) */
         if (t.qty && b2bType() === 'Bulk / wholesale' && t.qty < 10) {
           note.textContent = 'Needs at least 10 units for this design \u2014 add ' + (10 - t.qty) + ' more.';
-          note.className = 'line-note small b2b-moq-warn';
+          note.className = 'line-note small b2b-moq-warn js-line-moq';
         } else {
           note.textContent = '';
-          note.className = 'line-note small muted';
+          note.className = 'line-note small muted js-line-moq';
         }
       }
+      /* the per-unit name count reads against the line's units, so it follows the
+         quantity steppers as well as the textarea */
+      if (!line.hidden) b2bNamesNote(line);
     });
   }
   document.addEventListener('qtychange', function (e) {
@@ -1419,8 +1876,11 @@
     $$('.js-b2b-deco', line).forEach(function (c) { c.classList.remove('is-active'); });
     chip.classList.add('is-active');
     var method = chip.getAttribute('data-method');
+    var idx = parseInt(line.getAttribute('data-idx'), 10);
     var wrap = $('.js-dp-wrap', line);
-    if (wrap) wrap.innerHTML = B2B_PARAM_HTML[method] || '';
+    if (wrap) wrap.innerHTML = b2bParamHTML(method, B2B_ITEMS[idx]);
+    b2bLimitNote(line);
+    b2bNamesNote(line);
     b2bRecalc();
   });
 
@@ -1429,10 +1889,16 @@
     var place = e.target.closest('select[data-param="placement"]');
     if (place) {
       var lp = place.closest('.js-b2b-line');
+      var pKey = b2bPlaceKey(place.value) || 'left chest';
+      place.setAttribute('data-limit', String(cfgPlacementCfg(pKey).max));
       var box = lp && $('.js-diag-place', lp);
-      if (box) box.innerHTML = b2bPlaceDiag(place.value);
+      if (box) box.innerHTML = b2bPlaceDiag(pKey, place.getAttribute('data-diagram') || 'tee');
+      b2bLimitNote(lp);
       return;
     }
+    /* the character limit depends on the script as well as the placement */
+    var langSel = e.target.closest('select[data-param="lang"]');
+    if (langSel) { b2bLimitNote(langSel.closest('.js-b2b-line')); return; }
     var iron = e.target.closest('select[data-param="transfer"]');
     if (iron) {
       var li = iron.closest('.js-b2b-line');
@@ -1452,6 +1918,12 @@
       x.classList.toggle('is-on', on);
       x.setAttribute('aria-pressed', on ? 'true' : 'false');
     });
+  });
+
+  /* per-unit names for a decorated line (Embroidery) — live count against the units */
+  document.addEventListener('input', function (e) {
+    if (!e.target || !e.target.classList || !e.target.classList.contains('js-dp-names')) return;
+    b2bNamesNote(e.target.closest('.js-b2b-line'));
   });
 
   /* rush-date flag (step 1) */
@@ -1499,13 +1971,18 @@
   function b2bPayload() {
     var type = b2bType();
     var lines = visibleLines().filter(function (t) { return t.qty > 0; }).map(function (t) {
+      /* a named run carries one name per unit — folded into decorationParams so the
+         confirmed draft holds the full personalisation spec (PRD §10 handoff) */
+      var params = b2bParams(t.line);
+      var names = b2bNames(t.line);
+      if (names.length) { params.names = names; params.namesCount = names.length; }
       return {
         name: t.name,
         unitPrice: t.unit,
         qty: t.qty,
         sizes: b2bSizesByLine(t.line),
         decoration: { method: t.method, addOnPerUnit: t.decoAdd },
-        decorationParams: b2bParams(t.line),
+        decorationParams: params,
         lineTotal: +(t.sub + t.deco).toFixed(2)
       };
     });
@@ -1549,9 +2026,7 @@
     var date = new Date().toLocaleDateString('en-SG', { day: 'numeric', month: 'short', year: 'numeric' });
     var itemRows = p.items.map(function (it) {
       var sizes = Object.keys(it.sizes).map(function (s) { return s + ': ' + it.sizes[s]; }).join(', ') || '\u2014';
-      var deco = it.decoration.method === 'Standard' ? '\u2014' : it.decoration.method +
-        (it.decorationParams.placement ? ' \u00b7 ' + it.decorationParams.placement : '') +
-        (it.decorationParams.thread ? ' \u00b7 ' + it.decorationParams.thread : '');
+      var deco = b2bDecoText(it);
       return '<tr><td>' + esc(it.name) + '<br><span style="font-size:10.5px;color:#555">' + sizes + '</span></td>' +
         '<td class="right">' + it.qty + '</td><td>' + esc(deco) + '</td>' +
         '<td class="right">S$' + it.lineTotal.toFixed(2) + '</td></tr>';
@@ -1588,8 +2063,7 @@
     var lines = p.items.map(function (it) {
       var sizes = Object.keys(it.sizes).map(function (s) { return s + ' \u00d7 ' + it.sizes[s]; }).join(', ');
       var deco = it.decoration.method === 'Standard' ? '' : ' \u00b7 ' + esc(it.decoration.method);
-      var ps = it.decorationParams || {};
-      var pText = [ps.placement, ps.thread, ps.inks, ps.transfer].filter(Boolean);
+      var pText = b2bDecoDetail(it);
       var meta = [];
       if (sizes) meta.push(sizes);
       if (pText.length) meta.push('Decoration: ' + pText.join(' \u00b7 '));
@@ -1918,6 +2392,47 @@
     grid.innerHTML = fillFrom(pickPool(keys), 6, 0).map(productCard).join('');
   }
 
+  /* --- Recently viewed + cross-sell surfaces -------------------------------
+     Three independent surfaces, each with its OWN slot, so neither can hide the
+     other: the homepage rail and the PDP "Recently viewed" row show the visitor's
+     own trail, while the PDP "Complete the look" rail is ALWAYS product-derived
+     (crossSellFor) and is never taken over. All of them read the one exclusion rule
+     (seed + bag + purchased) and hide rather than show an empty grid. */
+  function renderViewedSurfaces() {
+    var viewed = viewedRecommendations(4);
+    var html = viewed.map(productCard).join('');
+
+    var rail = $('#viewedRail');
+    if (rail) {
+      var vg = $('#viewedGrid');
+      if (vg) vg.innerHTML = html;
+      rail.style.display = html ? '' : 'none';
+    }
+    /* PDP recently-viewed row \u2014 its own block, above the cross-sell rail */
+    var pv = $('#pdpViewed');
+    if (pv) {
+      var pvg = $('#pdpViewedGrid');
+      if (pvg) pvg.innerHTML = html;
+      pv.hidden = !viewed.length;
+    }
+
+    /* PDP cross-sell: always scored against the product on screen, so a browsing
+       history can never push it off the page */
+    var xg = $('#pdpXsellGrid');
+    if (!xg) return;
+    var seed = CURRENT_PDP;
+    var list = crossSellFor(seed, 4);
+    xg.innerHTML = list.map(productCard).join('');
+    var sec = $('#pdpXsell'); if (sec) sec.hidden = !list.length;
+    var k = $('#pdpXsellKicker'), t = $('#pdpXsellTitle'), l = $('#pdpXsellLink');
+    if (k) k.textContent = 'Goes well with this';
+    if (t) t.textContent = 'Complete the look';
+    if (l) {
+      l.style.display = '';
+      l.setAttribute('href', XSELL_PILLAR_HREF[seed && seed.k] || 'elly-label.html');
+    }
+  }
+
   /* --- recommender tiles under the hero (occasion rail) --- */
   var REC_TILES = {
     'tourist-first': { kicker: 'Recommended for your visit', title: 'What tourists search first', sub: 'Theme-park looks, family photoshoots and gifting lead the list for visitors planning a Singapore trip.' },
@@ -2125,6 +2640,9 @@
        the badge alone updating while the cart lines stay stale was a live bug. */
     refreshBag();
     populateCartLines();
+    /* the trail is per account — signing in/out swaps the bucket, so re-render
+       every recently-viewed surface here alongside the bag */
+    renderViewedSurfaces();
   }
   window.EL = window.EL || {};
   window.EL.applySegmentState = applyHeroState;
@@ -2312,6 +2830,24 @@
   /* ---------- PDP + cart demo lines get real products ---------- */
   function productByName(name) {
     for (var i = 0; i < PRODUCTS.length; i++) if (PRODUCTS[i].n === name) return PRODUCTS[i];
+    /* Pre-order designs are chosen inside ONE PDP product, so the bag stores
+       "<product> \u2014 <design>". Resolve that back to the design's artwork so the
+       cart/checkout lines show the exact design the shopper picked. */
+    for (var j = 0; j < PRODUCTS.length; j++) {
+      var prod = PRODUCTS[j];
+      if (!prod.designs || !prod.designs.length) continue;
+      var prefix = prod.n + ' \u2014 ';
+      if (name.indexOf(prefix) !== 0) continue;
+      var dName = name.slice(prefix.length);
+      for (var k = 0; k < prod.designs.length; k++) {
+        if (prod.designs[k].name !== dName) continue;
+        var copy = {}, key;
+        for (key in prod) if (Object.prototype.hasOwnProperty.call(prod, key)) copy[key] = prod[key];
+        copy.n = name;
+        copy.img = prod.designs[k].img;
+        return copy;
+      }
+    }
     return null;
   }
 
@@ -2349,8 +2885,14 @@
   var CUSTOM_FONT_SIZES = [
     { id: 'sm', label: 'Small' }, { id: 'md', label: 'Medium' }, { id: 'lg', label: 'Large' }
   ];
+  /* Scripts come straight from the approved-character library (PRD §12):
+     Korean, Chinese and English, plus Japanese for the Japanese-market names the
+     store already embroiders. `id` is what the configurator, the staff library and
+     a stored spec all key on — so a language added here is immediately selectable
+     everywhere and a name from the library can never light the wrong chip. */
   var CUSTOM_LANGS = [
     { id: 'en', label: 'English', placeholder: 'e.g. Amelia' },
+    { id: 'cn', label: '中文',     placeholder: '例： 美娜' },
     { id: 'jp', label: '日本語',   placeholder: '例： あみ' },
     { id: 'kr', label: '한국어',   placeholder: '예: 미나' }
   ];
@@ -2594,7 +3136,40 @@
     return s;
   }
 
-  function cfgEligible(prod) { return !!(prod && prod.custom && prod.custom.methods && prod.custom.methods.length); }
+  /* ONE personalisation predicate for the whole site. The canonical copy is
+     window.EL.isPersonalisable (defined in products.js, which loads first); this
+     delegates to it so the PDP, the shell, the staff tablet and the catalog data
+     can never disagree. Captured once at load — delegating to window.EL at call
+     time would recurse into this very function on pages without products.js. */
+  var CANON_PERS = (window.EL && typeof window.EL.isPersonalisable === 'function') ? window.EL.isPersonalisable : null;
+  function cfgEligible(prod) {
+    if (CANON_PERS) return CANON_PERS(prod);
+    return !!(prod && prod.custom && prod.custom.methods && prod.custom.methods.length);
+  }
+  /* the PDP "Personalisation" accordion body, built from the item's own spec — a
+     patches-only tee must never open onto embroidery copy, and vice versa */
+  function persAccBody(prod) {
+    var c = (prod && prod.custom) || {};
+    var methods = c.methods || [];
+    var places = (c.placements || []).map(function (k) {
+      return (CUSTOM_PLACEMENTS[k] && CUSTOM_PLACEMENTS[k].label) || k;
+    });
+    var parts = [];
+    if (methods.indexOf('embroidered') >= 0) {
+      parts.push('Embroidered initials or a name' +
+        (places.length ? ' \u2014 ' + places.join(' / ') + ' placement' : '') +
+        ', your choice of thread colour, a curated font range, font size and script \u2014 English, \u4e2d\u6587, \u65e5\u672c\u8a9e or \ud55c\uad6d\uc5b4.');
+    }
+    if (methods.indexOf('patches') >= 0) {
+      var set = CUSTOM_PATCH_SETS[c.patchSet || 'sg'];
+      parts.push('Iron-on patches from the item\u2019s ' + (set ? set.label : '') + ' range \u2014 up to ' +
+        (c.patchCount || 3) + ' free, each applied to a pre-selected spot.');
+    }
+    parts.push('Personalise before you add to bag: a larger flat ' +
+      ((c.placements || []).indexOf('keepsake box lid') >= 0 ? 'top' : 'front') +
+      ' view of the item sits below the gallery so your initials render level and true to placement.');
+    return parts.join(' ');
+  }
   function cfgPlacementCfg(key) { return CUSTOM_PLACEMENTS[key] || { label: key, max: 10, x: '50%', y: '50%', w: '40%' }; }
   function cfgPatchSet() { return CUSTOM_PATCH_SETS[(CFG.prod && CFG.prod.custom && CFG.prod.custom.patchSet) || 'sg'] || CUSTOM_PATCH_SETS.sg; }
   function cfgPatchCount() { return (CFG.prod && CFG.prod.custom && CFG.prod.custom.patchCount) || 3; }
@@ -2620,9 +3195,40 @@
     for (var i = 0; i < CUSTOM_LANGS.length; i++) if (CUSTOM_LANGS[i].id === id) return CUSTOM_LANGS[i];
     return CUSTOM_LANGS[0];
   }
-  /* non-Latin scripts get a tighter limit — native characters are wider in thread */
-  function cfgLangMax(max) {
-    return CFG.language === 'en' ? max : Math.min(max || 8, 8);
+  /* non-Latin scripts get a tighter allowance — native characters are wider in
+     thread — but it SCALES WITH THE PLACEMENT rather than sitting on a flat ceiling.
+     The old `Math.min(max, 8)` clipped every roomy placement down to 8, so a
+     keepsake lid or blanket corner (12) lost its extra room; now the allowance is
+     ~3/4 of the placement, never above the placement's own booking, and never below
+     the 8 the site already shipped (so no existing booking gets tighter).
+     Latin is untouched. */
+  function cfgLangMaxFor(max, langId) {
+    var latin = max || 10;
+    if (!langId || langId === 'en') return latin;
+    return Math.min(latin, Math.max(8, Math.round(latin * 0.75)));
+  }
+  function cfgLangMax(max) { return cfgLangMaxFor(max, CFG.language); }
+  /* render a stored spec's summary from the tables — used when a spec arrives from a
+     surface that doesn't carry the summary string (e.g. the staff tablet's snapshot) */
+  function cfgSummaryForSpec(spec) {
+    if (!spec) return '';
+    if (spec.summary) return spec.summary;
+    var parts = [];
+    if (spec.method) parts.push(CFG_METHOD_LABELS[spec.method] || spec.method);
+    if (spec.method === 'patches') {
+      (spec.patches || []).forEach(function (id) {
+        var p = cfgPatchById(id);
+        parts.push(p ? p.name + ' (' + cfgPatchSpot(id).loc + ')' : id);
+      });
+    } else {
+      if (spec.text) parts.push("'" + spec.text + "'");
+      if (spec.placement) parts.push(cfgPlacementCfg(spec.placement).label);
+      if (spec.colourName) parts.push(spec.colourName + ' thread');
+      if (spec.font) parts.push(cfgFontById(spec.font).label);
+      if (spec.fontSize) parts.push(cfgSizeById(spec.fontSize).label);
+      if (spec.language && spec.language !== 'en') parts.push(cfgLangById(spec.language).label);
+    }
+    return parts.join(' \u00b7 ');
   }
   function cfgSummaryText() {
     var parts = [];
@@ -2851,9 +3457,145 @@
     if (tog) tog.textContent = open ? 'Hide personalisation' : cfgToggleLabel();
   }
 
+  /* ---------- Personalisation on a bag line (per profile, persistent) ----------
+     The configurator used to be a preview only: the chosen spec was echoed in the
+     toast and then lost. It is now stored the same way as the bag \u2014 a localStorage
+     MAP keyed by the signed-in account id (guest = '__guest'), then by product name,
+     which is the same key the cart uses to aggregate repeats into one line. So a
+     personalisable item can be edited from the cart, and the spec follows the profile
+     exactly like the bag does. */
+  var PERS_MAP_KEY = 'elly-pers';
+  function readPersMap() {
+    try {
+      var raw = lsGet(PERS_MAP_KEY);
+      var map = raw ? JSON.parse(raw) : {};
+      return (map && typeof map === 'object') ? map : {};
+    } catch (e) { return {}; }
+  }
+  /* the same map addressed by an EXPLICIT account id — the staff tablet reads and writes
+     the customer's specs while staff are signed in as themselves */
+  function persForAccount(accountId, name) {
+    var bucket = readPersMap()[accountId || BAG_GUEST];
+    return (bucket && bucket[name]) || null;
+  }
+  function savePersForAccount(accountId, name, spec) {
+    if (!accountId || !name) return;
+    var map = readPersMap();
+    var bucket = map[accountId] || {};
+    if (spec) {
+      /* a spec captured elsewhere (staff tablet) may not carry the rendered summary */
+      spec.summary = cfgSummaryForSpec(spec);
+      bucket[name] = spec;
+    } else {
+      delete bucket[name];
+    }
+    map[accountId] = bucket;
+    lsSet(PERS_MAP_KEY, JSON.stringify(map));
+  }
+  function persFor(name) { return persForAccount(bagAccountKey(), name); }
+  function savePers(name, spec) { savePersForAccount(bagAccountKey(), name, spec); }
+
+  /* the current configurator state as a storable spec; null when nothing is set */
+  function cfgSpec() {
+    if (!CFG.prod || !CFG.method) return null;
+    var patches = CFG.method === 'patches';
+    if (patches && !CFG.patches.length) return null;
+    if (!patches && !CFG.text) return null;
+    return {
+      method: CFG.method,
+      placement: patches ? '' : CFG.placement,
+      text: patches ? '' : CFG.text,
+      colourName: patches ? '' : CFG.colourName,
+      colourHex: patches ? '' : CFG.colourHex,
+      font: patches ? '' : CFG.font,
+      fontSize: patches ? '' : CFG.fontSize,
+      language: patches ? '' : CFG.language,
+      patches: patches ? CFG.patches.slice() : [],
+      summary: cfgSummaryText()
+    };
+  }
+  /* re-open a saved spec in the configurator (used by the cart's inline editor) */
+  function cfgRestore(spec) {
+    if (!spec) return;
+    if (spec.method) cfgPickMethod(spec.method);
+    if (spec.method === 'patches') {
+      CFG.patches = (spec.patches || []).slice(0, cfgPatchCount());
+      $$('#cfgPatches .cfg-chip').forEach(function (b) {
+        b.classList.toggle('is-on', CFG.patches.indexOf(b.getAttribute('data-v')) >= 0);
+      });
+    } else {
+      if (spec.placement) cfgPickPlacement(spec.placement);
+      CFG.text = spec.text || '';
+      if (spec.colourName) cfgPickColour(spec.colourName, spec.colourHex || CFG.colourHex);
+      if (spec.font) cfgPickFont(spec.font);
+      if (spec.fontSize) cfgPickSize(spec.fontSize);
+      if (spec.language) cfgPickLang(spec.language);
+    }
+    cfgRefresh();
+  }
+
+  /* the configurator's panel markup. pdp.html and staff.html carry their own copy; the
+     cart's inline editor renders this one, so a bag line edits personalisation with the
+     exact same controls. `compact` drops the page-level head + staff toggle. */
+  function cfgPanelHTML(compact) {
+    var head = compact ? '' :
+      '<div class="cfg-head">' +
+        '<div><span class="kicker kicker--coral">Make it theirs</span>' +
+        '<h3 style="margin-top:2px">Personalise before you add to bag</h3></div>' +
+        '<div class="seg seg--coral" id="cfgViewSeg" aria-label="Configurator view">' +
+          '<button type="button" class="is-on" data-cfgview="customer">Customer</button>' +
+          '<button type="button" data-cfgview="staff">Staff \u00b7 POS</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="cfg-staff-note" id="cfgStaffNote" hidden><b>In-store capture</b> \u2014 same configurator on tablet/POS as the website; the order syncs to the customer\u2019s unified profile. Demo only.</div>';
+    return head +
+      '<div class="cfg-row"><span class="opt-label">Method <b id="cfgMethod">\u2014</b></span><div class="cfg-chips" id="cfgMethods"></div></div>' +
+      '<div class="cfg-row" id="cfgPlaceWrap"><span class="opt-label">Placement <b id="cfgPlacement">\u2014</b></span><div class="cfg-chips" id="cfgPlacements"></div><p class="small muted cfg-hint" id="cfgPlaceHint">Pick a placement \u2014 only ones that work on this item are offered.</p></div>' +
+      '<div class="cfg-row" id="cfgTextWrap"><span class="opt-label">Initial / name <b id="cfgChars">0</b></span><input type="text" class="cfg-text" id="cfgText" placeholder="e.g. Amelia" autocomplete="off" spellcheck="false"><p class="small muted cfg-hint" id="cfgTextHint"></p></div>' +
+      '<div class="cfg-row" id="cfgLangWrap"><span class="opt-label">Language <b id="cfgLang">\u2014</b></span><div class="cfg-chips" id="cfgLangs"></div><p class="small muted cfg-hint">English, \u4e2d\u6587, \u65e5\u672c\u8a9e or \ud55c\uad6d\uc5b4 embroidery \u2014 native script keeps its shape.</p></div>' +
+      '<div class="cfg-row" id="cfgFontWrap"><span class="opt-label">Font type <b id="cfgFont">\u2014</b></span><div class="cfg-chips cfg-fonts" id="cfgFonts"></div><p class="small muted cfg-hint">A curated set of embroidery fonts \u2014 each chip is set in its own typeface.</p></div>' +
+      '<div class="cfg-row" id="cfgSizeWrap"><span class="opt-label">Font size <b id="cfgSize">\u2014</b></span><div class="cfg-chips" id="cfgSizes"></div></div>' +
+      '<div class="cfg-row cfg-colours" id="cfgColoursWrap"><span class="opt-label">Thread colour <b id="cfgColour">\u2014</b></span><div class="f-color" id="cfgColours"></div></div>' +
+      '<div class="cfg-row" id="cfgPatchesWrap" hidden><span class="opt-label">Iron-on patches <b id="cfgPatchSel">\u2014</b> <em class="cfg-free" id="cfgPatchCount"></em></span><div class="cfg-chips cfg-patches" id="cfgPatches"></div><p class="small muted cfg-hint" id="cfgPatchHint"></p></div>' +
+      '<p class="cfg-summary" id="cfgSummary">Choose a method, placement and text to preview your personalisation here.</p>';
+  }
+
+  /* ---------- Cart personalisation editor ----------
+     Opened from a bag line, it reuses the whole configurator (same chips, same
+     summary) and writes the result back to that line's spec. */
+  function closePersEditor() {
+    var host = $('#persEditor');
+    if (host) { host.hidden = true; host.innerHTML = ''; }
+  }
+  function openPersEditor(name) {
+    var host = $('#persEditor');
+    var prod = productByName(name);
+    if (!host || !prod || !cfgEligible(prod)) return;
+    host.innerHTML =
+      '<div class="pers-editor">' +
+        '<span class="kicker kicker--coral">Make it theirs</span>' +
+        '<h3 style="margin-top:2px">Edit personalisation</h3>' +
+        '<p class="small muted" style="margin:6px 0 14px">' + esc(prod.n) + ' \u2014 saving updates the line already in your bag.</p>' +
+        '<div class="configurator" id="configurator">' + cfgPanelHTML(true) + '</div>' +
+        '<div class="pers-editor__actions">' +
+          '<button type="button" class="btn btn--coral js-save-pers" data-name="' + esc(name) + '">Save personalisation</button>' +
+          '<button type="button" class="btn btn--ghost js-cancel-pers">Cancel</button>' +
+          (persFor(name) ? '<button type="button" class="pers-editor__clear js-clear-pers" data-name="' + esc(name) + '">Remove personalisation</button>' : '') +
+        '</div>' +
+      '</div>';
+    host.hidden = false;
+    initConfigurator(prod);
+    var c = $('#configurator'); if (c) c.hidden = false;   /* initConfigurator hides the panel by default */
+    cfgRestore(persFor(name));
+    if (host.scrollIntoView) host.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
   function initConfigurator(prod) {
     CFG.prod = prod; CFG.method = ''; CFG.placement = ''; CFG.text = ''; CFG.colourName = 'Coral'; CFG.colourHex = '#ff6070'; CFG.patches = []; CFG.font = 'serif'; CFG.fontSize = 'md'; CFG.language = 'en'; CFG.open = false;
     var cfg = $('#configurator'), tog = $('#persToggle');
+    /* a page without the panel markup (the cart's inline editor) gets it injected, so
+       the same controls appear wherever personalisation is edited */
+    if (cfg && !cfg.querySelector('.cfg-row')) cfg.innerHTML = cfgPanelHTML(false);
     var eligible = cfgEligible(prod);
     if (tog) tog.hidden = !eligible;
     if (cfg) cfg.hidden = true;
@@ -2954,9 +3696,21 @@
   document.addEventListener('click', function (e) {
     var card = e.target.closest('.ph-card');
     if (!card || e.target.closest('.quick-add')) return;
+    /* items with their own PDP (e.g. the Pre-Order design picker) open it directly */
+    var direct = card.getAttribute('data-href');
+    if (direct) { window.location.href = direct; return; }
     var q = card.getAttribute('data-p') || REP_PRODUCT[card.getAttribute('data-kind')];
     if (q) window.location.href = 'pdp.html?p=' + encodeURIComponent(q);
   });
+
+  /* the right size run for an item: its own run, else the pet / shoe run, else a
+     single "One size" — so gifts, plush, toys and pets never show baby months */
+  function sizeRun(prod) {
+    if (prod && prod.sizes && prod.sizes.length) return prod.sizes;
+    if (prod && prod.petSize && prod.petSize.length) return prod.petSize;
+    if (prod && prod.shoeSizes && prod.shoeSizes.length) return prod.shoeSizes;
+    return ['One size'];
+  }
 
   function populatePDP() {
     var pdp = $('.pdp');
@@ -2970,6 +3724,7 @@
     } catch (e) {}
     if (!prod) prod = productByName('Beary Personalisable Baby Gift Set') || PRODUCTS[0];
     CURRENT_PDP = prod;
+    recordView(prod.n);   /* per-profile recently-viewed trail (bag/purchases filtered at read time) */
     var pillar = ({ elly: 'Elly Label', disney: 'Disney | elly', shoe: 'Shoes', gift: 'Gifting', custom: 'Customization' })[prod.k] || 'Elly Label';
     if (document.title) document.title = prod.n + ' | The Elly Store';
     var t = $('#pdpTitle'); if (t) t.textContent = prod.n;
@@ -2978,12 +3733,22 @@
     var d = $('#pdpDesc');
     if (d) d.textContent = 'Made for comfort and play first \u2014 soft, breathable fabric, machine washable. Populated from the live catalog (theellystore.com) so the PDP layout has real product imagery, pricing and copy slots.';
     var crumb = $('#pdpCrumb'); if (crumb) crumb.textContent = prod.n;
+    /* size chips come from the item's own run — the markup default is a baby set */
+    var srow = $('.size-row[data-size-row]');
+    if (srow) {
+      srow.innerHTML = sizeRun(prod).map(function (s) {
+        return '<button type="button" class="size-chip" data-size="' + esc(s) + '">' + esc(s) + '</button>';
+      }).join('');
+      var sl = $('#sizeSel'); if (sl) sl.textContent = '\u2014';
+    }
     var main = $('.pdp__main');
     if (main) {
       var imgs = prod.imgs && prod.imgs.length ? prod.imgs : [prod.img];
       main.classList.add('is-real');
-      main.innerHTML = '<div class="pdp__tags">' + (cfgEligible(prod) ? '<span class="badge badge--coral">Personalisable</span>' : '') + '</div>' +
-        '<img class="pdp-img" src="' + esc(imgs[0]) + '" alt="' + esc(prod.n) + '">';
+      /* NO Personalisable badge here — the PDP shows eligibility through the
+         configurator and the "Add a name / initials" button instead. The overlay
+         lives on the listing cards that lead here (productCard). */
+      main.innerHTML = '<img class="pdp-img" src="' + esc(imgs[0]) + '" alt="' + esc(prod.n) + '">';
     }
     /* Live Look stage: a large, flat front / top view below the main photo — only
        for customisable items, where the initials/patches need a realistic surface */
@@ -3001,13 +3766,32 @@
           '</figure>');
       }
     }
-    $$('.pdp__thumb').forEach(function (th, i) {
-      var imgs = prod.imgs && prod.imgs.length ? prod.imgs : [prod.img];
-      if (i < imgs.length) {
-        th.classList.add('is-real');
-        th.innerHTML = '<img src="' + esc(imgs[i]) + '" alt="Image ' + (i + 1) + '">';
-      }
-    });
+    /* Thumbnails are BUILT from the item's own images, so the extra placeholder
+       buttons in the static markup are replaced rather than left behind. Each thumb
+       carries its image in data-img (the click handler swaps the main photo from it),
+       and an item with a single image collapses the rail \u2014 there is nothing to
+       choose between, so no empty column is left on the left of the photo. */
+    var timgs = prod.imgs && prod.imgs.length ? prod.imgs : [prod.img];
+    var thumbRail = $('.pdp__thumbs');
+    if (thumbRail) {
+      thumbRail.innerHTML = timgs.map(function (src, i) {
+        return '<button type="button" class="pdp__thumb is-real' + (i === 0 ? ' is-on' : '') + '"' +
+          ' role="tab" aria-selected="' + (i === 0) + '" aria-label="Image ' + (i + 1) + '"' +
+          ' data-img="' + esc(src) + '">' +
+          '<img src="' + esc(src) + '" alt="Image ' + (i + 1) + '"></button>';
+      }).join('');
+    }
+    var galEl = $('.pdp__gal');
+    if (galEl) galEl.classList.toggle('pdp__gal--solo', timgs.length < 2);
+    /* the Personalisation accordion exists only for items that really offer it, and
+       its copy comes from the item's own methods/placements */
+    var persAcc = $('#pdpPersAcc');
+    if (persAcc) {
+      var canPers = cfgEligible(prod);
+      persAcc.hidden = !canPers;
+      var persBody = $('#pdpPersBody');
+      if (canPers && persBody) persBody.textContent = persAccBody(prod);
+    }
     initConfigurator(prod);
   }
 
@@ -3021,23 +3805,41 @@
   function fallbackProduct(name) {
     return { n: name, p: 'S$0', img: '' };
   }
-  function cartLineHTML(prod, i, compact) {
+  function cartLineHTML(prod, i, qty, compact) {
     var price = parseFloat((prod.p || 'S$0').replace(/S\$/, '')) || 0;
-    var sizes = ['3Y', '2Y', '12M', '0\u20136M'], colours = ['Ice blue', 'Rain & Cozy', 'Cream', 'Blue'];
-    if (compact) {
-      return '<div class="js-cart-line" data-name="' + esc(prod.n) + '" data-price="' + price + '" style="border-bottom:1px solid var(--line-soft);padding:10px 0;display:flex;gap:12px;align-items:center">' +
-        '<div style="width:46px;height:46px;border-radius:var(--radius);flex:none;overflow:hidden;border:1px solid var(--line)"><img src="' + esc(prod.img) + '" alt="' + esc(prod.n) + '" style="width:100%;height:100%;object-fit:cover"></div>' +
-        '<div style="flex:1;font-size:12.5px"><b>' + esc(prod.n) + '</b><br><span class="muted">' + sizes[i % sizes.length] + ' \u00b7 qty 1</span></div>' +
-        '<span style="font-weight:700;font-size:13px">S$' + price.toFixed(2) + '</span></div>';
+    /* show the item's OWN size run + colours — never a fixed baby/kid size on a
+       gift, plush, pet item or adult shirt */
+    var run = sizeRun(prod);
+    var sizeLabel = run.length === 1 ? run[0] : (run.length <= 3 ? run.join(', ') : run[0] + ' \u2013 ' + run[run.length - 1]);
+    var colourLabel = (prod.colours && prod.colours.length) ? prod.colours.join(', ') : '\u2014';
+    /* the line's saved personalisation (if any) + its Edit / Remove affordance —
+       offered on any eligible item, so the PDP's "add a name to this at cart" copy
+       is a real flow rather than a promise */
+    var spec = persFor(prod.n);
+    var persRow = '';
+    if (cfgEligible(prod) || spec) {
+      persRow = '<div class="cart-pers">' + (spec
+        ? '<span class="cart-pers__val">Personalised: ' + esc(spec.summary) + '</span>' +
+          '<button type="button" class="js-edit-pers" data-name="' + esc(prod.n) + '">Edit</button>' +
+          '<button type="button" class="muted js-clear-pers" data-name="' + esc(prod.n) + '">Remove</button>'
+        : '<button type="button" class="js-edit-pers" data-name="' + esc(prod.n) + '">Add a name / initials</button>') +
+        '</div>';
     }
-    return '<div class="js-cart-line" data-name="' + esc(prod.n) + '" data-price="' + price + '" style="border-top:1px solid var(--line)">' +
+    if (compact) {
+      return '<div class="js-cart-line" data-name="' + esc(prod.n) + '" data-price="' + price + '" data-qty="' + qty + '" style="border-bottom:1px solid var(--line-soft);padding:10px 0;display:flex;gap:12px;align-items:center">' +
+        '<div style="width:46px;height:46px;border-radius:var(--radius);flex:none;overflow:hidden;border:1px solid var(--line)"><img src="' + esc(prod.img) + '" alt="' + esc(prod.n) + '" style="width:100%;height:100%;object-fit:cover"></div>' +
+        '<div style="flex:1;font-size:12.5px"><b>' + esc(prod.n) + '</b><br><span class="muted">' + esc(sizeLabel) + ' \u00b7 qty ' + qty + (spec ? '<br>Personalised: ' + esc(spec.summary) : '') + '</span></div>' +
+        '<span style="font-weight:700;font-size:13px">S$' + (price * qty).toFixed(2) + '</span></div>';
+    }
+    return '<div class="js-cart-line" data-name="' + esc(prod.n) + '" data-price="' + price + '" data-qty="' + qty + '" style="border-top:1px solid var(--line)">' +
       '<div class="cart-line">' +
       '<div class="cart-line__img is-real" style="--m-a:#e3ecfb;--m-b:#c2d6f2"><img src="' + esc(prod.img) + '" alt="' + esc(prod.n) + '"></div>' +
       '<div><h4>' + esc(prod.n) + '</h4>' +
-      '<div class="meta"><span>Size: ' + sizes[i % sizes.length] + ' \u00b7 Colour: ' + colours[i % colours.length] + '</span><span>From the live catalog \u00b7 demo line</span></div>' +
-      '<div class="qty-row" data-min="1" data-max="10"><button type="button" data-step="-1" aria-label="Decrease">\u2212</button><output>1</output><button type="button" data-step="1" aria-label="Increase">+</button></div>' +
+      '<div class="meta"><span>Sizes: ' + esc(sizeLabel) + ' \u00b7 Colours: ' + esc(colourLabel) + '</span><span>From the live catalog \u00b7 demo line</span></div>' +
+      persRow +
+      '<div class="qty-row" data-min="1" data-max="10"><button type="button" data-step="-1" aria-label="Decrease">\u2212</button><output value="' + qty + '">' + qty + '</output><button type="button" data-step="1" aria-label="Increase">+</button></div>' +
       '</div>' +
-      '<div class="cart-line__right"><span class="line-price">S$' + price.toFixed(2) + '</span>' +
+      '<div class="cart-line__right"><span class="line-price">S$' + (price * qty).toFixed(2) + '</span>' +
       '<button type="button" class="small muted js-remove-line" style="display:block;margin-top:10px;background:none;border:0;padding:0;text-align:right;text-decoration:underline;cursor:pointer">Remove</button></div>' +
       '</div></div>';
   }
@@ -3051,16 +3853,26 @@
       container.innerHTML = '';
       if (empty) empty.style.display = '';
       cartTotals();
+      renderCartCrossSell();   /* empty bag -> the "complete the set" block hides */
+      closePersEditor();       /* nothing left to personalise */
       return;
     }
     if (empty) empty.style.display = 'none';
+    /* aggregate repeated adds of the same item into ONE line with a quantity */
+    var lines = [], at = {};
+    names.forEach(function (name) {
+      if (Object.prototype.hasOwnProperty.call(at, name)) { lines[at[name]].qty += 1; return; }
+      at[name] = lines.length;
+      lines.push({ name: name, qty: 1 });
+    });
     var html = '';
-    names.forEach(function (name, i) {
-      var prod = productByName(name) || fallbackProduct(name);
-      html += cartLineHTML(prod, i, compact);
+    lines.forEach(function (line, i) {
+      var prod = productByName(line.name) || fallbackProduct(line.name);
+      html += cartLineHTML(prod, i, line.qty, compact);
     });
     container.innerHTML = html;
     cartTotals();
+    renderCartCrossSell();
   }
 
   /* Remove a line: drop it from elly-bag-items and re-render — the badge count
@@ -3074,6 +3886,35 @@
     if (name && removeFromBag(name)) {
       populateCartLines();
       toast('Removed from bag \u2014 <b>demo</b>');
+    }
+  });
+
+  /* ---------- Edit personalisation from the cart ----------
+     One inline editor at a time, reusing the configurator. Save writes the spec back
+     to that line; Remove drops the spec (the item itself stays in the bag). */
+  document.addEventListener('click', function (e) {
+    var ed = e.target.closest('.js-edit-pers');
+    if (ed) { e.preventDefault(); openPersEditor(ed.getAttribute('data-name') || ''); return; }
+    if (e.target.closest('.js-cancel-pers')) { e.preventDefault(); closePersEditor(); return; }
+    var sv = e.target.closest('.js-save-pers');
+    if (sv) {
+      e.preventDefault();
+      var nm = sv.getAttribute('data-name') || '';
+      var sp = cfgSpec();
+      if (!sp) { toast('Add a name or pick at least one patch before saving.'); return; }
+      savePers(nm, sp);
+      closePersEditor();
+      populateCartLines();
+      toast('Personalisation saved \u2014 <b>' + esc(sp.summary) + '</b>');
+      return;
+    }
+    var cl = e.target.closest('.js-clear-pers');
+    if (cl) {
+      e.preventDefault();
+      savePers(cl.getAttribute('data-name') || '', null);
+      closePersEditor();
+      populateCartLines();
+      toast('Personalisation removed from this line');
     }
   });
 
@@ -3099,6 +3940,7 @@
       if (big) big.value = sq;
     }
     updateFacetUI();
+    renderViewedSurfaces();   /* after the generic grid fills, so the trail wins */
     if ($('.js-cart-line')) cartTotals();
     buildB2BLines();
     if ($('.js-b2b-line')) b2bRecalc();
@@ -3138,9 +3980,21 @@
   window.EL.goStep = goStep;
   window.EL.b2bReview = b2bOpenReview;
   window.EL.startB2B = startB2B;
+  window.EL.isPersonalisable = window.EL.isPersonalisable || cfgEligible;
+  window.EL.productCard = productCard;
   window.EL.initConfigurator = initConfigurator;
+  window.EL.persFor = persFor;
+  window.EL.savePers = savePers;
+  window.EL.persForAccount = persForAccount;
+  window.EL.savePersForAccount = savePersForAccount;
+  window.EL.cfgSummaryForSpec = cfgSummaryForSpec;
+  window.EL.cfgSpec = cfgSpec;
+  window.EL.openPersEditor = openPersEditor;
+  window.EL.closePersEditor = closePersEditor;
   window.EL.cfgSummaryText = cfgSummaryText;
   window.EL.inKind = inKind;
+  window.EL.productByName = productByName;
+  window.EL.sizeRun = sizeRun;
   window.EL.pickPool = pickPool;
   window.EL.pagePool = pagePool;
   window.EL.updateFacetUI = updateFacetUI;
@@ -3150,6 +4004,26 @@
   window.EL.refreshBag = refreshBag;
   window.EL.populateCartLines = populateCartLines;
   window.EL.bagItems = bagItems;
+  window.EL.recordView = recordView;
+  window.EL.viewedItems = viewedItems;
+  window.EL.viewedRecommendations = viewedRecommendations;
+  window.EL.crossSellFor = crossSellFor;
+  window.EL.crossSellPool = crossSellPool;
+  window.EL.renderViewedSurfaces = renderViewedSurfaces;
+  window.EL.renderCartCrossSell = renderCartCrossSell;
+  /* B2B quote internals exposed for the smoke suite: the per-item decoration
+     capability, the panel/field builders and the placement table they share with
+     the consumer configurator. */
+  window.EL.b2bItems = B2B_ITEMS;
+  window.EL.b2bItemPanelHTML = b2bItemPanelHTML;
+  window.EL.b2bParamHTML = b2bParamHTML;
+  window.EL.b2bCapability = b2bCapability;
+  window.EL.b2bNamesNote = b2bNamesNote;
+  window.EL.b2bPlaceDiag = b2bPlaceDiag;
+  window.EL.cfgPlacementCfg = cfgPlacementCfg;
+  window.EL.cfgLangMaxFor = cfgLangMaxFor;
+  window.EL.customLangs = CUSTOM_LANGS;
   window.EL.addToBag = addToBag;
   window.EL.removeFromBag = removeFromBag;
+  window.EL.setBagQty = setBagQty;
 })();

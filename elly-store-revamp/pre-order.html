@@ -98,7 +98,7 @@
 
         <span class="opt-label">Price</span>
         <div class="pdp__price" style="margin-top:0">
-          <span class="price">S$<span class="sk" style="display:inline-block;width:44px;vertical-align:middle"></span></span>
+          <span class="price" id="prePrice">S$59</span>
           <span class="badge badge--cream">Full payment upfront</span>
         </div>
 
@@ -127,7 +127,7 @@
         </div>
 
         <div class="pdp__buy">
-          <button type="button" class="btn btn--coral js-buy">Pre-order now · pay in full</button>
+          <button type="button" class="btn btn--coral js-buy" data-p="Disney Pre-Order" data-design="Heritage Shophouse">Pre-order now · pay in full</button>
         </div>
         <p class="small muted" style="margin-top:10px">Loyalty points cannot be redeemed against pre-orders (full-payment model). You will not be charged twice — nothing is charged until checkout confirmation.</p>
 
@@ -148,6 +148,21 @@
     var src = o.getAttribute('data-img');
     if (src) { var im = new Image(); im.src = src; } /* preload so switching is instant */
   });
+  /* The 3 designs are ONE catalog item: bind the buy button + price to that
+     product so a click adds a single bag line carrying the selected design. */
+  var preProd = (window.EL_PRODUCTS || []).filter(function (p) { return p.availability === 'pre-order'; })[0];
+  var buyBtn = document.querySelector('.js-buy');
+  function syncBuy() {
+    if (!buyBtn) return;
+    if (preProd) buyBtn.setAttribute('data-p', preProd.n);
+    var on = document.querySelector('.design-opt.is-on');
+    buyBtn.setAttribute('data-design', on ? on.getAttribute('data-dname') : '');
+  }
+  if (preProd) {
+    var priceEl = document.getElementById('prePrice');
+    if (priceEl) priceEl.textContent = preProd.p;
+  }
+  syncBuy();
   document.addEventListener('click', function (e) {
     var opt = e.target.closest('.design-opt');
     if (!opt) return;
@@ -166,6 +181,7 @@
     }
     var t = document.getElementById('preTitle');
     if (t) t.textContent = opt.getAttribute('data-dname') + ' — Disney pre-order design';
+    syncBuy();
   });
 </script>
 </body>

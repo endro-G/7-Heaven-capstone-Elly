@@ -182,6 +182,7 @@
       '<div class="search-layer__body search-layer__body--grid">' +
       '<aside class="search-rail">' +
       '<div class="chips-group" id="recentChipsWrap" hidden><span class="chips-label">Recently searched</span><div class="chip-row" id="recentChips"></div></div>' +
+      '<div class="chips-group" id="viewedChipsWrap" hidden><span class="chips-label">Recently viewed</span><div class="chip-row chip-row--col" id="viewedChips"></div></div>' +
       '<div class="chips-group" id="popularKeywordsWrap"><span class="chips-label">Most searched · keywords</span><div class="chip-row" id="popularKeywords"></div></div>' +
       '<div class="chips-group" id="suggestChipsWrap"><span class="chips-label" id="suggestLabel">Suggested searches</span><div class="chip-row chip-row--col" id="suggestChips"></div></div>' +
       '<div class="chips-group" id="occasionChipsWrap"><span class="chips-label">Most popular intent-led categories</span><div class="chip-row chip-row--col" id="occasionChips"></div></div>' +

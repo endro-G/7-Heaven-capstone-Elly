@@ -645,7 +645,10 @@ section.block--tight { padding-block: clamp(40px, 4.5vw, 60px); }
   font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; padding: 11px 8px; border-radius: var(--radius);
 }
 .ph-card:hover .quick-add, .ph-card:focus-within .quick-add { opacity: 1; transform: none; }
-.ph-card__badges { position: absolute; top: 10px; left: 10px; display: flex; flex-direction: column; gap: 5px; align-items: flex-start; }
+/* z-index is load-bearing: the real card's <img> is absolutely positioned and comes
+   AFTER this container in the DOM, so without it the photo paints over every badge
+   (same reason .pdp__main.is-real .pdp__tags carries a z-index). */
+.ph-card__badges { position: absolute; top: 10px; left: 10px; z-index: 1; display: flex; flex-direction: column; gap: 5px; align-items: flex-start; }
 .sk { display: block; height: 11px; border-radius: 3px; background: linear-gradient(90deg, #efe8dc 25%, #f7f1e8 50%, #efe8dc 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite linear; }
 @keyframes shimmer { to { background-position: -200% 0; } }
 .ph-card__title { font-family: var(--font-body); font-size: 14px; font-weight: 700; margin-bottom: 4px; }
@@ -720,15 +723,21 @@ section.block--tight { padding-block: clamp(40px, 4.5vw, 60px); }
 .pdp__thumb { aspect-ratio: 1; border-radius: var(--radius); border: 1px solid var(--line); overflow: hidden; cursor: pointer; background: var(--cream-2); display: grid; place-items: center; padding: 0; }
 .pdp__thumb.is-on { border-color: var(--ink); }
 .pdp__thumb svg { width: 22px; height: 22px; color: rgba(0,0,0,.3); }
+/* a single-image item has nothing to swap between, so the thumbnail column collapses
+   instead of leaving an empty rail (the Live Look follows into column 1) */
+.pdp__gal--solo { grid-template-columns: 1fr; }
+.pdp__gal--solo .pdp__thumbs { display: none; }
+.pdp__gal--solo .livelook { grid-column: 1; }
 .pdp__main { aspect-ratio: 1 / 1.02; border-radius: 4px; overflow: hidden; border: 1px dashed var(--line); background: linear-gradient(150deg, var(--m-a, #f6efe3), var(--m-b, #e9dcc6)); display: grid; place-items: center; position: relative; }
 .pdp__main .big-ico { text-align: center; color: rgba(0,0,0,.32); }
 .pdp__main .big-ico svg { width: 64px; height: 64px; margin: 0 auto 12px; }
 .pdp__main .big-ico span { font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; display: block; }
 .pdp__main.is-real { border-style: solid; }
 .pdp__main.is-real .pdp-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+/* gallery badges — still used by the Pre-Order PDP design gallery (pre-order.html) */
 .pdp__main.is-real .pdp__tags { z-index: 1; }
-.pdp__thumb.is-real img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
 .pdp__tags { position: absolute; top: 14px; left: 14px; display: flex; flex-direction: column; gap: 7px; align-items: flex-start; }
+.pdp__thumb.is-real img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
 
 .pdp__crumbs { font-size: 12px; color: var(--ink-light); display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 14px; align-items: center; }
 .pdp__crumbs a:hover { color: var(--coral); }
@@ -788,6 +797,15 @@ section.block--tight { padding-block: clamp(40px, 4.5vw, 60px); }
 }
 .cfg-text:focus { outline: none; border-color: var(--coral); box-shadow: 0 0 0 3px rgba(255, 96, 112, .14); }
 .cfg-summary { margin-top: 15px; padding-top: 13px; border-top: 1px dashed var(--line); font-size: 13px; color: var(--ink-soft); }
+/* cart personalisation: the line's saved spec + the inline editor (reuses the configurator) */
+.cart-pers { margin-top: 7px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 3px 10px; font-size: 12px; color: var(--ink-soft); }
+.cart-pers__val { font-weight: 700; color: var(--ink); }
+.cart-pers button { background: none; border: 0; padding: 0; font: inherit; color: var(--coral); text-decoration: underline; cursor: pointer; }
+.cart-pers button.muted { color: var(--ink-light); }
+.pers-editor { border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper); padding: 20px; }
+.pers-editor .configurator { margin-top: 0; border: 0; background: transparent; padding: 0; }
+.pers-editor__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-top: 16px; }
+.pers-editor__clear { background: none; border: 0; padding: 0; font: inherit; font-size: 13px; color: var(--ink-light); text-decoration: underline; cursor: pointer; }
 /* embroidery: font picker chips set in their own typeface, size + language chips */
 .cfg-fonts .cfg-chip { font-size: 15px; letter-spacing: .03em; }
 .cfg-fonts .cfg-chip.is-on { font-family: inherit; }
