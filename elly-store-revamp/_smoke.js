@@ -149,7 +149,7 @@ try {
   check('demo bar removed from landing', !/demo-bar/.test(all) && !/Demo&nbsp;controls/.test(all));
   check('sign-in panel lives in the header (opens under the account tool)', /sign-panel/.test(all) && /js-signin/.test(all) && /tom-cook/.test(all) && /chloe-ng/.test(all));
   check('B2B banner injected (headline + sub-line + CTA)', /b2b-banner/.test(all) && /Bulk and corporate orders, made simple/.test(all) && /Start your quote/.test(all) && /b2b\.html/.test(all));
-  check('mobile drawer has B2B link', /b2b\.html">B2B &amp; bulk quotes<\/a>/.test(all));
+  check('mobile drawer no longer carries a B2B button', !/b2b\.html">B2B &amp; bulk quotes<\/a>/.test(all));
   registry['#b2bWizard'].hidden = true;
   check('B2B wizard hidden by default', registry['#b2bWizard'].hidden === true);
   check('startB2B exported', typeof sandbox.EL.startB2B === 'function');

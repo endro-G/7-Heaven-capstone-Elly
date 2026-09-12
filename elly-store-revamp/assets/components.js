@@ -220,8 +220,7 @@
       '<nav class="m-drawer__nav">' +
       '<a class="acc-pill" href="account.html">' + I.user + ' <span id="mAcctPill">My account \u00b7 sign in (demo accounts)</span></a>' +
       links +
-      '<div class="foot-note"><a class="btn btn--ghost btn--sm" href="cart.html">' + I.bag + ' View bag</a>' +
-      '<a class="btn btn--coral btn--sm" href="b2b.html">B2B &amp; bulk quotes</a></div>' +
+      '<div class="foot-note"><a class="btn btn--ghost btn--sm" href="cart.html">' + I.bag + ' View bag</a></div>' +
       '</nav></aside>';
   }
 
