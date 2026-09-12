@@ -150,6 +150,113 @@ try {
   check('sign-in panel lives in the header (opens under the account tool)', /sign-panel/.test(all) && /js-signin/.test(all) && /tom-cook/.test(all) && /chloe-ng/.test(all));
   check('B2B banner injected (headline + sub-line + CTA)', /b2b-banner/.test(all) && /Bulk and corporate orders, made simple/.test(all) && /Start your quote/.test(all) && /b2b\.html/.test(all));
   check('mobile drawer no longer carries a B2B button', !/b2b\.html">B2B &amp; bulk quotes<\/a>/.test(all));
+  /* Tapping a pillar in the mobile drawer must land on that pillar's product
+     listing: the label is the link, the caret only opens the sub-categories. */
+  check('mobile drawer: every pillar links to its listing, with its own caret toggle', (function () {
+    var urls = ['elly-label.html', 'disney-elly.html', 'shoe-boutique.html', 'gifting-hub.html', 'customization.html', 'furkids.html'];
+    var links = all.match(/<a class="m-navlink" href="[^"]+"/g) || [];
+    var toggles = all.match(/data-m-sub-toggle/g) || [];
+    return urls.every(function (u) { return all.indexOf('<a class="m-navlink" href="' + u + '"') >= 0; }) &&
+      links.length === urls.length && toggles.length === urls.length;
+  })());
+  check('mobile drawer: pillar taps navigate (no preventDefault on the pillar name)', (function () {
+    var src = fs.readFileSync('assets/app.js', 'utf8');
+    return /closest\('\[data-m-sub-toggle\]'\)/.test(src) && !/closest\('\.m-navlink'\)/.test(src);
+  })());
+  /* ---------- sub-pillar deep links really filter the listing ----------
+     A sub-pillar item (mega menu + mobile drawer) must land on a NARROWED grid for its
+     pillar, not the pillar's full listing. Every ?f=Facet:Value the menus emit is
+     replayed against the real product database, so a typo in components.js SUB_FACET
+     (or a facet whose data moved) fails the suite instead of silently showing the
+     whole category. */
+  check('sub-pillar links filter their pillar listing, never the full grid', (function () {
+    var catCtx = vm.createContext({ window: {} });
+    vm.runInContext(fs.readFileSync('assets/products.js', 'utf8'), catCtx);
+    var CAT = catCtx.window.EL_PRODUCTS;
+    var PAGE_KIND = {}, PAGE_DATA = {};
+    ['elly-label.html', 'disney-elly.html', 'shoe-boutique.html', 'gifting-hub.html', 'customization.html', 'furkids.html'].forEach(function (page) {
+      var html = fs.readFileSync(page, 'utf8');
+      var m = /data-ghost-grid="\d+" data-kind="([^"]+)"/.exec(html);
+      if (m) PAGE_KIND[page] = m[1];
+      var d = /<body data-page="([^"]+)"/.exec(html);
+      PAGE_DATA[page] = d ? d[1] : '';
+    });
+    /* signed off deliberately — the prototype catalogue has nothing to narrow to / the
+       facet itself is already satisfied by every item in the category */
+    var OK_UNFILTERED = ['All Disney', 'Outerwear', 'New In', 'Personalised name tag', 'Matching family + pet looks'];
+    var OK_EMPTY = ['Bobux', 'Garvalin', 'KEEN', 'Old Soles', 'Adventure shoes', 'Waterplay', 'Digital gift card'];
+    var OK_SAME = ['Small pets', 'Medium pets', 'Large pets'];
+    var blocks = [], bre = /class="(?:m-sub|mega__group)"[^>]*>([\s\S]*?)(?:<\/div>|<\/ul>)/g, b;
+    while ((b = bre.exec(all))) blocks.push(b[1]);
+    var bad = [], total = 0;
+    blocks.forEach(function (block) {
+      var re = /<a href="([^"]+)">([^<]+)<\/a>/g, m;
+      while ((m = re.exec(block))) {
+        var href = m[1].replace(/&amp;/g, '&');
+        var label = m[2].replace(/&amp;/g, '&');
+        total++;
+        if (href === 'pre-order.html') continue;   /* the Pre-Order PDP is its own page */
+        var page = href.split('?')[0];
+        var kind = PAGE_KIND[page];
+        if (!kind) { bad.push(label + ' → ' + page); continue; }
+        var specs = href.indexOf('?') < 0 ? [] : new URLSearchParams(href.slice(href.indexOf('?') + 1)).getAll('f').map(function (s) {
+          var j = s.indexOf(':');
+          return [s.slice(0, j), s.slice(j + 1)];
+        });
+        if (!specs.length) {
+          if (OK_UNFILTERED.indexOf(label) < 0) bad.push(label + ' → unfiltered');
+          continue;
+        }
+        /* facetMatch is page-aware (shoe-stages/sizes read the shoe page's own fields) */
+        registry['body'].setAttribute('data-page', PAGE_DATA[page] || '');
+        var pool = CAT.filter(function (pr) { return pr.k === kind || (pr.kinds || []).indexOf(kind) >= 0; });
+        var hits = pool.filter(function (pr) {
+          return specs.every(function (f) { return sandbox.EL.facetMatch(pr, f[0], f[1]); });
+        }).length;
+        if (!hits) { if (OK_EMPTY.indexOf(label) < 0) bad.push(label + ' → 0 of ' + pool.length); }
+        else if (hits === pool.length) { if (OK_SAME.indexOf(label) < 0) bad.push(label + ' → no narrowing'); }
+      }
+    });
+    if (bad.length) console.log('    ↳ ' + bad.join(' · '));
+    return total >= 70 && bad.length === 0;
+  })());
+  /* ---------- Girls / Boys (1–14Y) are audience edits, not one age bucket ----------
+     They used to alias to "Kids (1–14Y)", so a boy's edit showed dresses & cheongsams. */
+  check('catalogue carries the gender signal the Girls/Boys edits rely on', (function () {
+    var catCtx = vm.createContext({ window: {} });
+    vm.runInContext(fs.readFileSync('assets/products.js', 'utf8'), catCtx);
+    var CAT = catCtx.window.EL_PRODUCTS;
+    var cuts = CAT.filter(function (p) { return p.type === 'Dresses' || /girls'/i.test(p.n); });
+    return cuts.length >= 15 && cuts.every(function (p) { return p.gender === 'girls'; });
+  })());
+  check('Boys (1–14Y) drops every girls-only piece and keeps the rest of the kids range', (function () {
+    var catCtx = vm.createContext({ window: {} });
+    vm.runInContext(fs.readFileSync('assets/products.js', 'utf8'), catCtx);
+    var CAT = catCtx.window.EL_PRODUCTS;
+    var pool = CAT.filter(function (p) { return (p.age || []).indexOf('Kids (1–14Y)') >= 0; });
+    var boys = pool.filter(function (p) { return sandbox.EL.facetMatch(p, 'Age', 'Boys (1–14Y)'); });
+    var girlsOnly = pool.filter(function (p) { return p.gender === 'girls'; });
+    return girlsOnly.length > 0 &&
+      !boys.some(function (p) { return p.gender === 'girls'; }) &&     /* no dresses under Boys */
+      boys.length === pool.length - girlsOnly.length &&               /* nothing else dropped */
+      boys.length < pool.length;                                      /* and it really narrowed */
+  })());
+  check('Elly Label panel offers the Girls/Boys facets its sub-links point at', (function () {
+    var src = fs.readFileSync('elly-label.html', 'utf8');
+    return /data-f="Age" value="Girls \(1–14Y\)"/.test(src) && /data-f="Age" value="Boys \(1–14Y\)"/.test(src);
+  })());
+  check('every SUB_FACET entry maps a real pillar sub-link (no typos, no stale keys)', (function () {
+    var body = /var SUB_FACET = \{([\s\S]*?)\n  \};/.exec(fs.readFileSync('assets/components.js', 'utf8'));
+    if (!body || !sandbox.EL.PILLARS) return false;
+    var keys = (body[1].match(/(?:^|\n)    '([^']+)': \[\[/g) || []).map(function (l) { return l.trim().replace(/': \[\[$/, '').replace(/^'/, ''); });
+    if (keys.length < 60) return false;
+    return keys.every(function (k) {
+      var i = k.indexOf('|'), pk = k.slice(0, i), label = k.slice(i + 1);
+      var pillar = sandbox.EL.PILLARS.filter(function (p) { return p.key === pk; })[0];
+      if (!pillar) return false;
+      return pillar.groups.some(function (g) { return g.links.indexOf(label) >= 0; });
+    });
+  })());
   registry['#b2bWizard'].hidden = true;
   check('B2B wizard hidden by default', registry['#b2bWizard'].hidden === true);
   check('startB2B exported', typeof sandbox.EL.startB2B === 'function');
@@ -307,6 +414,43 @@ try {
     var src = fs.readFileSync('assets/styles.css', 'utf8');
     var m = /\[data-bump="fade"\][^{]*\{([^}]*)\}/.exec(src);
     return !!m && /transform:\s*none/.test(m[1]) && /will-change:\s*auto/.test(m[1]);
+  })());
+  /* ---------- mobile filter sheet: committing a filter collapses the overlay ----------
+     The sheet covers the grid on phones, so leaving it open hid the very result of the
+     filter the shopper just chose. Desktop is unaffected: there the panel sits in flow
+     beside the grid and never receives .show. */
+  (function () {
+    /* the listing pages own #facetPanel; register a stand-in for $()/querySelector */
+    var panel = makeEl('aside');
+    registry['#facetPanel'] = panel;
+    function stub(kind) {
+      var el = {
+        id: '', value: '', files: [],
+        closest: function (s) {
+          if (kind === 'change') return s === '.facet-panel input[type="checkbox"]' ? el : null;
+          return s === '.c-swatch' ? el : null;
+        },
+        matches: function () { return false; },
+        getAttribute: function () { return 'Cream'; },
+        classList: { toggle: function () { return true; }, add: function () {}, remove: function () {}, contains: function () { return true; } }
+      };
+      return el;
+    }
+    function commit(kind) {
+      var ev = { target: stub(kind), preventDefault: function () {}, stopPropagation: function () {} };
+      try { (listeners[kind] || []).forEach(function (fn) { fn(ev); }); } catch (e) { /* later listeners may need a fuller stub */ }
+    }
+    panel.classList.add('show'); commit('change');
+    check('mobile: choosing a facet collapses the filter sheet', !panel.classList.contains('show'));
+    panel.classList.add('show'); commit('click');
+    check('mobile: choosing a colour swatch collapses the filter sheet', !panel.classList.contains('show'));
+    commit('change');
+    check('desktop: a filter tap leaves the in-flow panel untouched', !panel.classList.contains('show'));
+    delete registry['#facetPanel'];   /* don't leak into the grid/facet checks below */
+  })();
+  check('hideFacets clears the borrowed drawer scrim as well', (function () {
+    var m = /function hideFacets\(\)[\s\S]*?\n  \}/.exec(fs.readFileSync('assets/app.js', 'utf8'));
+    return !!m && /hideScrim\('drawer'\)/.test(m[0]);
   })());
   check('PDP carries no Personalisable badge — the configurator is the signal', (function () {
     var src = fs.readFileSync('pdp.html', 'utf8');

@@ -496,13 +496,23 @@
     if (t.closest('.js-scrim')) return;
   });
 
-  /* mobile nav accordions */
+  /* mobile nav accordions — the pillar label is a LINK to its listing, so only the
+     caret (data-m-sub-toggle) expands the sub-categories. Tapping the name used to
+     just rotate the caret and go nowhere, i.e. no listing for that pillar. */
   document.addEventListener('click', function (e) {
-    var b = e.target.closest('.m-navlink');
-    if (!b) return;
+    var t = e.target.closest('[data-m-sub-toggle]');
+    if (!t) return;
+    var row = t.closest('.m-row');
+    if (!row) return;
     e.preventDefault();
-    var open = b.classList.toggle('open');
-    $$('.m-navlink').forEach(function (o) { if (o !== b) o.classList.remove('open'); });
+    var open = row.classList.toggle('open');
+    t.setAttribute('aria-expanded', open ? 'true' : 'false');
+    $$('.m-row').forEach(function (o) {
+      if (o === row) return;
+      o.classList.remove('open');
+      var b = $('[data-m-sub-toggle]', o);
+      if (b) b.setAttribute('aria-expanded', 'false');
+    });
   });
 
   /* ---------- Search overlay ---------- */
@@ -792,6 +802,9 @@
      (age, type, characters, colours, price, customization method/placement,
      pet size, shoe stage/brand/size, occasion/recipient/style/budget). */
   var SORT_STATE = ''; /* '' = Featured (database order) */
+  /* Facets that arrived from a sub-pillar deep link (<page>.html?f=Name:Value) and
+     had no control to tick on this page — they still filter and get a pill. */
+  var DEEP_FACETS = [];
 
   var CHAR_GROUPS = {
     'Mickey & Friends': ['Mickey', 'Minnie', 'Donald', 'Daisy', 'Goofy', 'Pluto'],
@@ -801,10 +814,11 @@
     'Stitch': ['Stitch'],
     'Zootopia': ['Zootopia']
   };
+  /* NB: Girls/Boys (1–14Y) are NOT aliases of "Kids (1–14Y)" — that made both edits
+     show the same everything-kids grid, dresses included. They are audience edits and
+     are handled in the Age case below against the catalogue's `gender` tag. */
   var AGE_ALIAS = {
-    'Baby Disney (0–2Y)': ['Newborn (0–12M)', 'Baby (0–2Y)'],
-    'Girls (1–14Y)': ['Kids (1–14Y)'],
-    'Boys (1–14Y)': ['Kids (1–14Y)']
+    'Baby Disney (0–2Y)': ['Newborn (0–12M)', 'Baby (0–2Y)']
   };
   var TYPE_ALIAS = {
     'Dresses & cheongsams': ['Dresses'],
@@ -871,6 +885,10 @@
   /* one facet value → does this product match? (name = data-f, v = checkbox/swatch value) */
   function facetMatch(p, name, v) {
     var page = (document.body && document.body.getAttribute('data-page')) || '';
+    /* `|` = OR inside one facet value: a sub-pillar edit such as "Baby girls & boys"
+       spans two values. Facets AND together, values within one facet OR. */
+    var alt = String(v).split('|');
+    if (alt.length > 1) return alt.some(function (x) { return facetMatch(p, name, x); });
     switch (name) {
       case 'Price': case 'Budget': return priceMatch(p.price || 0, v);
       case 'Colour':
@@ -879,6 +897,12 @@
         return matchList(p, 'colours', v);
       case 'Character': return matchChars(p, v);
       case 'Age': {
+        /* Girls/Boys (1–14Y) are audience edits, not one age bucket: a boy's edit must
+           never surface a girls-only cut (products tagged gender:'girls') and a girl's
+           must not surface boys-only ones. Untagged pieces are unisex — shown in both. */
+        var kids = function (x) { return (x.age || []).indexOf('Kids (1–14Y)') >= 0; };
+        if (v === 'Girls (1–14Y)') return kids(p) && p.gender !== 'boys';
+        if (v === 'Boys (1–14Y)') return kids(p) && p.gender !== 'girls';
         var keys = AGE_ALIAS[v] || [v];
         return keys.some(function (k) { return (p.age || []).indexOf(k) >= 0; });
       }
@@ -899,6 +923,10 @@
           return pl.some(function (k) { return String(x).toLowerCase() === k; });
         });
       }
+      /* editorial merchandising tags — no panel control on most pages, so these
+         arrive from sub-pillar deep links ("Wear Your SG", "Mummy & Me") */
+      case 'Collection': return matchList(p, 'collection', v);
+      case 'Intent': return matchList(p, 'int', v);
       case 'Pet size': return matchList(p, 'petSize', v);
       case 'Stage': return matchList(p, 'shoeStage', v);
       case 'Brand': return matchList(p, 'brand', v);
@@ -913,12 +941,50 @@
   function activeFacets(panel) {
     var vals = [];
     $$('input[type="checkbox"]:checked', panel).forEach(function (i) {
-      vals.push({ name: i.getAttribute('data-f'), val: i.value });
+      vals.push({ name: i.getAttribute('data-f'), val: i.value, label: i.value });
     });
     $$('.c-swatch.is-on', panel).forEach(function (sw) {
-      vals.push({ name: 'Colour', val: sw.getAttribute('data-c') });
+      var c = sw.getAttribute('data-c');
+      vals.push({ name: 'Colour', val: c, label: c });
+    });
+    /* a deep-linked facet the page has no control for (collection/intent edits on
+       the sub-pillar menus) filters here and shows up in the pill row, removable */
+    DEEP_FACETS.forEach(function (f) {
+      var dup = vals.some(function (v) { return v.name === f.name && v.val === f.val; });
+      if (!dup) vals.push(f);
     });
     return vals;
+  }
+
+  /* Sub-pillar menus link to a FILTERED listing: <page>.html?f=Name:Value[&f=…]
+     (+ optional parallel &fl=<pill label>). A value the page can't offer as a
+     control is applied directly, so every sub-pillar lands on a narrowed grid.
+     updateFacetUI() right after this renders the ticked controls + pills once. */
+  function applyFacetQuery() {
+    var panel = $('#facetPanel');
+    if (!panel || !window.URLSearchParams) return;
+    var q = new URLSearchParams(window.location.search);
+    var specs = q.getAll('f') || [];
+    var labels = q.getAll('fl') || [];
+    DEEP_FACETS = [];
+    specs.forEach(function (spec, i) {
+      var j = String(spec).indexOf(':');
+      if (j < 0) return;
+      var name = spec.slice(0, j), val = spec.slice(j + 1);
+      if (!name || !val) return;
+      var label = labels[i] || val;
+      var hit = false;
+      if (name === 'Colour' || name === 'Thread colour') {
+        $$('.c-swatch', panel).forEach(function (s) {
+          if (s.getAttribute('data-c') === val) { s.classList.add('is-on'); hit = true; }
+        });
+      } else {
+        $$('input[type="checkbox"]', panel).forEach(function (i2) {
+          if (i2.getAttribute('data-f') === name && i2.value === val) { i2.checked = true; hit = true; }
+        });
+      }
+      if (!hit) DEEP_FACETS.push({ name: name, val: val, label: label });
+    });
   }
 
   /* the full category pool behind the page's grid (union of its pillar kinds) */
@@ -976,7 +1042,8 @@
     var pillWrap = $('.active-filters');
     if (pillWrap) {
       pillWrap.innerHTML = vals.map(function (v) {
-        return '<span class="f-pill">' + v.val + '<button type="button" data-remove="' + v.val.replace(/"/g, '&quot;') + '" aria-label="Remove ' + v.val + '">' + icon('close') + '</button></span>';
+        var lbl = v.label || v.val;
+        return '<span class="f-pill">' + esc(lbl) + '<button type="button" data-remove="' + String(v.val).replace(/"/g, '&quot;') + '" aria-label="Remove ' + esc(lbl) + '">' + icon('close') + '</button></span>';
       }).join('');
     }
     var grid = $('[data-ghost-grid]');
@@ -1037,7 +1104,7 @@
 
   document.addEventListener('change', function (e) {
     var f = e.target.closest('.facet-panel input[type="checkbox"]');
-    if (f) updateFacetUI();
+    if (f) { updateFacetUI(); collapseFacetsAfterFilter(); }
   });
   document.addEventListener('click', function (e) {
     var sw = e.target.closest('.c-swatch');
@@ -1045,6 +1112,7 @@
       var on = sw.classList.toggle('is-on');
       if (!on) sw.classList.remove('is-on');
       updateFacetUI();
+      collapseFacetsAfterFilter();
     }
     var rm = e.target.closest('.f-pill button');
     if (rm) {
@@ -1054,6 +1122,7 @@
         $$('input[type="checkbox"]', panel).forEach(function (i) { if (i.value === val) i.checked = false; });
         $$('.c-swatch', panel).forEach(function (s) { if (s.getAttribute('data-c') === val) s.classList.remove('is-on'); });
       }
+      DEEP_FACETS = DEEP_FACETS.filter(function (f) { return f.val !== val; });
       updateFacetUI();
     }
     var clear = e.target.closest('.js-clear-filters');
@@ -1063,10 +1132,12 @@
         $$('input[type="checkbox"]', p2).forEach(function (i) { i.checked = false; });
         $$('.c-swatch', p2).forEach(function (s) { s.classList.remove('is-on'); });
       }
+      DEEP_FACETS = [];
       SORT_STATE = '';
       var sortSel = $('.sort select');
       if (sortSel) sortSel.value = 'Featured';
       updateFacetUI();
+      collapseFacetsAfterFilter();
       toast('All filters cleared');
     }
   });
@@ -1081,6 +1152,18 @@
   function hideFacets() {
     var p = $('#facetPanel');
     if (p) p.classList.remove('show');
+    /* the sheet borrows the mobile nav's scrim — only clear it when the drawer
+       isn't the overlay that was showing */
+    var d = $('#mDrawer');
+    if (!d || !d.classList.contains('show')) hideScrim('drawer');
+  }
+  /* Mobile only: the sheet is an overlay covering the grid, so the moment a filter
+     is committed we collapse it and let the (already re-rendered) filtered listing
+     show through. `.show` is only ever set on the overlay, so on desktop — where the
+     panel sits in flow beside the grid — this is a no-op. */
+  function collapseFacetsAfterFilter() {
+    var p = $('#facetPanel');
+    if (p && p.classList.contains('show')) hideFacets();
   }
   document.addEventListener('click', function (e) {
     var t = e.target.closest('[data-facet-toggle]');
@@ -2271,7 +2354,8 @@
     var cols = p.groups.map(function (g) {
       return '<div class="mega__group"><h4>' + g.title + '</h4><ul>' +
         g.links.map(function (l) {
-          var href = /pre-order/i.test(l) ? 'pre-order.html' : p.url;
+          /* sub-pillar links carry their filter — see SUB_FACET in components.js */
+          var href = window.EL_SUBHREF ? window.EL_SUBHREF(p, l) : p.url;
           return '<li><a href="' + href + '">' + l + '</a></li>';
         }).join('') + '</ul></div>';
     }).join('');
@@ -3942,6 +4026,7 @@
       var big = $('#bigSearch');
       if (big) big.value = sq;
     }
+    applyFacetQuery();        /* sub-pillar deep links pre-tick their facet first */
     updateFacetUI();
     renderViewedSurfaces();   /* after the generic grid fills, so the trail wins */
     if ($('.js-cart-line')) cartTotals();
@@ -3979,6 +4064,7 @@
 
   window.EL = window.EL || {};
   window.EL.ghostCard = ghostCard;
+  window.EL.facetMatch = facetMatch;   /* _smoke.js replays every sub-pillar link */
   window.EL.toast = toast;
   window.EL.goStep = goStep;
   window.EL.b2bReview = b2bOpenReview;

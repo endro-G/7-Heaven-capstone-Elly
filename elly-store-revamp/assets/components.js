@@ -93,6 +93,119 @@
     }
   ];
 
+  /* ---------- sub-pillar links ----------
+     Every sub-pillar item (desktop mega, mobile drawer, quick-shop panel) links to a
+     FILTERED listing instead of its pillar's full grid:
+       <pillar>.html?f=<Facet>:<Value>[&f=<Facet>:<Value>][&fl=<pill label>]
+     Repeated `f` entries AND together; `|` inside a value ORs ("Baby girls|Baby boys").
+     A value this page also renders as a facet control gets pre-ticked (visible and
+     undoable in the panel); anything else rides as a removable pill — see
+     applyFacetQuery in app.js. _smoke.js replays every entry against the product
+     database and fails if a link no longer narrows its pillar grid.
+     Deliberately absent: labels with nothing in the catalogue to filter by
+     ("Outerwear", "New In", "Personalised name tag", "Matching family + pet looks").
+     "All Disney" is the pillar itself, so it stays unfiltered on purpose. */
+  var SUB_FACET = {
+    /* Elly Label — age, type, and the editorial collections */
+    'elly-label|Baby (0–2Y)': [['Age', 'Baby (0–2Y)']],
+    /* Girls/Boys are audience edits (kids minus the girls-only / boys-only cuts), not a
+       plain "Kids (1–14Y)" bucket — see the Age case in app.js facetMatch */
+    'elly-label|Girls (1–14Y)': [['Age', 'Girls (1–14Y)']],
+    'elly-label|Boys (1–14Y)': [['Age', 'Boys (1–14Y)']],
+    'elly-label|Adults': [['Age', 'Adults']],
+    'elly-label|Mummy & Me / Daddy & Me': [['Intent', 'twin', 'Mummy & Me / Daddy & Me']],
+    'elly-label|Newborn essentials': [['Age', 'Newborn (0–12M)', 'Newborn essentials']],
+    'elly-label|Dresses & sets': [['Type', 'Dresses', 'Dresses & sets']],
+    'elly-label|Tops & bottoms': [['Type', 'Tops & tees', 'Tops & bottoms']],
+    'elly-label|Sleepwear': [['Type', 'Sleepwear']],
+    'elly-label|Swimwear': [['Type', 'Swimwear']],
+    'elly-label|Wear Your SG': [['Collection', 'Wear Your SG']],
+    'elly-label|Occasionwear': [['Collection', 'Occasionwear']],
+    'elly-label|Matching family outfits': [['Intent', 'twin', 'Matching family outfits']],
+
+    /* Disney | elly — characters first (the sub-pillar shoppers look for) */
+    'disney-elly|Mickey & Friends': [['Character', 'Mickey & Friends']],
+    'disney-elly|Disney Princess': [['Character', 'Disney Princess']],
+    'disney-elly|Frozen': [['Character', 'Frozen']],
+    'disney-elly|Winnie the Pooh': [['Character', 'Winnie the Pooh']],
+    'disney-elly|Stitch': [['Character', 'Stitch']],
+    'disney-elly|Baby Disney (0–2Y)': [['Age', 'Baby Disney (0–2Y)']],
+    'disney-elly|Girls (1–14Y)': [['Age', 'Girls (1–14Y)']],
+    'disney-elly|Boys (1–14Y)': [['Age', 'Boys (1–14Y)']],
+    'disney-elly|Disney for adults': [['Age', 'Adults', 'Disney for adults']],
+    'disney-elly|Singapore exclusives': [['Collection', 'Singapore', 'Singapore exclusives']],
+    'disney-elly|Disney family outfits': [['Intent', 'twin', 'Disney family outfits']],
+    'disney-elly|Disney swimwear': [['Type', 'Swimwear', 'Disney swimwear']],
+    'disney-elly|Personalisable Disney gifts': [['Style', 'Personalisable', 'Personalisable Disney gifts']],
+
+    /* Shoe Boutique — stage / type / brand */
+    'shoe|Soft soles & pre-walkers': [['Stage', 'Soft soles / pre-walkers', 'Soft soles & pre-walkers']],
+    'shoe|First walkers': [['Stage', 'First walkers']],
+    'shoe|Confident walkers': [['Stage', 'Confident walkers']],
+    'shoe|Sneakers': [['Type', 'Sneakers']],
+    'shoe|Sandals': [['Type', 'Sandals']],
+    'shoe|Ballet flats & Mary Janes': [['Type', 'Ballet flats & Mary Janes']],
+    'shoe|Adventure shoes': [['Type', 'Adventure shoes']],
+    'shoe|Waterplay': [['Type', 'Beach & waterplay', 'Waterplay']],
+    'shoe|Biomecanics': [['Brand', 'Biomecanics']],
+    'shoe|Bobux': [['Brand', 'Bobux']],
+    'shoe|Garvalin': [['Brand', 'Garvalin']],
+    'shoe|KEEN': [['Brand', 'KEEN']],
+    'shoe|Native': [['Brand', 'Native']],
+    'shoe|Old Soles': [['Brand', 'Old Soles']],
+
+    /* Gifting Hub — occasion / recipient / gift style / budget */
+    'gift|Newborn & baby shower': [['Occasion', 'Newborn & baby shower']],
+    'gift|Full month': [['Occasion', 'Full month']],
+    'gift|Birthday': [['Occasion', 'Birthday']],
+    'gift|First birthday': [['Occasion', 'Birthday', 'First birthday']],
+    'gift|Christmas & festive': [['Occasion', 'Festive / Christmas', 'Christmas & festive']],
+    'gift|Baby girls & boys': [['Recipient', 'Baby girls|Baby boys', 'Baby girls & boys']],
+    'gift|Kids (3–14Y)': [['Recipient', 'Kids (3–14Y)']],
+    'gift|Parents & grandparents': [['Recipient', 'Parents & grandparents']],
+    'gift|Twins & multiples': [['Recipient', 'Twins & multiples']],
+    'gift|Gift sets from $80': [['Budget', '$80–$150|$150–$300|$300+', 'Gift sets from $80']],
+    'gift|Deluxe keepsake sets': [['Style', 'Keepsake box', 'Deluxe keepsake sets']],
+    'gift|Personalisable gifts': [['Style', 'Personalisable']],
+    'gift|Digital gift card': [['Style', 'Digital gift card']],
+
+    /* Customization — method / what you personalise / placement */
+    'custom|Embroidered': [['Method', 'Embroidered']],
+    'custom|Iron-on patches': [['Method', 'Iron-on', 'Iron-on patches']],
+    'custom|Name': [['Detail', 'Name']],
+    'custom|Initials': [['Detail', 'Initials']],
+    'custom|Number': [['Detail', 'Number']],
+    'custom|Thread colour': [['Method', 'Embroidered', 'Thread colour']],
+    'custom|Placement': [['Placement', 'Chest / pocket|Back / yoke|Sleeve / cuff|Keepsake box lid', 'Placement']],
+    'custom|Varsity tees & bombers': [['Type', 'Tops & tees', 'Varsity tees & bombers']],
+    'custom|Robes & pullovers': [['Type', 'Tops & tees|Sleepwear', 'Robes & pullovers']],
+    'custom|Keepsake boxes': [['Type', 'Keepsake box', 'Keepsake boxes']],
+    'custom|Baby gift sets': [['Type', 'Gift set', 'Baby gift sets']],
+
+    /* Elly FurKids — type, pet size, gifting intent */
+    'furkids|Blankets & mats': [['Type', 'Blankets & mats']],
+    'furkids|Bows': [['Type', 'Bows']],
+    'furkids|Pet apparel': [['Type', 'Pet apparel']],
+    'furkids|Small pets': [['Pet size', 'S — small', 'Small pets']],
+    'furkids|Medium pets': [['Pet size', 'M — medium', 'Medium pets']],
+    'furkids|Large pets': [['Pet size', 'L — large', 'Large pets']],
+    'furkids|Pet gift sets': [['Intent', 'gift', 'Pet gift sets']]
+  };
+
+  /* sub-pillar label → href (one resolver for mega, drawer and quick-shop) */
+  function subHref(pillar, label) {
+    if (/pre-order/i.test(label)) return 'pre-order.html';
+    var specs = SUB_FACET[pillar.key + '|' + label];
+    if (!specs || !specs.length) return pillar.url;
+    var parts = specs.map(function (f) {
+      var q = 'f=' + encodeURIComponent(f[0] + ':' + f[1]);
+      if (f[2] && f[2] !== f[1]) q += '&fl=' + encodeURIComponent(f[2]);
+      return q;
+    });
+    return pillar.url + '?' + parts.join('&');
+  }
+  window.EL_SUBHREF = subHref;   /* app.js's quick-shop panel renders the same links */
+
   var FOOT = {
     shop: {
       title: 'Shop',
@@ -130,8 +243,7 @@
     var cols = p.groups.map(function (g) {
       return '<div class="mega__group"><h4>' + esc(g.title) + '</h4><ul>' +
         g.links.map(function (l) {
-          var href = /pre-order/i.test(l) ? 'pre-order.html' : p.url;
-          return '<li><a href="' + href + '">' + esc(l) + '</a></li>';
+          return '<li><a href="' + esc(subHref(p, l)) + '">' + esc(l) + '</a></li>';
         }).join('') + '</ul></div>';
     }).join('');
     var note = p.concept
@@ -207,11 +319,15 @@
       var flag = p.concept ? '<span class="flag concept-tag">Concept</span>' : '';
       var sub = p.groups.map(function (g) {
         return g.links.map(function (l) {
-          var href = /pre-order/i.test(l) ? 'pre-order.html' : p.url;
-          return '<a href="' + href + '">' + esc(l) + '</a>';
+          return '<a href="' + esc(subHref(p, l)) + '">' + esc(l) + '</a>';
         }).join('');
       }).join('');
-      return '<div><button type="button" class="m-navlink"' + (p.key === activeKey ? ' style="color:var(--coral)"' : '') + '>' + esc(p.label) + flag + I.caret + '</button>' +
+      /* the pillar NAME goes straight to its product listing; the caret is a separate
+         control that opens the sub-categories (one shared button used to do neither) */
+      return '<div><div class="m-row">' +
+        '<a class="m-navlink" href="' + p.url + '"' + (p.key === activeKey ? ' style="color:var(--coral)"' : '') + '>' + esc(p.label) + flag + '</a>' +
+        '<button type="button" class="m-subtoggle" data-m-sub-toggle aria-expanded="false" aria-label="Show ' + esc(p.label) + ' categories">' + I.caret + '</button>' +
+        '</div>' +
         '<div class="m-sub">' + sub + '</div></div>';
     }).join('');
     return '<aside class="m-drawer" id="mDrawer" aria-hidden="true">' +
