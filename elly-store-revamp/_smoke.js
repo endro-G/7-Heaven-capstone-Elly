@@ -42,7 +42,7 @@ const registry = {};
  '#cfgLang', '#cfgLangWrap', '#cfgLangs', '#cfgFont', '#cfgFontWrap', '#cfgFonts', '#cfgSize', '#cfgSizeWrap', '#cfgSizes',
  '#pdpTitle', '#pdpKicker', '#pdpPrice', '#pdpDesc', '#pdpCrumb', '.pdp', '.pdp__main', '.pdp__gal', '.pdp__thumbs',
  '#cartLines', '#ckLines', '#cartEmpty', '#cartSubtotal', '#cartTotal', '#shipMeter', '#shipMeterLabel',
- '#recRail', '#eventsEyebrow', '#mAcctPill', '#signPanel', '.announce__loc', '#f-country',
+ '#recRail', '#recRailLink', '#eventsEyebrow', '#mAcctPill', '#signPanel', '.announce__loc', '#f-country',
  /* in-store staff assist (PRD §12) */
  '#staffApp', '#staffCustInput', '#staffCustResults', '#staffWalkIn', '#staffOccasion', '#staffTravel',
  '#staffSearch', '#staffResults', '#staffConfirm', '#confirmSize', '#confirmQty', '#confirmAdd',
@@ -50,6 +50,7 @@ const registry = {};
  '#staffDrawer', '#staffDrawerScrim', '#drawerTitle', '#drawerDots', '#drawerPrev', '#drawerNext', '#drawerClose',
  '#charSearch', '#charResults', '#charApprove', '#livelookStage', '#livelookArtWrap',
  '#staffGiftPanel', '#staffShipTo', '#wearerName', '#wearerAge', '#wearerRel',
+ '#staffFulfilItems', '#staffFulfilCount',
  '#draftReview', '#staffHandoff', '#handoffResult', '#orderLadder', '#acctStaffOrders',
  '#viewedRail', '#viewedGrid', '#viewedChipsWrap', '#viewedChips',
  '#pdpXsellGrid', '#pdpXsellTitle', '#pdpXsellKicker', '#pdpXsellLink', '#pdpXsell',
@@ -91,7 +92,7 @@ try {
   load('assets/components.js');
   sandbox.EL_PRODUCTS = [
     { n: 'Beary Personalisable Baby Gift Set', p: 'S$150', k: 'custom', img: 'x.jpg', custom: { methods: ['embroidered'], placements: ['front'] } },
-    { id: 'disney-1', n: 'Kids Tee - Doodle Mickey', p: 'S$49.90', k: 'disney', kinds: ['disney', 'custom'], img: 'y.jpg', tags: ['kids tee', 'mickey', 'doodle'], custom: { methods: ['patches'], patchSet: 'disney', patchCount: 2 } },
+    { id: 'disney-1', n: 'Kids Tee - Doodle Mickey', p: 'S$49.90', k: 'disney', kinds: ['disney', 'custom'], img: 'y.jpg', tags: ['kids tee', 'mickey', 'doodle'], sizes: ['3Y', '5Y'], custom: { methods: ['patches'], patchSet: 'disney', patchCount: 2 } },
     { id: 'elly-24', n: 'Swim Shorts - Turtles', p: 'S$39.90', k: 'elly', img: 'z.jpg', tags: ['swim shorts', 'turtles'] },
     /* cross-sell fixtures: a same-category tee vs a complementary swim piece, and a
        pair of pet items that must only ever pair with each other */
@@ -288,6 +289,78 @@ try {
   check('customer / staff (POS) view toggle present', typeof registry['#cfgViewSeg'] === 'object' && typeof registry['#cfgStaffNote'] === 'object');
   check('embroidery: font picker built (curated calligraphy range)', /Elegant Script/.test(registry['#cfgFonts']._html || '') && /Light Script/.test(registry['#cfgFonts']._html || '') && /Graceful Serif/.test(registry['#cfgFonts']._html || '') && /Calligraphy Caps/.test(registry['#cfgFonts']._html || ''));
   check('embroidery: size + language pickers built', /Medium/.test(registry['#cfgSizes']._html || '') && /日本語/.test(registry['#cfgLangs']._html || '') && /한국어/.test(registry['#cfgLangs']._html || ''));
+  /* the font range belongs to the script: the four elegant Latin faces carry no
+     Chinese/Korean glyphs, so a native name picked against one fell back to a
+     system face that looked nothing like the embroidery. */
+  check('embroidery fonts are scoped to the script (2 中文 + 2 한국어, none shared with Latin)', (function () {
+    var ids = function (l) { return l.map(function (f) { return f.id; }); };
+    var en = ids(sandbox.EL.cfgFontsFor('en')), cn = ids(sandbox.EL.cfgFontsFor('cn')), kr = ids(sandbox.EL.cfgFontsFor('kr')), jp = ids(sandbox.EL.cfgFontsFor('jp'));
+    var shared = cn.concat(kr, jp).filter(function (id) { return en.indexOf(id) >= 0; });
+    return en.length === 4 && cn.length === 2 && kr.length === 2 && jp.length >= 1 && shared.length === 0;
+  })());
+  check('every script has a declared font range (no language inherits Latin faces)', (function () {
+    return sandbox.EL.customLangs.every(function (l) { return sandbox.EL.cfgFontsFor(l.id).length > 0; });
+  })());
+  check('every font declares a family + script, and each CJK face a native sample glyph', (function () {
+    var all = sandbox.EL.customFonts;
+    return all.every(function (f) { return !!f.id && !!f.label && !!f.family && !!f.script; }) &&
+      all.filter(function (f) { return f.script !== 'latin'; }).every(function (f) { return !!f.sample; });
+  })());
+  check('Latin still defaults to Graceful Serif; each native script defaults inside its own range', (function () {
+    var inRange = function (lang) { return sandbox.EL.cfgFontsFor(lang).map(function (f) { return f.id; }).indexOf(sandbox.EL.cfgDefaultFontId(lang)) >= 0; };
+    return sandbox.EL.cfgDefaultFontId('en') === 'serif' && inRange('cn') && inRange('kr') && inRange('jp');
+  })());
+  var pickLang = function (id) {
+    var chip = {
+      id: '', closest: function () { return null; }, matches: function () { return false; },
+      getAttribute: function (k) { return k === 'data-v' ? id : null; },
+      classList: { add: function () {}, remove: function () {}, toggle: function () {}, contains: function () { return false; } }
+    };
+    var ev = { target: { closest: function (s) { return s === '#cfgLangs .cfg-chip' ? chip : null; } }, preventDefault: function () {}, stopPropagation: function () {} };
+    /* per-listener try/catch: an unrelated click handler may need a fuller stub than
+       this one event carries, and it must not stop the configurator's handler */
+    (listeners['click'] || []).forEach(function (fn) { try { fn(ev); } catch (e) {} });
+    return true;
+  };
+  check('picking 中文 rebuilds the font chips in the Chinese range (no English face left)', (function () {
+    sandbox.EL.initConfigurator(sandbox.EL_PRODUCTS[0]);
+    if (!pickLang('cn')) return false;
+    var html = registry['#cfgFonts']._html || '';
+    return /Elegant Ming/.test(html) && /Brush Calligraphy/.test(html) && /cfg-sample/.test(html) &&
+      !/Graceful Serif/.test(html) && !/Elegant Script/.test(html) &&
+      (registry['#cfgFont'].textContent || '') === 'Elegant Ming';
+  })());
+  check('picking 한국어 rebuilds the font chips in the Korean range', (function () {
+    sandbox.EL.initConfigurator(sandbox.EL_PRODUCTS[0]);
+    if (!pickLang('kr')) return false;
+    var html = registry['#cfgFonts']._html || '';
+    return /Elegant Myeongjo/.test(html) && /Soft Batang/.test(html) &&
+      !/Graceful Serif/.test(html) && !/Elegant Ming/.test(html);
+  })());
+  check('switching back to English restores the Latin range', (function () {
+    sandbox.EL.initConfigurator(sandbox.EL_PRODUCTS[0]);
+    pickLang('cn'); pickLang('en');
+    var html = registry['#cfgFonts']._html || '';
+    return /Graceful Serif/.test(html) && !/Elegant Ming/.test(html) && !/Elegant Myeongjo/.test(html);
+  })());
+  check('a native script previews the name in its own face (the field is not left in the site font)', (function () {
+    sandbox.EL.initConfigurator(sandbox.EL_PRODUCTS[0]);
+    pickLang('kr');
+    var fam = registry['#cfgText'].style.fontFamily || '';
+    return /Nanum Myeongjo/.test(fam);
+  })());
+  check('English leaves the text field in its own typography (no font flip for Latin)', (function () {
+    sandbox.EL.initConfigurator(sandbox.EL_PRODUCTS[0]);
+    return (registry['#cfgText'].style.fontFamily || '') === '';
+  })());
+  /* a stored spec restores script-first: the chips are rebuilt per script, so a
+     native font id can only be lit once its script is selected */
+  check('restoring a saved spec applies the script before the font', (function () {
+    var fn = /function cfgRestore\(spec\)[\s\S]*?\n  \}/.exec(fs.readFileSync('assets/app.js', 'utf8'));
+    if (!fn) return false;
+    var lang = fn[0].indexOf('cfgPickLang(spec.language)'), font = fn[0].indexOf('cfgPickFont(spec.font)');
+    return lang >= 0 && font >= 0 && lang < font;
+  })());
   sandbox.EL.initConfigurator({ n: 'Kids Tee - Doodle Mickey', p: 'S$49.90', k: 'disney', img: 'y.jpg', custom: { methods: ['patches'], patchSet: 'disney', patchCount: 3 } });
   check('patches-only product: method chips = Iron-on patches', /Iron-on patches/.test(registry['#cfgMethods']._html || ''));
   check('patches-only product: patch picker built (Pop Mickey)', /Pop Mickey/.test(registry['#cfgPatches']._html || ''));
@@ -305,6 +378,28 @@ try {
   check('staff character library tags its Chinese entry as cn, not kr', (function () {
     var src = fs.readFileSync('assets/staff.js', 'utf8');
     return /script: 'CN', lang: 'cn'/.test(src) && !/script: 'CN', lang: 'kr'/.test(src);
+  })());
+  check('staff library seeds each CJK name with a font from its own script\u2019s range', (function () {
+    var src = fs.readFileSync('assets/staff.js', 'utf8');
+    return /script: 'KR', lang: 'kr', font: 'kr-/.test(src) && /script: 'CN', lang: 'cn', font: 'cn-/.test(src);
+  })());
+  check('staff library shows an approved name in the typeface it was approved in', (function () {
+    var src = fs.readFileSync('assets/staff.js', 'utf8');
+    return /char-card__text" lang="' \+ esc\(e\.script\) \+ '"' \+ charFontStyle\(e\)/.test(src) &&
+      /window\.EL\.cfgFontById\(e\.font\)/.test(src);
+  })());
+  check('every family the configurator can pick is loaded by the pages that render it', (function () {
+    var fam = sandbox.EL.customFonts.map(function (f) { return f.family.split(',')[0].replace(/['"]/g, '').trim(); });
+    var pages = ['pdp.html', 'staff.html', 'cart.html'].map(function (p) { return fs.readFileSync(p, 'utf8').replace(/\+/g, ' '); });
+    var missing = [];
+    fam.forEach(function (f) {
+      pages.forEach(function (src, i) { if (src.indexOf('family=' + f) < 0) missing.push(['pdp.html', 'staff.html', 'cart.html'][i] + ':' + f); });
+    });
+    return missing.length === 0;
+  })());
+  check('CJK font chips carry a native sample glyph so the real shapes are visible', (function () {
+    var src = fs.readFileSync('assets/styles.css', 'utf8');
+    return /\.cfg-fonts \.cfg-chip \.cfg-sample\s*\{/.test(src);
   })());
   /* native scripts get a limit that SCALES with the placement instead of a flat 8,
      so a 12-character blanket corner / keepsake lid keeps its room */
@@ -357,6 +452,42 @@ try {
   check('B2B embroidery pane carries script, font, size and the consumer thread palette', (function () {
     var pane = sandbox.EL.b2bParamHTML('Embroidery', { places: ['left chest'], diagram: 'tee' });
     return /data-param="lang"/.test(pane) && /中文/.test(pane) && /Graceful Serif/.test(pane) && /data-param="fontSize"/.test(pane) && /data-col="Cream"/.test(pane) && /data-col="Navy"/.test(pane) && /is-on" style="background:#ff6070"/.test(pane);
+  })());
+  check('B2B font select offers only the script\u2019s range (a 中文 run gets no Latin face)', (function () {
+    var cn = sandbox.EL.b2bFontOptions('cn'), kr = sandbox.EL.b2bFontOptions('kr'), en = sandbox.EL.b2bFontOptions('en');
+    return /ZCOOL XiaoWei/.test(cn) && /Ma Shan Zheng/.test(cn) && !/Great Vibes|Cinzel|Cormorant/.test(cn) &&
+      /Nanum Myeongjo/.test(kr) && /Gowun Batang/.test(kr) && !/Great Vibes|Cinzel|Cormorant/.test(kr) &&
+      /Cormorant Garamond/.test(en) && /selected/.test(en);
+  })());
+  check('B2B embroidery pane starts on the Latin range (Script defaults to English)', (function () {
+    var pane = sandbox.EL.b2bParamHTML('Embroidery', { places: ['left chest'], diagram: 'tee' });
+    return /data-param="font"/.test(pane) && /Graceful Serif<\/option>/.test(pane) && !/ZCOOL XiaoWei/.test(pane);
+  })());
+  check('changing the B2B Script rebuilds the Font type select in that script', (function () {
+    var fontSel = makeEl('select');
+    fontSel.value = 'Graceful Serif';
+    var langSel = makeEl('select');
+    langSel.value = '\u4e2d\u6587';
+    var line = makeEl('div');
+    line.querySelector = function (sel) {
+      if (sel === 'select[data-param="font"]') return fontSel;
+      if (sel === 'select[data-param="lang"]') return langSel;
+      if (sel === '.js-limit-note') return makeEl('p');
+      return null;
+    };
+    langSel.closest = function (s) { return s === '.js-b2b-line' ? line : null; };
+    var ev = {
+      target: {
+        id: '', value: '\u4e2d\u6587', name: '',
+        closest: function (s) { return s === 'select[data-param="lang"]' ? langSel : null; },
+        matches: function () { return false; }
+      }
+    };
+    /* per-listener try/catch: earlier change handlers expect a fuller stub, and one
+       of them throwing must not hide the B2B behaviour under test */
+    (listeners['change'] || []).forEach(function (fn) { try { fn(ev); } catch (e) {} });
+    return /ZCOOL XiaoWei/.test(fontSel._html || '') && /Ma Shan Zheng/.test(fontSel._html || '') &&
+      !/Great Vibes/.test(fontSel._html || '') && fontSel.getAttribute('data-script') === 'cn';
   })());
   check('B2B embroidery pane captures per-unit names with a live count', (function () {
     var pane = sandbox.EL.b2bParamHTML('Embroidery', { places: ['left chest'], diagram: 'tee' });
@@ -548,13 +679,21 @@ try {
     sandbox.EL.initConfigurator(sandbox.EL_PRODUCTS[0]);
     var evIn = { target: { id: 'cfgText', value: 'Noah', closest: function () { return null; } } };
     (listeners['input'] || []).forEach(function (fn) { fn(evIn); });
-    var picked = { classList: { add: function () {}, remove: function () {}, contains: function () { return true; } } };
+    /* a realistic size chip: the PDP add reads data-size off the picked chip */
+    var picked = {
+      classList: { add: function () {}, remove: function () {}, contains: function () { return true; } },
+      getAttribute: function (a) { return a === 'data-size' ? 'Set' : null; },
+      textContent: 'Set'
+    };
     var sizeSel = { querySelector: function (s) { return s === '.size-chip.is-on' ? picked : { value: '1' }; } };
     var buy = { getAttribute: function () { return null; }, closest: function () { return sizeSel; } };
     var ev = { target: { closest: function (s) { return s === '.js-buy' ? buy : null; } }, preventDefault: function () {} };
     try { (listeners['click'] || []).forEach(function (fn) { fn(ev); }); } catch (e) { return false; }
     var spec = sandbox.EL.persFor('Beary Personalisable Baby Gift Set');
-    return !!spec && spec.text === 'Noah' && sandbox.EL.bagItems().indexOf('Beary Personalisable Baby Gift Set') >= 0;
+    /* the gift set is single-variant ("Set"), so no size is attached and the entry
+       stays the plain name — a listing quick-add would be the same line */
+    return !!spec && spec.text === 'Noah' &&
+      sandbox.EL.bagItems().indexOf('Beary Personalisable Baby Gift Set') >= 0;
   })());
   sandbox.EL.savePers('Beary Personalisable Baby Gift Set', null);
   sandbox.EL.setBag(0);
@@ -618,6 +757,96 @@ try {
   check('badge count matches remaining items after remove', sandbox.EL.bagCount() === 1 && String(registry['#bagCount'].textContent) === '1');
   sandbox.EL.populateCartLines();
   check('cart line removed and remaining item shown', (registry['#cartLines']._html || '').indexOf('Kids Tee - Doodle Mickey') < 0 && (registry['#cartLines']._html || '').indexOf('Beary Personalisable Baby Gift Set') >= 0);
+
+  /* ---------- same item, different sizes: one basket line per size ----------
+     The size rides WITH the bag entry, so a matching family/twin set (one style in
+     3Y and 5Y) is two lines with their own quantity — never "qty 2" of one line. */
+  sandbox.EL.setBag(0);
+  sandbox.EL.addToBag('Kids Tee - Doodle Mickey', 1, '3Y');
+  sandbox.EL.addToBag('Kids Tee - Doodle Mickey', 1, '5Y');
+  check('bag keeps the picked size with the entry', (function () {
+    var items = sandbox.EL.bagItems();
+    return items.length === 2 &&
+      items.indexOf('Kids Tee - Doodle Mickey::3Y') >= 0 &&
+      items.indexOf('Kids Tee - Doodle Mickey::5Y') >= 0 &&
+      sandbox.EL.bagNames().join('|') === 'Kids Tee - Doodle Mickey|Kids Tee - Doodle Mickey';
+  })());
+  sandbox.EL.populateCartLines();
+  /* NB: the harness registers #ckLines too, so populateCartLines renders the compact
+     checkout line ("Size 3Y · qty 1"); the full cart line renders "Size: 3Y" */
+  check('cart renders the same item in two sizes as two lines', (function () {
+    var html = registry['#cartLines']._html || '';
+    return (html.split('js-cart-line').length - 1) === 2 &&
+      /Size:? 3Y/.test(html) && /Size:? 5Y/.test(html) &&
+      (html.match(/data-qty="1"/g) || []).length === 2;
+  })());
+  check('cart lines are keyed by item + size, not just the item', (registry['#cartLines']._html || '').indexOf('data-entry="Kids Tee - Doodle Mickey::3Y"') >= 0 &&
+    (registry['#cartLines']._html || '').indexOf('data-entry="Kids Tee - Doodle Mickey::5Y"') >= 0);
+  check('adding the same size again still merges into that one line', (function () {
+    sandbox.EL.addToBag('Kids Tee - Doodle Mickey', 1, '3Y');
+    sandbox.EL.populateCartLines();
+    var html = registry['#cartLines']._html || '';
+    return (html.split('js-cart-line').length - 1) === 2 &&
+      /data-entry="Kids Tee - Doodle Mickey::3Y" data-price="[^"]*" data-qty="2"/.test(html);
+  })());
+  check('stepping one size leaves the other size alone', (function () {
+    sandbox.EL.setBagQty('Kids Tee - Doodle Mickey::3Y', 4);
+    var items = sandbox.EL.bagItems();
+    var three = items.filter(function (x) { return x === 'Kids Tee - Doodle Mickey::3Y'; }).length;
+    var five = items.filter(function (x) { return x === 'Kids Tee - Doodle Mickey::5Y'; }).length;
+    return three === 4 && five === 1 && sandbox.EL.bagCount() === 5;
+  })());
+  check('removing one size leaves the other in the basket', (function () {
+    var removed = sandbox.EL.removeFromBag('Kids Tee - Doodle Mickey::3Y');
+    var items = sandbox.EL.bagItems();
+    sandbox.EL.populateCartLines();
+    var html = registry['#cartLines']._html || '';
+    return removed && items.length === 1 && items[0] === 'Kids Tee - Doodle Mickey::5Y' &&
+      (html.split('js-cart-line').length - 1) === 1 && /Size:? 5Y/.test(html) && !/Size:? 3Y/.test(html);
+  })());
+  check('recommendations still exclude the item by NAME, whatever size is in the bag', (function () {
+    var ex = sandbox.EL.bagNames();
+    return ex.length === 1 && ex[0] === 'Kids Tee - Doodle Mickey';
+  })());
+  /* the PDP records the picked size — a multi-size item keeps the size it was added
+     with, and the single-variant path (checked above) stays a plain name */
+  check('PDP add stores the picked size for a multi-size item', (function () {
+    sandbox.EL.setBag(0);
+    var chip = {
+      classList: { add: function () {}, remove: function () {}, contains: function () { return true; } },
+      getAttribute: function (a) { return a === 'data-size' ? '3Y' : null; },
+      textContent: '3Y'
+    };
+    var sizeSel = { querySelector: function (s) { return s === '.size-chip.is-on' ? chip : { value: '2' }; } };
+    var buy = {
+      getAttribute: function (a) { return a === 'data-p' ? 'Kids Tee - Doodle Mickey' : null; },
+      closest: function () { return sizeSel; }
+    };
+    var ev = { target: { closest: function (s) { return s === '.js-buy' ? buy : null; } }, preventDefault: function () {} };
+    try { (listeners['click'] || []).forEach(function (fn) { fn(ev); }); } catch (e) { return false; }
+    var items = sandbox.EL.bagItems();
+    var ok = items.length === 2 && items.every(function (x) { return x === 'Kids Tee - Doodle Mickey::3Y'; });
+    sandbox.EL.savePers('Kids Tee - Doodle Mickey', null);
+    sandbox.EL.setBag(0);
+    return ok;
+  })());
+  /* the REAL cart page has no #ckLines, so it renders the full line ("Size: 3Y ·
+     Colours: …"); the harness registers both ids, so drop the checkout summary
+     briefly to exercise that path too */
+  check('cart page line states the picked size beside the colour', (function () {
+    var saved = registry['#ckLines'];
+    delete registry['#ckLines'];
+    sandbox.EL.setBag(0);
+    sandbox.EL.addToBag('Kids Tee - Doodle Mickey', 1, '3Y');
+    sandbox.EL.addToBag('Kids Tee - Doodle Mickey', 1, '5Y');
+    sandbox.EL.populateCartLines();
+    var html = registry['#cartLines']._html || '';
+    registry['#ckLines'] = saved;
+    return (html.split('js-cart-line').length - 1) === 2 &&
+      /Size: 3Y \u00b7 Colours/.test(html) && /Size: 5Y \u00b7 Colours/.test(html) &&
+      /qty-row/.test(html);
+  })());
+  sandbox.EL.setBag(0);
 
   /* ---------- in-store staff assist (PRD §12) — Workflows 1 & 2 ---------- */
   check('stock check: in-store item resolves to store', sandbox.EL_STAFF.checkStock('disney-1').loc === 'store');
@@ -695,6 +924,108 @@ try {
   check('per-customer bag: clearing the set empties it for the account', (function () {
     sandbox.EL_STAFF.bag.clear('tom-cook');
     return sandbox.EL_STAFF.bag.get('tom-cook').length === 0;
+  })());
+  /* a sized basket entry loads as one row per size, carrying the customer's size */
+  check('per-customer bag: the saved size loads into the staff row', (function () {
+    var rows = sandbox.EL_STAFF.rowsFromNames(['Kids Tee - Doodle Mickey::3Y', 'Kids Tee - Doodle Mickey::5Y'], 'tom-cook');
+    return rows.length === 2 &&
+      rows[0].name === 'Kids Tee - Doodle Mickey' && rows[0].size === '3Y' &&
+      rows[1].name === 'Kids Tee - Doodle Mickey' && rows[1].size === '5Y' &&
+      rows[0].img === rows[1].img;
+  })());
+  check('per-customer bag: dropping one size row keeps the other size', (function () {
+    sandbox.EL_STAFF.bag.save('tom-cook', ['Kids Tee - Doodle Mickey::3Y', 'Kids Tee - Doodle Mickey::5Y']);
+    sandbox.EL_STAFF.bag.remove('tom-cook', ['Kids Tee - Doodle Mickey::3Y']);
+    var b = sandbox.EL_STAFF.bag.get('tom-cook');
+    sandbox.EL_STAFF.bag.clear('tom-cook');
+    return b.length === 1 && b[0] === 'Kids Tee - Doodle Mickey::5Y';
+  })());
+
+  /* step 2 → step 3: staff tick which set items the fulfilment covers.
+     Everything is included by default; an unticked item stays in the set. */
+  check('step 3 picker: every item in the set is part of the handoff by default', (function () {
+    var rows = sandbox.EL_STAFF.rowsFromNames(['Kids Tee - Doodle Mickey', 'Swim Shorts - Turtles']);
+    return rows.length === 2 && rows.every(function (r) { return r.include === true; }) &&
+      sandbox.EL_STAFF.fulfilSelected(rows).length === 2 && sandbox.EL_STAFF.fulfilLeft(rows).length === 0 &&
+      sandbox.EL_STAFF.fulfilCountLabel(rows).indexOf('2</b> of 2') >= 0;
+  })());
+  check('step 3 picker: unticking drops the item from the handoff, not from the set', (function () {
+    var rows = sandbox.EL_STAFF.rowsFromNames(['A', 'B', 'C']);
+    rows[1].include = false;
+    return rows.length === 3 && sandbox.EL_STAFF.fulfilSelected(rows).length === 2 &&
+      sandbox.EL_STAFF.fulfilLeft(rows).length === 1 && sandbox.EL_STAFF.fulfilLeft(rows)[0].name === 'B';
+  })());
+  check('step 3 picker: renders one checked box per item + a live count', (function () {
+    sandbox.EL_STAFF.state.rows = sandbox.EL_STAFF.rowsFromNames(['Kids Tee - Doodle Mickey', 'Swim Shorts - Turtles']);
+    sandbox.EL_STAFF.renderFulfilItems();
+    var html = registry['#staffFulfilItems'].innerHTML;
+    return (html.match(/type="checkbox"/g) || []).length === 2 && (html.match(/ checked>/g) || []).length === 2 &&
+      html.indexOf('In this handoff') >= 0 &&
+      (registry['#staffFulfilCount'].innerHTML || '').indexOf('2</b> of 2') >= 0;
+  })());
+  check('step 3 picker: an unticked row renders as left-in-basket and the count follows', (function () {
+    sandbox.EL_STAFF.state.rows[1].include = false;
+    sandbox.EL_STAFF.renderFulfilItems();
+    var html = registry['#staffFulfilItems'].innerHTML;
+    return html.indexOf('Left in basket') >= 0 && (html.match(/ checked>/g) || []).length === 1 &&
+      (registry['#staffFulfilCount'].innerHTML || '').indexOf('1</b> of 2') >= 0;
+  })());
+  check('step 3 picker: the empty set renders a prompt, not a broken list', (function () {
+    sandbox.EL_STAFF.state.rows = [];
+    sandbox.EL_STAFF.renderFulfilItems();
+    return registry['#staffFulfilItems'].innerHTML.indexOf('ticked by default') >= 0 &&
+      (registry['#staffFulfilCount'].innerHTML || '') === '';
+  })());
+  check('step 3 picker: a partial handoff consumes only the ticked names from the set', (function () {
+    sandbox.EL_STAFF.bag.save('tom-cook', ['A', 'B', 'C']);
+    sandbox.EL_STAFF.bag.remove('tom-cook', ['A', 'C']);
+    var b = sandbox.EL_STAFF.bag.get('tom-cook');
+    var kept = b.length === 1 && b[0] === 'B';
+    sandbox.EL_STAFF.bag.clear('tom-cook');
+    return kept;
+  })());
+  /* end to end: hand the set to POS and the UNTICKED items must still be in the
+     customer's basket — the shared elly-bags store the storefront cart reads (and
+     the badge counts). Only the ticked items leave; nothing is dropped. */
+  check('step 3 picker: unticked items remain in the customer basket after handoff', (function () {
+    var ACC = 'basket-demo';
+    var names = ['Kids Tee - Doodle Mickey', 'Swim Shorts - Turtles', 'Beary Personalisable Baby Gift Set'];
+    sandbox.EL_STAFF.bag.save(ACC, names.slice());
+    /* identify the customer + load their set, exactly as step 1 → step 2 does */
+    sandbox.EL_STAFF.state.customer = { id: ACC, name: 'Basket Demo', countryName: 'Singapore', points: 10 };
+    sandbox.EL_STAFF.state.rows = sandbox.EL_STAFF.rowsFromNames(names, ACC);
+    sandbox.EL_STAFF.state.lost = [];
+    /* hand over the tee only — the swim shorts + gift set stay behind */
+    sandbox.EL_STAFF.state.rows[0].include = true;
+    sandbox.EL_STAFF.state.rows[1].include = false;
+    sandbox.EL_STAFF.state.rows[2].include = false;
+    var order = sandbox.EL_STAFF.handoff();
+    var bag = sandbox.EL_STAFF.bag.get(ACC);
+    var basketKept = bag.length === 2 &&
+      bag.indexOf('Swim Shorts - Turtles') >= 0 &&
+      bag.indexOf('Beary Personalisable Baby Gift Set') >= 0 &&
+      bag.indexOf('Kids Tee - Doodle Mickey') < 0;
+    var draftOnlyTicked = !!order && order.items.length === 1 && order.items[0].name === 'Kids Tee - Doodle Mickey';
+    var reported = (registry['#handoffResult']._html || '').indexOf('back in the customer&rsquo;s basket') >= 0;
+    sandbox.EL_STAFF.bag.clear(ACC);
+    sandbox.EL_STAFF.state.customer = null;
+    sandbox.EL_STAFF.state.rows = [];
+    return basketKept && draftOnlyTicked && reported;
+  })());
+  /* the wizard must actually route the selection (handoff + review read the ticked rows) */
+  check('step 3 picker: handoff + review are driven by the ticked rows', (function () {
+    var src = fs.readFileSync('assets/staff.js', 'utf8');
+    var handoff = src.slice(src.indexOf('function handoff()'), src.indexOf('function renderLadder'));
+    return handoff.indexOf('fulfilSelected(state.rows)') >= 0 && handoff.indexOf('removeNamesFromBag') >= 0 &&
+      handoff.indexOf('removeNamesFromBag(sel') >= 0 &&
+      src.indexOf("'staffFulfilCount'") >= 0 && src.indexOf('js-fulfil-item') >= 0;
+  })());
+  check('step 3 picker: the staff page hosts the picker above the fulfilment options', (function () {
+    var src = fs.readFileSync('staff.html', 'utf8');
+    var step3 = src.slice(src.indexOf('Step 3 · Fulfilment'), src.indexOf('Step 4 · Hand to POS'));
+    return step3.indexOf('id="staffFulfilItems"') >= 0 &&
+      step3.indexOf('staffFulfilItems') < step3.indexOf('aria-label="Fulfilment option"') &&
+      step3.indexOf('ticked by default') >= 0;
   })());
 
   /* ---------- recently viewed (per profile; bag + purchase filtered) ----------
@@ -837,6 +1168,79 @@ try {
   sandbox.ELSEG.signOut();
   check('signOut returns to anonymous first-time on live geo', sandbox.ELSEG.isSignedIn() === false && sandbox.ELSEG.current().key === 'tourist-first');
   check('header reverts to Sign In', (registry['#signLbl'].textContent || '') === 'Sign In');
+
+  /* ---------- landing hero: the recommender links to a listing, not the account ----------
+     For a signed-in profile the first banner IS the recommender's cross-sell (PRD
+     \u00a75.1 priority #1), so its buttons must open the filtered listing the
+     recommender picked \u2014 the account page is not a recommendation. `recos` on the
+     profile is that ranked output; the hero and the recommender rail's header link
+     both consume it, while a first-time visitor keeps the segment slides. */
+  check('account DB carries the recommender\u2019s ranked listings per profile', (function () {
+    return sandbox.EL_ACCOUNTS.length === 2 && sandbox.EL_ACCOUNTS.every(function (acc) {
+      return Array.isArray(acc.recos) && acc.recos.length >= 2 && acc.recos.every(function (r) {
+        return !!r.label && /\.html\?/.test(r.href) && !!r.why;
+      });
+    });
+  })());
+  check('recommender links land on a real, narrowed listing (never the account page)', (function () {
+    var catCtx = vm.createContext({ window: {} });
+    vm.runInContext(fs.readFileSync('assets/products.js', 'utf8'), catCtx);
+    var CAT = catCtx.window.EL_PRODUCTS.filter(function (p) { return p.availability !== 'b2b-only'; });
+    var OCC = { 'Birthday': 'birthday', 'Newborn & Baby Shower': 'newborn', 'Twinning & Matching Sets': 'twin',
+      'Theme Park Vacation': 'park', 'Family Photoshoot': 'photoshoot', 'Pajama Party / Sleepover': 'sleepover',
+      'Holiday Gift Boxes': 'gift', 'Big Brother / Little Sister': 'sibling' };
+    registry['body'].setAttribute('data-page', '');
+    var bad = [];
+    sandbox.EL_ACCOUNTS.forEach(function (acc) {
+      (acc.recos || []).forEach(function (r) {
+        if (/account\.html/.test(r.href)) { bad.push(r.label + ' \u2192 account page'); return; }
+        var q = new URLSearchParams(r.href.slice(r.href.indexOf('?') + 1));
+        var occIntent = OCC[q.get('occasion')] || '';
+        var hits = CAT.filter(function (p) {
+          if (occIntent && (p.int || []).indexOf(occIntent) < 0) return false;
+          return q.getAll('f').every(function (spec) {
+            var j = spec.indexOf(':');
+            return sandbox.EL.facetMatch(p, spec.slice(0, j), spec.slice(j + 1));
+          });
+        }).length;
+        if (!hits) bad.push(r.label + ' \u2192 0 items');
+        else if (hits === CAT.length) bad.push(r.label + ' \u2192 no narrowing');
+      });
+    });
+    if (bad.length) console.log('    \u21b3 ' + bad.join(' \u00b7 '));
+    return bad.length === 0;
+  })());
+  check('signed-in hero links the recommender\u2019s listings (no account-page CTA)', (function () {
+    sandbox.ELSEG.signIn('chloe-ng');
+    sandbox.EL.applySegmentState();
+    var html = registry['#heroSlides']._html || '';
+    var chloe = sandbox.EL_ACCOUNTS.filter(function (a) { return a.id === 'chloe-ng'; })[0];
+    var ok = html.indexOf(chloe.recos[0].href) >= 0 && html.indexOf(chloe.recos[1].href) >= 0 &&
+      html.indexOf('Shop the birthday edit for your 6-year-old') >= 0 &&
+      html.indexOf('Your 6-year-old\u2019s birthday is next month.') >= 0 &&
+      html.indexOf('account.html') < 0;
+    sandbox.ELSEG.signOut();
+    return ok;
+  })());
+  check('recommender rail header link follows the same picks', (function () {
+    sandbox.ELSEG.signIn('tom-cook');
+    sandbox.EL.applySegmentState();
+    var link = registry['#recRailLink'];
+    var tom = sandbox.EL_ACCOUNTS.filter(function (a) { return a.id === 'tom-cook'; })[0];
+    var signed = link.getAttribute('href') === tom.recos[0].href && link.textContent === 'Shop the recommended edit';
+    sandbox.ELSEG.signOut();
+    sandbox.EL.applySegmentState();
+    var anon = link.getAttribute('href') === 'account.html' && link.textContent === 'View unified history';
+    return signed && anon;
+  })());
+  check('first-time visitor keeps the segment hero (no account override)', (function () {
+    sandbox.ELSEG.__setGeoHint({ country: 'SG', countryName: 'Singapore', city: 'Singapore' });
+    sandbox.EL.applySegmentState();
+    var s = sandbox.ELSEG.current();
+    var html = registry['#heroSlides']._html || '';
+    return s.account === null && s.guest === 'first' &&
+      html.indexOf('Newborn & Baby Shower season') >= 0 && html.indexOf('account.html') < 0;
+  })());
 
   /* ---------- visitor geo-location (assets/geo.js) ----------
      fetch is stubbed to reject, so the only working tiers are the

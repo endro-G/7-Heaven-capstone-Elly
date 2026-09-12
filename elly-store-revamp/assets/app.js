@@ -190,12 +190,30 @@
   /* ---------- Bag (demo, per-account + persistent) ----------
      ONE source of truth for the header badge, the cart/checkout lines AND the
      staff tablet's "set": a per-account bag in localStorage (elly-bags), keyed by
-     the signed-in account id (guest = '__guest'). Items are product names, so
-     every surface reads the same list — staff additions for a matched customer
-     appear in that customer's online bag, and online additions show up on the
-     staff set. elly-bag still mirrors the length for the badge. */
+     the signed-in account id (guest = '__guest'). Entries are product names plus the
+     size the shopper picked (see bagEntry below), so every surface reads the same
+     list — staff additions for a matched customer appear in that customer's online
+     bag, and online additions show up on the staff set. elly-bag still mirrors the
+     length for the badge. */
   var BAG_MAP_KEY = 'elly-bags';
   var BAG_GUEST = '__guest';
+  /* An entry is "<product name>" when the item takes no size choice, or
+     "<product name>::<size>" once one is picked. The size rides WITH the entry, so
+     the same item in 3Y and 5Y are two separate basket lines (matching family/twin
+     outfits) instead of collapsing into one "qty 2" line. The product NAME stays the
+     lookup key everywhere else — catalogue, recommendations, personalisation specs. */
+  var BAG_SIZE_SEP = '::';
+  function bagEntry(name, size) { return size ? name + BAG_SIZE_SEP + size : name; }
+  function bagName(entry) {
+    var s = String(entry), i = s.indexOf(BAG_SIZE_SEP);
+    return i < 0 ? s : s.slice(0, i);
+  }
+  function bagSize(entry) {
+    var s = String(entry), i = s.indexOf(BAG_SIZE_SEP);
+    return i < 0 ? '' : s.slice(i + BAG_SIZE_SEP.length);
+  }
+  /* names only — for every consumer that resolves the catalogue product */
+  function bagNames() { return bagItems().map(bagName); }
   function lsGet(k) { try { return window.localStorage.getItem(k); } catch (e) { return null; } }
   function lsSet(k, v) { try { window.localStorage.setItem(k, v); } catch (e) {} }
   function bagAccountKey() {
@@ -229,31 +247,35 @@
     var c = $('#bagCount');
     if (c) { c.textContent = n; c.hidden = n <= 0; }
   }
-  /* one entry per unit: adding qty 3 stores the name three times. The cart
+  /* one entry per unit: adding qty 3 stores the entry three times. The cart
      aggregates repeats back into a single line with a quantity, so the badge
      (total units) and the cart totals can never disagree. */
-  function addToBag(name, qty) {
+  function addToBag(name, qty, size) {
     var items = bagItems();
     var n = Math.max(1, parseInt(qty, 10) || 1);
-    for (var i = 0; i < n; i++) items.push(name);
+    var entry = bagEntry(name, size);
+    for (var i = 0; i < n; i++) items.push(entry);
     saveBagItems(items);
   }
-  function removeFromBag(name) {
+  /* drop one LINE — an entry, so removing the 3Y tee leaves the 5Y tee alone */
+  function removeFromBag(entry) {
     var items = bagItems();
-    var next = items.filter(function (x) { return x !== name; });
+    var next = items.filter(function (x) { return x !== entry; });
     if (next.length === items.length) return false;
     saveBagItems(next);
-    /* the line is gone, so its personalisation spec goes with it */
-    if (next.indexOf(name) < 0) savePers(name, null);
+    /* the spec is keyed by product name, so only drop it once no size of the item
+       is left in the bag (removing the 3Y line must not wipe the 5Y line's spec) */
+    var stillInBag = next.some(function (x) { return bagName(x) === bagName(entry); });
+    if (!stillInBag) savePers(bagName(entry), null);
     return true;
   }
   /* set a line's quantity (cart stepper) — keeps the first occurrence's position */
-  function setBagQty(name, qty) {
+  function setBagQty(entry, qty) {
     var items = bagItems();
     var n = Math.max(1, parseInt(qty, 10) || 1);
     var next = [], placed = false;
     items.forEach(function (x) {
-      if (x !== name) { next.push(x); return; }
+      if (x !== entry) { next.push(x); return; }
       if (placed) return;
       placed = true;
       for (var i = 0; i < n; i++) next.push(x);
@@ -399,7 +421,7 @@
      profile already bought, and the seed product(s) themselves */
   function xsellExcluded(seeds) {
     var ex = {};
-    bagItems().forEach(function (n) { ex[n] = true; });
+    bagNames().forEach(function (n) { ex[n] = true; });
     var bought = purchasedNames();
     Object.keys(bought).forEach(function (n) { ex[n] = true; });
     (seeds || []).forEach(function (s) { if (s && s.n) ex[s.n] = true; });
@@ -452,7 +474,7 @@
     var grid = $('#cartXsellGrid');
     if (!grid) return;
     var seeds = [], seen = {};
-    bagItems().forEach(function (n) {
+    bagNames().forEach(function (n) {
       var p = productByName(n);
       if (p && !seen[p.n]) { seen[p.n] = true; seeds.push(p); }
     });
@@ -627,7 +649,7 @@
     'tourist-first': ['Disney Cruise outfits', 'Family photoshoot looks', 'Mickey Go Local tee', 'Twinning tees for the park', 'Shop now, ship home', 'Theme Park Vacation set'],
     'local-first': ['Birthday present', 'Newborn & baby shower gift', 'Full month set', 'Twinning & matching outfits', 'Sleepover PJs'],
     'tourist-return': ['Back in your size: Nautical Mickey', 'New: Marina Bay night designs', 'Restock your holiday edit', 'Stitch \u2014 you viewed this'],
-    'local-return': ['Refill your favourites', 'Newborn gift \u2014 you bought this', 'Birthday edit for your 5yo', 'Points balance: 1,240 \u00b7 redeem S$5']
+    'local-return': ['Refill your favourites', 'Newborn gift \u2014 you bought this', 'Birthday edit for your 6yo', 'Points balance: 1,240 \u00b7 redeem S$5']
   };
 
   /* icons for the intent-led category chips (shown ranked by catalog size) */
@@ -1243,12 +1265,20 @@
           : ((CURRENT_PDP && CURRENT_PDP.n) || (($('#preTitle') && $('#preTitle').textContent) || 'Beary Personalisable Baby Gift Set'));
         var qtyEl = sizeSel ? $('.qty-row output', sizeSel) : null;
         var qty = qtyEl ? (parseInt(qtyEl.value, 10) || 1) : 1;
-        addToBag(name, qty);
+        /* the picked size rides with the bag entry, so the cart can tell a 3Y and a
+           5Y of the same item apart (matching outfits) instead of merging them.
+           Only when the item really offers a choice: a single-variant piece (gift set
+           "Set", plush "One size") keeps its plain name, so a PDP add and a listing
+           quick-add stay the SAME line instead of splitting on "::One size". */
+        var buyProd = buy.getAttribute('data-p') ? (productByName(buy.getAttribute('data-p')) || null) : CURRENT_PDP;
+        var sizeChoice = !buyProd || sizeRun(buyProd).length > 1;
+        var pickedSize = sizeChoice ? (picked.getAttribute('data-size') || picked.textContent.trim()) : '';
+        addToBag(name, qty, pickedSize);
         /* store the spec with the bag, so the cart can show it and edit it later */
         var spec = (CURRENT_PDP && cfgEligible(CURRENT_PDP)) ? cfgSpec() : null;
         if (spec) savePers(name, spec);
         var pers = spec ? spec.summary : '';
-        toast('Added to bag \u2014 <b>demo</b>' + (pers ? ' \u00b7 ' + esc(pers) : '') + '. <a href="cart.html" style="text-decoration:underline;color:#fff">View bag</a>');
+        toast('Added to bag \u2014 <b>demo</b>' + (pickedSize ? ' \u00b7 size ' + esc(pickedSize) : '') + (pers ? ' \u00b7 ' + esc(pers) : '') + '. <a href="cart.html" style="text-decoration:underline;color:#fff">View bag</a>');
       } else {
         toast('Please pick a size first (demo checkout flow)');
       }
@@ -1343,7 +1373,7 @@
     if (!line) return;
     /* persist the line's new quantity so the badge + checkout summary agree */
     var out = $('.qty-row output', line);
-    var name = line.getAttribute('data-name');
+    var name = line.getAttribute('data-entry') || line.getAttribute('data-name');
     if (name && out) {
       var n = parseInt(out.value, 10) || 1;
       line.setAttribute('data-qty', n);
@@ -1524,6 +1554,16 @@
     for (var i = 0; i < CUSTOM_LANGS.length; i++) if (CUSTOM_LANGS[i].label === label) return CUSTOM_LANGS[i].id;
     return 'en';
   }
+  /* the Font type select follows the Script select — a bulk run in 中文/한국어 must
+     not be offered Latin faces that can't draw the names (same rule as the PDP
+     chips). Value stays the label, so the quote payload is unchanged. */
+  function b2bFontOptions(langId) {
+    var def = cfgDefaultFontId(langId);
+    return cfgFontsFor(langId).map(function (fo) {
+      return '<option value="' + esc(fo.label) + '" style="font-family:' + fo.family + '"' + (fo.id === def ? ' selected' : '') + '>' +
+        esc(fo.label) + (fo.sample ? ' (' + fo.sample + ')' : '') + '</option>';
+    }).join('');
+  }
   /* the per-unit character allowance for a decorated line: the placement's own
      limit, tightened for non-Latin scripts by the same rule the PDP uses (so a
      name approved on the site fits the bulk run too) */
@@ -1616,8 +1656,8 @@
         '<div class="field"><label>Script</label><select class="js-dp" data-param="lang">' +
         CUSTOM_LANGS.map(function (l) { return '<option value="' + esc(l.label) + '"' + (l.id === 'en' ? ' selected' : '') + '>' + esc(l.label) + '</option>'; }).join('') +
         '</select></div>' +
-        '<div class="field"><label>Font type</label><select class="js-dp" data-param="font">' +
-        CUSTOM_FONTS.map(function (fo) { return '<option value="' + esc(fo.label) + '" style="font-family:' + fo.family + '"' + (fo.id === 'serif' ? ' selected' : '') + '>' + esc(fo.label) + '</option>'; }).join('') +
+        '<div class="field"><label>Font type</label><select class="js-dp" data-param="font" data-script="en">' +
+        b2bFontOptions('en') +
         '</select></div>' +
         '<div class="field"><label>Font size</label><select class="js-dp" data-param="fontSize">' +
         CUSTOM_FONT_SIZES.map(function (si) { return '<option value="' + esc(si.label) + '"' + (si.id === 'md' ? ' selected' : '') + '>' + esc(si.label) + '</option>'; }).join('') +
@@ -1981,9 +2021,24 @@
       b2bLimitNote(lp);
       return;
     }
-    /* the character limit depends on the script as well as the placement */
+    /* the character limit depends on the script as well as the placement — and so
+       does the font range, so the Font type select is rebuilt for the new script */
     var langSel = e.target.closest('select[data-param="lang"]');
-    if (langSel) { b2bLimitNote(langSel.closest('.js-b2b-line')); return; }
+    if (langSel) {
+      var lline = langSel.closest('.js-b2b-line');
+      var fsel = lline && $('select[data-param="font"]', lline);
+      if (fsel) {
+        var langId = b2bLangId(langSel.value);
+        var keep = fsel.value;
+        fsel.innerHTML = b2bFontOptions(langId);
+        fsel.setAttribute('data-script', langId);
+        /* keep the previous pick when the new script still offers it */
+        var opts = cfgFontsFor(langId);
+        for (var oi = 0; oi < opts.length; oi++) if (opts[oi].label === keep) fsel.value = keep;
+      }
+      b2bLimitNote(lline);
+      return;
+    }
     var iron = e.target.closest('select[data-param="transfer"]');
     if (iron) {
       var li = iron.closest('.js-b2b-line');
@@ -2451,7 +2506,7 @@
       items: [
         { n: 'Frozen dress — you bought this', p: 'S$68', k: 'disney', stars: '5.0 (421)', badge: 'In-store · linked', badgeCls: 'badge--blue' },
         { n: 'Keepsake box — in-store purchase', p: 'S$120', k: 'gift', stars: '4.9 (203)' },
-        { n: 'Birthday edit for your 5yo', p: 'S$54', k: 'elly', stars: '4.8 (77)' },
+        { n: 'Birthday edit for your 6yo', p: 'S$54', k: 'elly', stars: '4.8 (77)' },
         { n: 'Refill your favourites', p: 'S$39', k: 'elly', stars: '4.7 (132)' },
         { n: 'Sleepover PJs — sibling set', p: 'S$46', k: 'elly', stars: '4.8 (64)' },
         { n: 'Pre-Order — Gardens by the Bay', p: 'S$59', k: 'disney', stars: 'New' }
@@ -2533,6 +2588,18 @@
     var k = $('#recTilesKicker'); if (k) k.textContent = c.kicker;
     var t = $('#recTilesTitle'); if (t) t.textContent = c.title;
     var s = $('#recTilesSub'); if (s) s.textContent = c.sub;
+    updateRecRailLink();
+  }
+
+  /* the recommender rail's header link follows the same picks as the hero: for a
+     signed-in profile it opens the listing the recommender picked (falling back to
+     the account page for an anonymous returning guest, who has no profile). */
+  function updateRecRailLink() {
+    var a = $('#recRailLink');
+    if (!a) return;
+    var recos = accountRecos();
+    a.setAttribute('href', recos ? recos[0].href : 'account.html');
+    a.textContent = recos ? 'Shop the recommended edit' : 'View unified history';
   }
 
   /* --- segment-flavoured events eyebrow (PRD §5.1 priority #2) ---
@@ -2609,12 +2676,12 @@
   };
   var _lr1 = {
     kicker: 'Welcome back \u00b7 recommender (demo)', h1: 'Birthday season is coming \u2014 we remembered',
-    sub: 'Your daughter turns 5 next month. Her Frozen wishlist, the keepsake box you bought in-store, and 1,240 points ready to redeem.',
+    sub: 'Your 6-year-old\u2019s birthday is next month. Her Frozen wishlist, the keepsake box you bought in-store, and 1,240 points ready to redeem.',
     cta: 'View your personalised edit', ctaHref: 'account.html',
     cta2: 'Check your points', cta2Href: 'account.html',
     art: '\ud83c\udf82', tag: 'Recommender \u00b7 history first', a: '#fde7e9', b: '#f9c8cd', c: '#f2a4ad',
     f1t: 'Because you bought', f1v: 'Frozen dress, in-store', f1c: 'var(--coral)',
-    f2t: 'Points to redeem', f2v: '1,240 \u00b7 S$60 off', f2c: 'var(--blue)'
+    f2t: 'Points to redeem', f2v: '1,240 \u00b7 S$62 off', f2c: 'var(--blue)'
   };
 
   var HERO_SLIDES = {
@@ -2623,6 +2690,53 @@
     'tourist-return': [_tr1, _tr2, _pre, _cust],
     'local-return': [_lr1, _lf1, _pre, _cust]
   };
+
+  /* ---------- the recommender's links for a signed-in profile ----------
+     PRD \u00a75.1 hero priority #1: for a RETURNING member the first banner IS the
+     recommender's cross-sell, so its buttons must open the listing the recommender
+     picked \u2014 not the account page. `recos` on the profile (accounts.js) is that
+     ranked output; each entry is a FILTERED listing built from the deep-link params
+     the facet engine already reads (?occasion= / ?f=), so a click lands on a
+     narrowed grid. A profile with no authored picks still gets listing links via
+     the segment default below, so a signed-in visitor can never dead-end on
+     account.html from the hero. */
+  var RETURN_DEFAULT_RECOS = {
+    'local-return': [
+      { label: 'Shop birthday gifts', href: 'gifting-hub.html?occasion=Birthday' },
+      { label: 'Newborn & baby-shower picks', href: 'gifting-hub.html?occasion=Newborn%20%26%20Baby%20Shower' }
+    ],
+    'tourist-return': [
+      { label: 'Shop Twinning & Matching Sets', href: 'disney-elly.html?occasion=Twinning%20%26%20Matching%20Sets' },
+      { label: 'Singapore exclusives', href: 'disney-elly.html?f=Collection:Singapore&fl=Singapore%20exclusives' }
+    ]
+  };
+
+  function accountRecos() {
+    var acc = currentAccount();
+    if (!acc) return null;
+    var picks = (acc.recos && acc.recos.length) ? acc.recos : RETURN_DEFAULT_RECOS[segSuggestionKey()];
+    return (picks && picks.length) ? picks : null;
+  }
+
+  /* swap the recommender slide's copy + buttons for this profile's picks. The
+     slide objects in HERO_SLIDES are shared, so clone rather than mutate. */
+  function applyAccountRecos(slides) {
+    var recos = accountRecos();
+    if (!recos || !slides || !slides.length) return slides;
+    var base = slides[0], primary = recos[0], secondary = recos[1];
+    var why = recos.map(function (r) { return r.why; }).filter(function (w) { return !!w; });
+    var out = slides.slice(0);
+    out[0] = {
+      kicker: base.kicker, h1: base.h1,
+      sub: why.length ? 'From your history: ' + why.join(' ') : base.sub,
+      cta: primary.label, ctaHref: primary.href,
+      cta2: secondary ? secondary.label : '', cta2Href: secondary ? secondary.href : '',
+      art: base.art, tag: base.tag, a: base.a, b: base.b, c: base.c,
+      f1t: base.f1t, f1v: base.f1v, f1c: base.f1c,
+      f2t: base.f2t, f2v: base.f2v, f2c: base.f2c
+    };
+    return out;
+  }
 
   var heroTimer = null, heroIdx = 0, heroLen = 0, HERO_MS = 6000; /* auto-advance interval (ms) */
 
@@ -2693,7 +2807,7 @@
     var wrap = $('#heroSlides');
     if (!wrap) return;
     var s = demoSeg();
-    var slides = HERO_SLIDES[s.geo + '-' + s.guest] || HERO_SLIDES['local-first'];
+    var slides = applyAccountRecos(HERO_SLIDES[s.geo + '-' + s.guest] || HERO_SLIDES['local-first']);
     heroLen = slides.length;
     wrap.innerHTML = slides.map(heroSlideHTML).join('');
     var dots = $('#heroDots');
@@ -2962,12 +3076,34 @@
   /* embroidery: a curated set of calligraphy fonts — cursive scripts and
      non-cursive display faces chosen to look like a gift tag / keepsake
      (PRD §5.3 — embroidered service for baby & kids clothing: initials +
-     thread + font + size + language). The default stays on 'serif'. */
+     thread + font + size + language).
+
+     `script` ties each face to the character set it can actually draw. The four
+     Latin faces are elegant but carry no Chinese/Korean/Japanese glyphs, so a
+     native name picked against one silently fell back to a system face that
+     looked nothing like the embroidery. Every script now has its own small
+     range (see CUSTOM_FONT_SCRIPT); `sample` is the native glyph drawn on the
+     chip so the shopper sees the real shapes before choosing.
+
+     All CJK faces are Google Fonts delivered with unicode-range slicing, so the
+     browser only fetches the slices that hold the typed characters. */
   var CUSTOM_FONTS = [
-    { id: 'script',  label: 'Elegant Script',   family: "'Great Vibes', cursive" },
-    { id: 'script2', label: 'Light Script',     family: "'Parisienne', cursive" },
-    { id: 'serif',   label: 'Graceful Serif',   family: "'Cormorant Garamond', serif" },
-    { id: 'caps',    label: 'Calligraphy Caps', family: "'Cinzel', serif" }
+    /* Latin — the original range; 'serif' stays the site default */
+    { id: 'script',  label: 'Elegant Script',   family: "'Great Vibes', cursive",      script: 'latin' },
+    { id: 'script2', label: 'Light Script',     family: "'Parisienne', cursive",       script: 'latin' },
+    { id: 'serif',   label: 'Graceful Serif',   family: "'Cormorant Garamond', serif", script: 'latin' },
+    { id: 'caps',    label: 'Calligraphy Caps', family: "'Cinzel', serif",             script: 'latin' },
+    /* 中文 — a clean Ming serif whose even strokes digitise and print cleanly, and
+       a brush kai (Ma Shan Zheng, 马善政毛笔楷书) for keepsake-style gifting */
+    { id: 'cn-ming',  label: 'Elegant Ming',      family: "'ZCOOL XiaoWei', serif",   script: 'cn', sample: '美' },
+    { id: 'cn-brush', label: 'Brush Calligraphy', family: "'Ma Shan Zheng', serif",   script: 'cn', sample: '美' },
+    /* 한국어 — a classic Myeongjo and a soft modern Batang; both are built on the
+       uniform strokes that embroider and print most predictably */
+    { id: 'kr-myeongjo', label: 'Elegant Myeongjo', family: "'Nanum Myeongjo', serif", script: 'kr', sample: '미' },
+    { id: 'kr-batang',   label: 'Soft Batang',      family: "'Gowun Batang', serif",   script: 'kr', sample: '미' },
+    /* 日本語 — the same defect applied to the kanji/kana range, so it gets a Mincho
+       serif of its own rather than silently reusing a Latin face */
+    { id: 'jp-mincho', label: 'Elegant Mincho', family: "'Noto Serif JP', serif",     script: 'jp', sample: 'あ' }
   ];
   var CUSTOM_FONT_SIZES = [
     { id: 'sm', label: 'Small' }, { id: 'md', label: 'Medium' }, { id: 'lg', label: 'Large' }
@@ -3274,6 +3410,47 @@
     for (var i = 0; i < CUSTOM_FONTS.length; i++) if (CUSTOM_FONTS[i].id === id) return CUSTOM_FONTS[i];
     return CUSTOM_FONTS[0];
   }
+  /* which font range a script gets, keyed on the CUSTOM_LANGS ids so a new language
+     has to declare a range here rather than quietly inherit Latin faces that can't
+     draw its characters */
+  var CUSTOM_FONT_SCRIPT = { en: 'latin', cn: 'cn', jp: 'jp', kr: 'kr' };
+  function cfgFontScriptFor(langId) { return CUSTOM_FONT_SCRIPT[langId] || 'latin'; }
+  function cfgFontsFor(langId) {
+    var want = cfgFontScriptFor(langId);
+    var out = [];
+    for (var i = 0; i < CUSTOM_FONTS.length; i++) {
+      if (CUSTOM_FONTS[i].script === want) out.push(CUSTOM_FONTS[i]);
+    }
+    /* a script with no curated range falls back to the Latin set rather than
+       showing an empty picker */
+    if (!out.length) for (var j = 0; j < CUSTOM_FONTS.length; j++) {
+      if (CUSTOM_FONTS[j].script === 'latin') out.push(CUSTOM_FONTS[j]);
+    }
+    return out;
+  }
+  function cfgDefaultFontId(langId) {
+    var list = cfgFontsFor(langId);
+    for (var i = 0; i < list.length; i++) if (list[i].id === 'serif') return 'serif';
+    return (list[0] || CUSTOM_FONTS[0]).id;
+  }
+  /* keep CFG.font inside the range for the chosen script: the chips are rebuilt per
+     script, so a Latin id would leave nothing selected — and preview the name in a
+     face that can't draw it */
+  function cfgSyncFontToLang() {
+    var list = cfgFontsFor(CFG.language);
+    for (var i = 0; i < list.length; i++) if (list[i].id === CFG.font) return;
+    CFG.font = cfgDefaultFontId(CFG.language);
+  }
+  function cfgFontChipHTML(fo) {
+    return '<button type="button" class="cfg-chip cfg-chip--font' + (fo.sample ? ' cfg-chip--native' : '') +
+      (fo.id === CFG.font ? ' is-on' : '') + '" data-v="' + fo.id + '" style="font-family:' + fo.family + '">' +
+      esc(fo.label) + (fo.sample ? ' <span class="cfg-sample" aria-hidden="true">' + fo.sample + '</span>' : '') +
+      '</button>';
+  }
+  function renderCfgFonts() {
+    var ff = $('#cfgFonts');
+    if (ff) ff.innerHTML = cfgFontsFor(CFG.language).map(cfgFontChipHTML).join('');
+  }
   function cfgSizeById(id) {
     for (var i = 0; i < CUSTOM_FONT_SIZES.length; i++) if (CUSTOM_FONT_SIZES[i].id === id) return CUSTOM_FONT_SIZES[i];
     return CUSTOM_FONT_SIZES[1];
@@ -3455,6 +3632,11 @@
       if (input.value !== CFG.text) input.value = CFG.text;
       var lang = cfgLangById(CFG.language);
       input.placeholder = lang.placeholder;
+      /* the field previews the chosen face, but only for native scripts: the site
+         font has no Chinese/Korean coverage, so the name would otherwise fall back
+         to a system face that looks nothing like the embroidery. English keeps the
+         field's own typography. */
+      input.style.fontFamily = (CFG.language === 'en') ? '' : cfgFontById(CFG.font).family;
     }
     var m = $('#cfgMethod'); if (m) m.textContent = CFG.method ? (CFG_METHOD_LABELS[CFG.method] || CFG.method) : '\u2014';
     var p = $('#cfgPlacement'); if (p) p.textContent = CFG.placement ? cfgPlacementCfg(CFG.placement).label : '\u2014';
@@ -3527,6 +3709,10 @@
   function cfgPickLang(id) {
     CFG.language = id;
     $$('#cfgLangs .cfg-chip').forEach(function (b) { b.classList.toggle('is-on', b.getAttribute('data-v') === id); });
+    /* the font range belongs to the script — switching to 中文/한국어 rebuilds the
+       chips and drops a Latin face that can't draw the name */
+    cfgSyncFontToLang();
+    renderCfgFonts();
     cfgRefresh();
   }
   function cfgToggleLabel() {
@@ -3614,9 +3800,12 @@
       if (spec.placement) cfgPickPlacement(spec.placement);
       CFG.text = spec.text || '';
       if (spec.colourName) cfgPickColour(spec.colourName, spec.colourHex || CFG.colourHex);
+      /* the script is applied before the font: the font range is rebuilt per script,
+         so a native chip can only be lit once its script is selected (and a legacy
+         Latin font id on a native spec gracefully upgrades to that script's default) */
+      if (spec.language) cfgPickLang(spec.language);
       if (spec.font) cfgPickFont(spec.font);
       if (spec.fontSize) cfgPickSize(spec.fontSize);
-      if (spec.language) cfgPickLang(spec.language);
     }
     cfgRefresh();
   }
@@ -3710,10 +3899,7 @@
         : '<span class="cfg-patch-dot" style="background:' + pt.hex + '"></span>';
       return '<button type="button" class="cfg-chip cfg-patch" data-v="' + pt.id + '">' + tile + pt.name + '<em class="cfg-patch-loc">' + esc(spot.loc) + '</em></button>';
     }).join('');
-    var ff = $('#cfgFonts');
-    if (ff) ff.innerHTML = CUSTOM_FONTS.map(function (fo) {
-      return '<button type="button" class="cfg-chip cfg-chip--font' + (fo.id === 'serif' ? ' is-on' : '') + '" data-v="' + fo.id + '" style="font-family:' + fo.family + '">' + fo.label + '</button>';
-    }).join('');
+    renderCfgFonts();
     var ss = $('#cfgSizes');
     if (ss) ss.innerHTML = CUSTOM_FONT_SIZES.map(function (si) {
       return '<button type="button" class="cfg-chip' + (si.id === 'md' ? ' is-on' : '') + '" data-v="' + si.id + '">' + si.label + '</button>';
@@ -3892,13 +4078,19 @@
   function fallbackProduct(name) {
     return { n: name, p: 'S$0', img: '' };
   }
-  function cartLineHTML(prod, i, qty, compact) {
+  function cartLineHTML(prod, i, qty, compact, entry) {
     var price = parseFloat((prod.p || 'S$0').replace(/S\$/, '')) || 0;
     /* show the item's OWN size run + colours — never a fixed baby/kid size on a
-       gift, plush, pet item or adult shirt */
+       gift, plush, pet item or adult shirt. When the shopper picked a size it is part
+       of the bag entry, so the line states it outright: two sizes of one item are two
+       lines, each with its own size, quantity and price. */
     var run = sizeRun(prod);
+    var picked = bagSize(entry || prod.n);
     var sizeLabel = run.length === 1 ? run[0] : (run.length <= 3 ? run.join(', ') : run[0] + ' \u2013 ' + run[run.length - 1]);
     var colourLabel = (prod.colours && prod.colours.length) ? prod.colours.join(', ') : '\u2014';
+    /* the line's identity is the ENTRY (item + size), so Remove / qty / totals act on
+       exactly this line — never on every size of the same item */
+    var entryAttr = ' data-entry="' + esc(entry || prod.n) + '"';
     /* the line's saved personalisation (if any) + its Edit / Remove affordance —
        offered on any eligible item, so the PDP's "add a name to this at cart" copy
        is a real flow rather than a promise */
@@ -3913,16 +4105,16 @@
         '</div>';
     }
     if (compact) {
-      return '<div class="js-cart-line" data-name="' + esc(prod.n) + '" data-price="' + price + '" data-qty="' + qty + '" style="border-bottom:1px solid var(--line-soft);padding:10px 0;display:flex;gap:12px;align-items:center">' +
+      return '<div class="js-cart-line" data-name="' + esc(prod.n) + '"' + entryAttr + ' data-price="' + price + '" data-qty="' + qty + '" style="border-bottom:1px solid var(--line-soft);padding:10px 0;display:flex;gap:12px;align-items:center">' +
         '<div style="width:46px;height:46px;border-radius:var(--radius);flex:none;overflow:hidden;border:1px solid var(--line)"><img src="' + esc(prod.img) + '" alt="' + esc(prod.n) + '" style="width:100%;height:100%;object-fit:cover"></div>' +
-        '<div style="flex:1;font-size:12.5px"><b>' + esc(prod.n) + '</b><br><span class="muted">' + esc(sizeLabel) + ' \u00b7 qty ' + qty + (spec ? '<br>Personalised: ' + esc(spec.summary) : '') + '</span></div>' +
+        '<div style="flex:1;font-size:12.5px"><b>' + esc(prod.n) + '</b><br><span class="muted">' + (picked ? 'Size ' + esc(picked) : esc(sizeLabel)) + ' \u00b7 qty ' + qty + (spec ? '<br>Personalised: ' + esc(spec.summary) : '') + '</span></div>' +
         '<span style="font-weight:700;font-size:13px">S$' + (price * qty).toFixed(2) + '</span></div>';
     }
-    return '<div class="js-cart-line" data-name="' + esc(prod.n) + '" data-price="' + price + '" data-qty="' + qty + '" style="border-top:1px solid var(--line)">' +
+    return '<div class="js-cart-line" data-name="' + esc(prod.n) + '"' + entryAttr + ' data-price="' + price + '" data-qty="' + qty + '" style="border-top:1px solid var(--line)">' +
       '<div class="cart-line">' +
       '<div class="cart-line__img is-real" style="--m-a:#e3ecfb;--m-b:#c2d6f2"><img src="' + esc(prod.img) + '" alt="' + esc(prod.n) + '"></div>' +
       '<div><h4>' + esc(prod.n) + '</h4>' +
-      '<div class="meta"><span>Sizes: ' + esc(sizeLabel) + ' \u00b7 Colours: ' + esc(colourLabel) + '</span><span>From the live catalog \u00b7 demo line</span></div>' +
+      '<div class="meta"><span>' + (picked ? 'Size: ' + esc(picked) : 'Sizes: ' + esc(sizeLabel)) + ' \u00b7 Colours: ' + esc(colourLabel) + '</span><span>From the live catalog \u00b7 demo line</span></div>' +
       persRow +
       '<div class="qty-row" data-min="1" data-max="10"><button type="button" data-step="-1" aria-label="Decrease">\u2212</button><output value="' + qty + '">' + qty + '</output><button type="button" data-step="1" aria-label="Increase">+</button></div>' +
       '</div>' +
@@ -3945,17 +4137,19 @@
       return;
     }
     if (empty) empty.style.display = 'none';
-    /* aggregate repeated adds of the same item into ONE line with a quantity */
+    /* aggregate repeated adds of the same ENTRY into one line with a quantity. The
+       entry carries the chosen size, so the same tee in 3Y and 5Y stays two lines —
+       a matching family/twin set is never silently merged into "qty 2". */
     var lines = [], at = {};
     names.forEach(function (name) {
       if (Object.prototype.hasOwnProperty.call(at, name)) { lines[at[name]].qty += 1; return; }
       at[name] = lines.length;
-      lines.push({ name: name, qty: 1 });
+      lines.push({ entry: name, name: bagName(name), qty: 1 });
     });
     var html = '';
     lines.forEach(function (line, i) {
       var prod = productByName(line.name) || fallbackProduct(line.name);
-      html += cartLineHTML(prod, i, line.qty, compact);
+      html += cartLineHTML(prod, i, line.qty, compact, line.entry);
     });
     container.innerHTML = html;
     cartTotals();
@@ -3969,7 +4163,7 @@
     if (!rm) return;
     e.preventDefault();
     var line = rm.closest('.js-cart-line');
-    var name = line ? line.getAttribute('data-name') : '';
+    var name = line ? (line.getAttribute('data-entry') || line.getAttribute('data-name')) : '';
     if (name && removeFromBag(name)) {
       populateCartLines();
       toast('Removed from bag \u2014 <b>demo</b>');
@@ -4093,6 +4287,10 @@
   window.EL.refreshBag = refreshBag;
   window.EL.populateCartLines = populateCartLines;
   window.EL.bagItems = bagItems;
+  window.EL.bagNames = bagNames;      /* product names only (size stripped) */
+  window.EL.bagEntry = bagEntry;      /* "<name>::<size>" — the cart's line key */
+  window.EL.bagName = bagName;
+  window.EL.bagSize = bagSize;        /* the size the shopper picked, or '' */
   window.EL.recordView = recordView;
   window.EL.viewedItems = viewedItems;
   window.EL.viewedRecommendations = viewedRecommendations;
@@ -4112,6 +4310,14 @@
   window.EL.cfgPlacementCfg = cfgPlacementCfg;
   window.EL.cfgLangMaxFor = cfgLangMaxFor;
   window.EL.customLangs = CUSTOM_LANGS;
+  /* embroidery font ranges: exposed so the staff library can render an approved
+     name in the typeface it was approved in, and the smoke suite can replay a
+     script switch */
+  window.EL.customFonts = CUSTOM_FONTS;
+  window.EL.cfgFontById = cfgFontById;
+  window.EL.cfgFontsFor = cfgFontsFor;
+  window.EL.cfgDefaultFontId = cfgDefaultFontId;
+  window.EL.b2bFontOptions = b2bFontOptions;
   window.EL.addToBag = addToBag;
   window.EL.removeFromBag = removeFromBag;
   window.EL.setBagQty = setBagQty;

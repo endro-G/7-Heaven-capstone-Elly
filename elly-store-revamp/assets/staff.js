@@ -111,11 +111,21 @@
     { text: 'Amelia',  script: 'EN', lang: 'en', font: 'serif',  size: 'md', colour: 'Coral', note: 'Approved · common English name' },
     { text: 'Olivia',  script: 'EN', lang: 'en', font: 'script', size: 'md', colour: 'Navy',  note: 'Approved · common English name' },
     { text: 'Mina',    script: 'EN', lang: 'en', font: 'caps',   size: 'sm', colour: 'Gold',  note: 'Approved · short name, chest placement' },
-    { text: '미나',     script: 'KR', lang: 'kr', font: 'serif',  size: 'md', colour: 'Navy',  note: 'Approved · Korean · Jan 2026' },
-    { text: '하린',     script: 'KR', lang: 'kr', font: 'serif',  size: 'sm', colour: 'Black', note: 'Approved · Korean · Jan 2026' },
-    { text: '美娜',     script: 'CN', lang: 'cn', font: 'serif',  size: 'md', colour: 'Coral', note: 'Approved · Chinese · Feb 2026' },
+    /* CJK names carry a font id from their OWN script's range — a Latin id here
+       would light a chip the configurator no longer shows once 한국어/中文 is on */
+    { text: '미나',     script: 'KR', lang: 'kr', font: 'kr-myeongjo', size: 'md', colour: 'Navy',  note: 'Approved · Korean · Jan 2026' },
+    { text: '하린',     script: 'KR', lang: 'kr', font: 'kr-batang',   size: 'sm', colour: 'Black', note: 'Approved · Korean · Jan 2026' },
+    { text: '美娜',     script: 'CN', lang: 'cn', font: 'cn-ming',     size: 'md', colour: 'Coral', note: 'Approved · Chinese · Feb 2026' },
     { text: 'Emma',    script: 'EN', lang: 'en', font: 'serif',  size: 'md', colour: 'Cream', note: 'Approved · common English name' }
   ];
+
+  /* each approved name renders in the typeface it was approved in — the card font
+     has no Chinese/Korean glyphs, so a native name would otherwise fall back to a
+     system face that shows none of the approved styling */
+  function charFontStyle(e) {
+    var f = (typeof window.EL === 'object' && window.EL.cfgFontById) ? window.EL.cfgFontById(e.font) : null;
+    return f ? ' style="font-family:' + f.family + '"' : '';
+  }
 
   function searchLibrary(q) {
     var term = String(q || '').trim().toLowerCase();
@@ -319,6 +329,8 @@
       el.classList.toggle('is-done', parseInt(el.getAttribute('data-step'), 10) < n);
     });
     state.step = n;
+    /* step 3 opens on the items handoff picker (all ticked by default) */
+    if (n === 3) renderFulfilItems();
     if (n === 4) renderReview();
   }
 
@@ -424,8 +436,10 @@
     if (!prod) return;
     var size = ($('confirmSize') || {}).value || '';
     var qty = parseInt(($('confirmQty') || {}).value, 10) || 1;
-    state.rows.push({ id: prod.id, name: prod.n, size: size, qty: qty, img: prodPhoto(prod), pers: null, wearer: null });
-    addNameToBag(prod.n);
+    state.rows.push({ id: prod.id, name: prod.n, size: size, qty: qty, img: prodPhoto(prod), pers: null, wearer: null, include: true });
+    /* write the entry (item + chosen size) so the customer's online cart shows the
+       same size — and a second size of the same item becomes its own cart line */
+    addNameToBag(bagEntryFor(prod.n, size));
     var lostBox = $('confirmLost');
     if (lostBox && lostBox.checked) {
       state.lost.push({ name: prod.n, size: size });
@@ -475,6 +489,7 @@
         '</div>' +
         '</div>';
     }).join('');
+    renderFulfilItems();
     var summary = $('stockSummary');
     if (summary) {
       var store = 0, wh = 0, none = 0;
@@ -493,6 +508,45 @@
     }
   }
 
+  /* ---------- step 2 → step 3: which items the fulfilment covers ----------
+     The step-3 picker lets staff hand over part of the set (e.g. only the items
+     going out as a gift). Everything is included by default; an unticked item is
+     simply not part of THIS handoff — it stays in the customer's basket. */
+  function fulfilSelected(rows) {
+    return (rows || []).filter(function (r) { return r.include !== false; });
+  }
+  function fulfilLeft(rows) {
+    return (rows || []).filter(function (r) { return r.include === false; });
+  }
+  function fulfilCountLabel(rows) {
+    var n = fulfilSelected(rows).length;
+    return '<b>' + n + '</b> of ' + (rows || []).length + ' item' + ((rows || []).length === 1 ? '' : 's') + ' in this handoff';
+  }
+  function renderFulfilItems() {
+    var box = $('staffFulfilItems');
+    var count = $('staffFulfilCount');
+    if (!box) return;
+    if (!state.rows.length) {
+      box.innerHTML = '<p class="small muted" style="margin:0">The set is empty — add items on step 2 and they appear here, ticked by default.</p>';
+      if (count) count.innerHTML = '';
+      return;
+    }
+    box.innerHTML = state.rows.map(function (row, i) {
+      var on = row.include !== false;
+      return '<label class="staff-fpick' + (on ? ' is-on' : '') + '" data-i="' + i + '">' +
+        '<input type="checkbox" class="js-fulfil-item" data-i="' + i + '"' + (on ? ' checked' : '') + '>' +
+        '<img src="' + esc(row.img) + '" alt="">' +
+        '<span class="staff-fpick__main">' +
+        '<b>' + esc(row.name) + '</b>' +
+        '<span class="muted">' + (row.size ? esc(row.size) + ' · ' : '') + '×' + row.qty +
+        (row.pers ? ' — ' + esc(row.pers.summary || persSummary(row.pers)) : '') + '</span>' +
+        '</span>' +
+        '<span class="badge ' + (on ? 'badge--blue' : 'badge--ink') + '">' + (on ? 'In this handoff' : 'Left in basket') + '</span>' +
+        '</label>';
+    }).join('');
+    if (count) count.innerHTML = fulfilCountLabel(state.rows);
+  }
+
   /* ---------- per-customer set = the customer's bag (step 1 → step 2) ---------- */
   function productByName(nm) {
     if (typeof window.EL_PRODUCTS === 'object') {
@@ -505,17 +559,37 @@
     if (window.EL && typeof window.EL.productByName === 'function') return window.EL.productByName(nm);
     return null;
   }
-  /* the shared bag holds names (the site's cart reads names); materialise the
-     richer staff rows from the catalog */
+  /* the shared bag stores "<product>::<size>" for a sized item (see app.js) — parse it
+     so the staff set shows the size the customer actually chose, and so two sizes of
+     one item stay two rows with their own size instead of collapsing together */
+  function bagEntryFor(name, size) {
+    if (window.EL && typeof window.EL.bagEntry === 'function') return window.EL.bagEntry(name, size);
+    return size ? name + '::' + size : name;
+  }
+  function bagEntryName(v) {
+    if (window.EL && typeof window.EL.bagName === 'function') return window.EL.bagName(v);
+    var s = String(v), i = s.indexOf('::');
+    return i < 0 ? s : s.slice(0, i);
+  }
+  function bagEntrySize(v) {
+    if (window.EL && typeof window.EL.bagSize === 'function') return window.EL.bagSize(v);
+    var s = String(v), i = s.indexOf('::');
+    return i < 0 ? '' : s.slice(i + 2);
+  }
+  /* the shared bag holds the entries above; materialise the richer staff rows from
+     the catalog (product lookup uses the NAME, the row carries the chosen SIZE) */
   function rowsFromNames(names, accId) {
     /* the customer's saved personalisation lives in the shared store keyed by their
        account id, so attach it here — the drawer then opens on the spec they chose */
     var saved = (typeof window.EL === 'object' && window.EL && typeof window.EL.persForAccount === 'function')
       ? function (nm) { return window.EL.persForAccount(accId, nm); }
       : function () { return null; };
-    return (names || []).map(function (nm) {
+    return (names || []).map(function (entry) {
+      var nm = bagEntryName(entry);
       var prod = productByName(nm);
-      return { id: prod ? prod.id : '', name: nm, size: '', qty: 1, img: prod ? prodPhoto(prod) : '', pers: saved(nm), wearer: null };
+      /* include: every item added to the set is part of the fulfilment until staff
+         untick it on step 3 */
+      return { id: prod ? prod.id : '', name: nm, size: bagEntrySize(entry), qty: 1, img: prod ? prodPhoto(prod) : '', pers: saved(nm), wearer: null, include: true };
     });
   }
   function resetSearchUI() {
@@ -538,7 +612,7 @@
     if (!state.customer && state.rows.length) {
       /* unowned set: adopt it into the customer being identified */
       var arr = map[acc.id] || [];
-      state.rows.forEach(function (r) { arr.push(r.name); });
+      state.rows.forEach(function (r) { arr.push(bagEntryFor(r.name, r.size)); });
       map[acc.id] = arr;
       writeBags(map);
     }
@@ -560,23 +634,38 @@
     delete map[key];
     writeBags(map);
   }
+  /* consume only the handed-off names: items left unticked on step 3 stay in the
+     customer's basket for a later order (a full handoff still empties it) */
+  function removeNamesFromBag(names, accId) {
+    var key = accId || (state.customer ? state.customer.id : null);
+    if (!key) return;
+    var map = readBags();
+    var arr = map[key] || [];
+    (names || []).forEach(function (nm) {
+      var i = arr.indexOf(nm);
+      if (i >= 0) arr.splice(i, 1);
+    });
+    if (arr.length) map[key] = arr; else delete map[key];
+    writeBags(map);
+  }
   /* staff additions/removals for a matched customer write the SAME bag the
      customer site reads — the header badge, cart and checkout follow along */
-  function addNameToBag(name) {
+  function addNameToBag(entry) {
     var key = state.customer ? state.customer.id : null;
     if (!key) return;
     var map = readBags();
     var arr = map[key] || [];
-    arr.push(name);
+    arr.push(entry);
     map[key] = arr;
     writeBags(map);
   }
-  function removeNameFromBag(name) {
+  /* entry-level removal: dropping the 5Y row must leave the 3Y row in place */
+  function removeNameFromBag(entry) {
     var key = state.customer ? state.customer.id : null;
     if (!key) return;
     var map = readBags();
     var arr = map[key] || [];
-    var i = arr.indexOf(name);
+    var i = arr.indexOf(entry);
     if (i >= 0) { arr.splice(i, 1); map[key] = arr; writeBags(map); }
   }
 
@@ -795,32 +884,48 @@
     var cust = state.customer
       ? state.customer.name + ' · ' + (state.customer.countryName || '') + ' · ' + state.customer.points + ' pts'
       : 'Walk-in customer · loyalty captured at POS';
-    var persCount = state.rows.filter(function (r) { return r.pers; }).length;
+    /* only the items ticked on step 3 reach the POS draft */
+    var sel = fulfilSelected(state.rows);
+    var left = fulfilLeft(state.rows);
+    var rowLine = function (r) {
+      return esc(r.name) + (r.size ? ' · ' + esc(r.size) : '') + ' ×' + r.qty +
+        (r.pers ? ' — ' + esc(r.pers.summary || persSummary(r.pers)) : '') +
+        (r.wearer && r.wearer.name ? ' <span class="muted">(wearer ' + esc(r.wearer.name) + (r.wearer.ageSize ? ' · ' + esc(r.wearer.ageSize) : '') + ')</span>' : '');
+    };
+    var persCount = sel.filter(function (r) { return r.pers; }).length;
     box.innerHTML =
       '<div class="summary-card" style="position:static">' +
       '<h3>Draft order — hand to POS</h3>' +
       '<div class="s-row"><span>Customer</span><b>' + esc(cust) + '</b></div>' +
       (state.occasion ? '<div class="s-row"><span>Occasion</span><b>' + esc(state.occasion) + (state.travelDate ? ' · travel ' + esc(state.travelDate) : '') + '</b></div>' : '') +
-      '<div class="s-row"><span>Items (' + state.rows.length + ')</span><b>' + state.rows.map(function (r) {
-        return esc(r.name) + (r.size ? ' · ' + esc(r.size) : '') + ' ×' + r.qty +
-          (r.pers ? ' — ' + esc(r.pers.summary || persSummary(r.pers)) : '') +
-          (r.wearer && r.wearer.name ? ' <span class="muted">(wearer ' + esc(r.wearer.name) + (r.wearer.ageSize ? ' · ' + esc(r.wearer.ageSize) : '') + ')</span>' : '');
-      }).join('<br>') + '</b></div>' +
+      '<div class="s-row"><span>Items (' + sel.length + (left.length ? ' of ' + state.rows.length : '') + ')</span><b>' +
+      (sel.length ? sel.map(rowLine).join('<br>') : '<span class="muted">None ticked — pick at least one item on step 3 to hand it to POS.</span>') + '</b></div>' +
+      (left.length ? '<div class="s-row"><span>Left in basket</span><b>' + left.map(function (r) {
+        return esc(r.name) + (r.size ? ' · ' + esc(r.size) : '') + ' ×' + r.qty;
+      }).join('<br>') + '</b></div>' : '') +
       (state.lost.length ? '<div class="s-row"><span>Lost sales (internal)</span><b>' + esc(state.lost.map(function (l) { return l.name; }).join(', ')) + '</b></div>' : '') +
       '<div class="s-row"><span>Fulfilment</span><b>' + esc(fulfilmentLabel()) + '</b></div>' +
       '<p class="small muted" style="margin-top:12px">' + (persCount ? '<b>' + persCount + ' item' + (persCount > 1 ? 's' : '') + ' personalised.</b> ' : 'No personalisation. ') +
+      (left.length ? '<b>' + left.length + ' item' + (left.length > 1 ? 's' : '') + ' stay in the customer&rsquo;s basket</b> for a later order. ' : '') +
       'Handing off builds a draft order the cashier retrieves at the POS terminal by customer lookup or this reference — no re-keying, no handwritten invoice number.</p>' +
       '</div>';
   }
 
   function handoff() {
     var cust = state.customer;
-    var items = state.rows.map(function (r) {
+    /* the POS draft carries only the items ticked on step 3 */
+    var sel = fulfilSelected(state.rows);
+    var left = fulfilLeft(state.rows);
+    if (!sel.length) {
+      if (window.EL && window.EL.toast) window.EL.toast('Tick at least one item on step 3 before handing the order to POS.');
+      return null;
+    }
+    var items = sel.map(function (r) {
       return { name: r.name, size: r.size, qty: r.qty, pers: r.pers, wearer: r.wearer };
     });
     var firstWearer = null;
-    for (var i = 0; i < state.rows.length; i++) {
-      if (state.rows[i].wearer) { firstWearer = state.rows[i].wearer; break; }
+    for (var i = 0; i < sel.length; i++) {
+      if (sel[i].wearer) { firstWearer = sel[i].wearer; break; }
     }
     var order = window.EL_STAFF_DAO.create({
       createdAt: new Date().toLocaleDateString('en-SG', { day: 'numeric', month: 'short', year: 'numeric' }),
@@ -833,9 +938,10 @@
       wearer: firstWearer,
       fulfilment: fulfilmentLabel()
     });
-    /* the set was consumed by the draft order — clear the customer's saved
-       basket so a re-selected customer starts a fresh set */
-    clearSavedBasket(cust ? cust.id : null);
+    /* only the handed-off items are consumed — anything left unticked stays in the
+       customer's basket (the same shared elly-bags store the storefront cart reads),
+       so it survives the handoff and can be ordered later */
+    removeNamesFromBag(sel.map(function (r) { return bagEntryFor(r.name, r.size); }), cust ? cust.id : null);
     var box = $('handoffResult');
     if (!box) return order;
     box.innerHTML =
@@ -843,6 +949,7 @@
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3l7 3v5c0 5-3.4 8.4-7 10-3.6-1.6-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>' +
       '<span><b>Draft order ' + esc(order.ref) + ' handed to POS.</b> Cashier retrieves by customer or reference to complete the sale — payment stays on the Shopify POS terminal. Status now tracks for staff and the customer&rsquo;s account.</span>' +
       '</div>' +
+      (left.length ? '<div style="margin-top:10px"><span class="badge badge--ink">' + left.length + ' item' + (left.length > 1 ? 's' : '') + ' back in the customer&rsquo;s basket</span> <span class="small muted">— kept for ' + esc(cust ? cust.name : 'the walk-in customer') + ' alongside the rest of their basket; hand them off in a later order.</span></div>' : '') +
       '<div style="margin-top:14px">' +
       '<span class="badge badge--demo">Status (demo ladder)</span>' +
       '<div class="ol-ladder" id="orderLadder"></div>' +
@@ -947,7 +1054,7 @@
         if (i >= 0 && i < state.rows.length) {
           var removedRow = state.rows[i];
           state.rows.splice(i, 1);
-          removeNameFromBag(removedRow.name);
+          removeNameFromBag(bagEntryFor(removedRow.name, removedRow.size));
         }
         renderBasket();
         return;
@@ -1034,6 +1141,23 @@
 
     /* keep review + state in sync as the wizard is walked */
     document.addEventListener('change', function (e) {
+      /* step 3: tick / untick an item of the set for THIS handoff (all ticked by
+         default — an unticked item stays in the customer's basket) */
+      var pick = (e.target && e.target.closest) ? e.target.closest('.js-fulfil-item') : null;
+      if (pick) {
+        var pi = parseInt(pick.getAttribute('data-i'), 10);
+        var prow = state.rows[pi];
+        if (!prow) return;
+        prow.include = !!pick.checked;
+        renderFulfilItems();
+        renderReview();
+        if (window.EL && window.EL.toast) {
+          window.EL.toast(pick.checked
+            ? 'In this handoff: <b>' + esc(prow.name) + '</b>'
+            : '<b>' + esc(prow.name) + '</b> left in the customer&rsquo;s basket — still there for a later order.');
+        }
+        return;
+      }
       if (e.target && e.target.id === 'staffOccasion') state.occasion = e.target.value;
       if (e.target && e.target.id === 'staffTravel') state.travelDate = e.target.value;
       if (e.target && e.target.id === 'staffShipTo') {
@@ -1062,7 +1186,7 @@
     box.innerHTML = hits.length
       ? hits.map(function (e, i) {
           return '<div class="char-card">' +
-            '<div class="char-card__main"><b class="char-card__text" lang="' + esc(e.script) + '">' + esc(e.text) + '</b>' +
+            '<div class="char-card__main"><b class="char-card__text" lang="' + esc(e.script) + '"' + charFontStyle(e) + '>' + esc(e.text) + '</b>' +
             '<span class="muted">' + esc(e.script) + ' · ' + esc(e.note) + '</span></div>' +
             '<button type="button" class="btn btn--ghost btn--sm js-char-use" data-i="' + i + '">Use</button>' +
             '</div>';
@@ -1118,9 +1242,19 @@
         writeBags(map);
       },
       clear: function (accId) { clearSavedBasket(accId); },
+      /* consume named items only — used by the step-3 partial handoff */
+      remove: function (accId, names) { removeNamesFromBag(names, accId); },
       all: readBags
     },
     rowsFromNames: rowsFromNames,
+    /* step 2 → step 3 item picker (headless-safe) */
+    fulfilSelected: fulfilSelected,
+    fulfilLeft: fulfilLeft,
+    fulfilCountLabel: fulfilCountLabel,
+    renderFulfilItems: renderFulfilItems,
+    /* step 4 handoff — headless-safe so the "only the ticked items leave the
+       basket" rule can be asserted end to end, not just read off the source */
+    handoff: handoff,
     drawerStepsFor: drawerStepsFor,
     state: state
   };

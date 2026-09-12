@@ -43,6 +43,19 @@
       kids: 'No kids \u2014 shops Disney matching tees for himself and his wife while visiting Singapore',
       lastVisit: 'Aug 2026',
       recognition: 'Recognition on return: the Doodle Mickey tees you bought in-store on 21 Jan appear below in order history and already feed your recommendations \u2014 no re-entry, no paper receipt. (Illustrative demo row.)',
+      /* Recommender output for this profile (PRD \u00a75.1 hero priority #1): the ranked
+         LISTINGS the landing hero links to. Every href is a FILTERED listing built
+         from the deep-link params the facet engine already reads (?occasion= / ?f=),
+         so the first banner's buttons open a narrowed grid of what the recommender
+         picked \u2014 never the account page. `why` is the reason shown in the banner. */
+      recos: [
+        { label: 'Matching Disney sets for you & your wife',
+          href: 'disney-elly.html?occasion=Twinning%20%26%20Matching%20Sets&f=Age:Adults',
+          why: 'You buy matching Disney tees for the two of you.' },
+        { label: 'Singapore exclusives new since your last visit',
+          href: 'disney-elly.html?f=Collection:Singapore&fl=Singapore%20exclusives',
+          why: 'New Lion City & SG-exclusive designs landed since your last visit.' }
+      ],
       history: [
         hist('Adult Tee - Doodle Mickey \u00b7 M (him)', 'store', '21 Jan 2026', 'Completed \u2014 POS sync via Smile'),
         hist('Ladies Tee - Doodle Minnie \u00b7 S (wife)', 'store', '21 Jan 2026', 'Completed \u2014 POS sync via Smile'),
@@ -69,6 +82,16 @@
       kids: 'Two daughters \u2014 3 months and 6 years old',
       lastVisit: '',
       recognition: 'Recognition on return: the Frozen dress you bought in-store on 12 Aug appears below in order history and already feeds your recommendations \u2014 no re-entry, no paper receipt. (Illustrative demo row.)',
+      /* Recommender output for this profile (PRD \u00a75.1 hero priority #1): the ranked
+         LISTINGS the landing hero links to \u2014 see the note on Tom's profile above. */
+      recos: [
+        { label: 'Shop the birthday edit for your 6-year-old',
+          href: 'gifting-hub.html?occasion=Birthday&f=Recipient:Kids%20(3%E2%80%9314Y)',
+          why: 'Your 6-year-old\u2019s birthday is next month.' },
+        { label: 'Newborn & baby-shower picks for your 3-month-old',
+          href: 'gifting-hub.html?occasion=Newborn%20%26%20Baby%20Shower',
+          why: 'Your baby is 3 months old \u2014 newborn essentials are ready.' }
+      ],
       history: [
         hist('Frozen dress \u00b7 Elsa (12M) \u2014 baby daughter', 'store', '12 Aug 2026', 'Completed \u2014 POS sync via Smile'),
         hist('Nautical Mickey tee set (3\u20134Y) \u2014 elder daughter', 'online', '3 Jul 2026', 'Delivered'),

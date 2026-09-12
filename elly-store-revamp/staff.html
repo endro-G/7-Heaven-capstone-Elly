@@ -7,9 +7,12 @@
 <meta name="description" content="In-store staff assist tablet interface — greet/occasion capture, catalog search with photo confirm, build-the-set basket with per-item personalisation, approved-character library, draft order handoff.">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Ovo&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Parisienne&family=Cormorant+Garamond:wght@400;500;600&family=Cinzel:wght@500;600&display=swap" rel="stylesheet">
+<!-- personalisation fonts: the Latin range the configurator ships, plus one range per
+     script (中文 / 한국어 / 日本語) so a native name previews in a face that can actually
+     draw it — the approved-character library shows each entry in its own typeface. -->
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Parisienne&family=Cormorant+Garamond:wght@400;500;600&family=Cinzel:wght@500;600&family=Ma+Shan+Zheng&family=ZCOOL+XiaoWei&family=Nanum+Myeongjo:wght@400;700&family=Gowun+Batang:wght@400;700&family=Noto+Serif+JP:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/styles.css">
 </head>
 <body data-page="staff">
@@ -117,7 +120,17 @@
           <div class="staff-step__head">
             <span class="kicker kicker--coral">Step 3 · Fulfilment</span>
             <h2 class="sec" style="font-size:clamp(22px,2.6vw,30px)">Pickup or ship it for them</h2>
-            <p class="small muted">Gift-from-counter reuses the same ship-to options as online checkout — no manual re-capture of address and shipping choice.</p>
+            <p class="small muted">Gift-from-counter reuses the same ship-to options as online checkout — no manual re-capture of address and shipping choice. Tick which items this fulfilment covers; the whole set is selected by default.</p>
+          </div>
+
+          <!-- which items from the step-2 set ride along into this fulfilment (all on by default) -->
+          <div class="staff-card">
+            <div class="s-row" style="margin-bottom:4px">
+              <span class="opt-label" style="margin:0">Items in this fulfilment</span>
+              <span class="small muted" id="staffFulfilCount"></span>
+            </div>
+            <p class="small muted" style="margin:6px 0 0">Every item in the set is ticked by default. Untick anything you are <b>not</b> handing over now — it stays in the customer&rsquo;s basket on the storefront for a later order, and the POS draft only carries the ticked items.</p>
+            <div id="staffFulfilItems" style="margin-top:12px"></div>
           </div>
 
           <div class="fopts" role="radiogroup" aria-label="Fulfilment option">

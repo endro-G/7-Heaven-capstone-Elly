@@ -813,6 +813,12 @@ section.block--tight { padding-block: clamp(40px, 4.5vw, 60px); }
 /* embroidery: font picker chips set in their own typeface, size + language chips */
 .cfg-fonts .cfg-chip { font-size: 15px; letter-spacing: .03em; }
 .cfg-fonts .cfg-chip.is-on { font-family: inherit; }
+/* CJK chips: the label is drawn in the chip's own face, and the native sample glyph
+   rides along so the shopper sees the real character shapes — the Latin name alone
+   can't show them, and the site font has no CJK coverage to fall back on */
+.cfg-fonts .cfg-chip--native { letter-spacing: .05em; }
+.cfg-fonts .cfg-chip .cfg-sample { font-size: 1.15em; line-height: 1; }
+.cfg-fonts .cfg-chip.is-on .cfg-sample { opacity: .9; }
 /* ---------- Live Look stage (PDP gallery, customisable items) ----------
    A large, flat front/top view of the item rendered below the main photo —
    horizontally aligned so embroidered initials sit level and realistic. */
@@ -1831,6 +1837,41 @@ body.is-leaving {
 }
 .staff-bline__side .small { font-size: 11.5px; }
 .staff-empty { padding: 14px 4px 4px; }
+
+/* ---------- staff · step 3 "items in this fulfilment" picker (all on by default) ---------- */
+.staff-fpick {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.staff-fpick:last-child { margin-bottom: 0; }
+.staff-fpick:hover { border-color: var(--ink-light); }
+.staff-fpick.is-on { border-color: var(--blue); background: var(--blue-wash); }
+.staff-fpick input { width: 17px; height: 17px; accent-color: var(--blue); flex: none; margin: 0; }
+.staff-fpick img {
+  width: 44px; height: 44px;
+  border-radius: 9px;
+  object-fit: cover;
+  border: 1px solid var(--line-soft);
+  background: var(--cream-2);
+  flex: none;
+}
+.staff-fpick__main { min-width: 0; flex: 1; }
+.staff-fpick__main b { font-size: 13.5px; display: block; }
+.staff-fpick__main .muted { font-size: 12px; }
+.staff-fpick .badge { font-size: 10.5px; flex: none; }
+
+@media (max-width: 640px) {
+  .staff-fpick { flex-wrap: wrap; }
+  .staff-fpick .badge { margin-left: 29px; }
+}
 
 /* ---------- staff · personalisation drawer (slide-over) ---------- */
 .staff-drawer { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 120; }

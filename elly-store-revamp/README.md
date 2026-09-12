@@ -132,7 +132,7 @@ in either environment.
 | `cart.html` / `checkout.html` | Bag + checkout with **all 3 tourist fulfilment options** (ship to SG/hotel · ship home · buy in-store/pop-up) |
 | `b2b.html` | B2B landing (use-case cards) → 5-step RFQ: order type/date → **item rows with a product dropdown** (sizes + **per-item decoration options** appear under the selected item — gated to what that item can take, with a shape-correct placement diagram; add/remove rows) → artwork/shipping → your details → **review & confirm** (the validated details are frozen and echoed back; Request and printable Download live on this step) → two-stage confirmation + printable quote sheet |
 | `account.html` | Unified profile: in-store + online order history merged, loyalty points (Smile placeholder rules), and **Personalisation orders & wearers** fed by the staff tablet (PRD §12) |
-| `staff.html` | **In-store staff assist tablet (PRD §12)**: a 4-stage loop — greet/occasion capture → **build the set** (search the catalog → tap a result to show the item photo for customer confirmation → add; the basket mixes personalisable and plain items, and each eligible item opens the configurator in a slide-over drawer with its own name, placement, font, colour **and wearer**, PRD §12; **the set is the matched customer's bag** — ONE store with the online site (per-account, localStorage): items added online show up on the staff tablet, staff additions land in the customer's bag, switching customers swaps sets, and walk-in/new customers start empty) → fulfilment (pickup or gift-from-counter reusing checkout ship-to) → draft-order handoff to POS. Stock is two-tier: **One Holland Village first** (the shelf carries the popular edit in sufficient quantity, ~35% of sales) with **warehouse fallback** (more SKUs popular + niche, larger quantities, ~65% of sales are online; wait-time estimate, pop-up excluded, lost-sale logging). The left rail is clickable to jump between stages, and the order-status ladder tracks back in the customer's account |
+| `staff.html` | **In-store staff assist tablet (PRD §12)**: a 4-stage loop — greet/occasion capture → **build the set** (search the catalog → tap a result to show the item photo for customer confirmation → add; the basket mixes personalisable and plain items, and each eligible item opens the configurator in a slide-over drawer with its own name, placement, font, colour **and wearer**, PRD §12; **the set is the matched customer's bag** — ONE store with the online site (per-account, localStorage): items added online show up on the staff tablet, staff additions land in the customer's bag, switching customers swaps sets, and walk-in/new customers start empty) → fulfilment (pickup or gift-from-counter reusing checkout ship-to; the step lists the set and staff **tick which items this fulfilment covers** — every item is ticked by default, and anything unticked stays in the customer's basket for a later order while the POS draft carries only the ticked items) → draft-order handoff to POS. Stock is two-tier: **One Holland Village first** (the shelf carries the popular edit in sufficient quantity, ~35% of sales) with **warehouse fallback** (more SKUs popular + niche, larger quantities, ~65% of sales are online; wait-time estimate, pop-up excluded, lost-sale logging). The left rail is clickable to jump between stages, and the order-status ladder tracks back in the customer's account |
 | `admin.html` | Demo dashboard: 3 KPI families + interactive **demand vs MOQ** per Pre-Order design |
 
 ## Brand system (from live theellystore.com)
@@ -181,6 +181,27 @@ in either environment.
   exclusion rule — the seed, anything in the bag and anything already bought are left out. The PDP
   cross-sell is **always product-derived** (its own row), so a browsing history can never push it
   off the page.
+- **The landing hero links to what the recommender picked (signed-in visitors)**: the first
+  banner is the PRD §5.1 priority-1 recommender slide, so for a signed-in profile its two
+  buttons open **filtered listings** — the `?occasion=` / `?f=` deep links the facet engine
+  already reads — instead of the account page. Chloe's banner opens the birthday edit for her
+  6-year-old plus newborn picks for her 3-month-old; Tom's opens adult matching sets plus the
+  Singapore exclusives new since his last trip. `recos` on each profile in `accounts.js` is
+  that ranked output (`{label, href, why}`, `why` being the reason shown in the banner), and
+  the "Because you shopped with us" rail's header link follows the same top pick. A profile
+  with no picks falls back to the segment's default listings, and first-time visitors keep the
+  segment slides unchanged.
+- **The embroidery font range is scoped to the script**: every face declares the character set it
+  can draw (`script: latin / cn / kr / jp` on `CUSTOM_FONTS`) and the picker shows only the range
+  matching the selected script. The four Latin calligraphy faces carry no Chinese/Korean/Japanese
+  glyphs, so a native name picked against one previewed in a system fallback face — nothing like
+  what would be embroidered. 中文 gets a Ming serif and a brush kai (ZCOOL XiaoWei, Ma Shan Zheng),
+  한국어 a classic Myeongjo and a soft Batang (Nanum Myeongjo, Gowun Batang), 日本語 a Mincho (Noto
+  Serif JP) — all chosen to hold up both printed and embroidered. Each chip carries a native sample
+  glyph, the name field previews the chosen face, switching script snaps off a face that can't draw
+  the name, and the B2B **Font type** select follows the **Script** select by the same rule (the
+  option value stays the label, so the quote payload is unchanged). The CJK faces come from Google
+  Fonts with unicode-range slicing, so only the slices holding the typed characters download.
 - **B2B decoration is item-aware, and specced like the store**: the method chips, the placement
   list, the diagram, the thread palette, the font/script ranges and the per-placement character
   limit all come from the same tables the PDP configurator uses. A tee gets
@@ -190,14 +211,23 @@ in either environment.
   The embroidery pane takes per-unit names (one per line, counted live against the line's
   quantities, and carried on the quote sheet as `decorationParams.names`) so a 50-tee named run is
   capturable in one line — the copy already promised "per-group names for personalisation".
+- **Same item, different sizes = different cart lines**: a bag entry is the product name plus the
+  size picked on the PDP (`"<name>::<size>"`, `assets/app.js`), so a matching family/twin set — one
+  style in **3Y and 5Y** — renders as **two lines with their own size, quantity and price** instead of
+  collapsing into "qty 2". Each line carries its own `data-entry`, so the qty stepper and **Remove**
+  act on exactly that size, while adding the same size twice still merges into one line. Everything
+  that resolves the catalogue (recommendations, the recently-viewed trail, the staff set) works off
+  the **name** via `bagNames()`, so a size can never leak into a product lookup. The staff tablet
+  round-trips the size the customer chose, and the POS draft carries it.
 - **Personalisation on a bag line (edit it from the cart)**: the configurator's spec — method,
   placement, text, thread colour, font, size, script, or the picked patches — is stored with the
-  bag as a `localStorage` map keyed by account id then **product name** (the same key the cart
-  aggregates lines on), mirroring `elly-bags`. So a personalisable item already in the bag can be
+  bag as a `localStorage` map keyed by account id then **product name** (the cart aggregates its
+  LINES on item + size, but one spec covers every size of that item), mirroring `elly-bags`. So a personalisable item already in the bag can be
   **edited in place** from the cart (an inline editor reopens the same configurator on that line and
   re-populates it), its personalisation can be **removed without dropping the item**, and a
   quick-added personalisable item offers **"Add a name / initials"** right on its line. Removing the
-  line drops its spec, and specs follow the signed-in profile exactly like the bag. The **staff
+  line drops its spec **once no size of that item is left in the bag**, and specs follow the signed-in
+  profile exactly like the bag. The **staff
   tablet** reads and writes the same map **by account id**, so opening a customer's item pre-fills
   the drawer with the spec they already chose, and an in-store capture lands back in their cart. The
   drawer only lists the steps that APPLY to the item — one that takes patches but not embroidery has
