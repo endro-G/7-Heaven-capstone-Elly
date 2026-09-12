@@ -39,7 +39,9 @@
     </div>
   </div>
 
-  <section class="block block--tight" data-bump>
+  <!-- data-bump="fade": the mobile filter sheet inside is position: fixed, so this
+       section must not carry a transform (it would become the sheet's containing block) -->
+  <section class="block block--tight" data-bump="fade">
     <div class="wrap">
       <!-- budget quick chips -->
       <div class="chip-row" data-tab-chip-group style="margin-bottom:26px">

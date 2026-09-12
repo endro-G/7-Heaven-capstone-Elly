@@ -39,7 +39,9 @@
     </div>
   </div>
 
-  <section class="block block--tight" data-bump>
+  <!-- data-bump="fade": the mobile filter sheet inside is position: fixed, so this
+       section must not carry a transform (it would become the sheet's containing block) -->
+  <section class="block block--tight" data-bump="fade">
     <div class="wrap">
       <p class="section-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>Live demo catalog — the grid below is populated from the live product database. Facets and sort refine the grid.</p>
     </div>

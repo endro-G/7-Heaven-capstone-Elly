@@ -153,8 +153,23 @@ try {
   registry['#b2bWizard'].hidden = true;
   check('B2B wizard hidden by default', registry['#b2bWizard'].hidden === true);
   check('startB2B exported', typeof sandbox.EL.startB2B === 'function');
-  sandbox.EL.startB2B('Corporate', 1);
+  sandbox.EL.startB2B('Corporate & events', 1);
   check('startB2B reveals wizard without error', registry['#b2bWizard'].hidden === false);
+  /* order type is a step-1 decision: corporate gifting + corporate events are ONE option */
+  const b2bHtml = fs.readFileSync('b2b.html', 'utf8');
+  const step1Html = b2bHtml.slice(b2bHtml.indexOf('What kind of order is this?'), b2bHtml.indexOf('data-step="2"'));
+  check('B2B step 1 offers two order types (corporate gifting merged with events)',
+    (step1Html.match(/class="otype[ "]/g) || []).length === 2 &&
+    /data-name="Corporate &amp; events"/.test(step1Html) &&
+    !/data-name="Corporate event"/.test(step1Html));
+  check('B2B step 1 asks for a description of the event above the date',
+    /id="b2bEvent"/.test(step1Html) &&
+    step1Html.indexOf('id="b2bEvent"') < step1Html.indexOf('id="b2bDate"'));
+  check('B2B landing merges corporate gifting + events into one use-case card',
+    (b2bHtml.match(/class="use-card/g) || []).length === 2 &&
+    /<b>Corporate &amp; events<\/b>/.test(b2bHtml) &&
+    !/<b>Corporate gifting<\/b>/.test(b2bHtml) &&
+    !/<b>Corporate events<\/b>/.test(b2bHtml));
 
   /* PDP personalisation configurator (PRD §5.3 / §8 #5) */
   check('PDP populated with default personalisable item', registry['#pdpTitle'].textContent === 'Beary Personalisable Baby Gift Set');
@@ -275,6 +290,23 @@ try {
     var src = fs.readFileSync('assets/styles.css', 'utf8');
     var m = /\.ph-card__badges\s*\{([^}]*)\}/.exec(src);
     return !!m && /z-index\s*:/.test(m[1]);
+  })());
+  /* Every listing page's filter sheet is position: fixed on mobile. A transformed
+     (or will-change: transform) ancestor becomes the containing block for fixed
+     descendants, so the section hosting the sheet must use the fade-only bump —
+     otherwise the sheet is laid out against the section instead of the viewport and
+     filtering looks dead on phones while desktop (static panel) is unaffected. */
+  ['disney-elly', 'search', 'furkids', 'elly-label', 'shoe-boutique', 'customization', 'gifting-hub'].forEach(function (page) {
+    var src = fs.readFileSync(page + '.html', 'utf8');
+    var panel = src.indexOf('id="facetPanel"');
+    var open = src.lastIndexOf('<section', panel);
+    var tag = open < 0 ? '' : src.slice(open, src.indexOf('>', open) + 1);
+    check(page + ': filter-sheet section uses the fade-only bump (no transform)', /data-bump="fade"/.test(tag));
+  });
+  check('fade-only bump clears transform + will-change in CSS', (function () {
+    var src = fs.readFileSync('assets/styles.css', 'utf8');
+    var m = /\[data-bump="fade"\][^{]*\{([^}]*)\}/.exec(src);
+    return !!m && /transform:\s*none/.test(m[1]) && /will-change:\s*auto/.test(m[1]);
   })());
   check('PDP carries no Personalisable badge — the configurator is the signal', (function () {
     var src = fs.readFileSync('pdp.html', 'utf8');

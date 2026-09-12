@@ -1044,7 +1044,7 @@ section.block--tight { padding-block: clamp(40px, 4.5vw, 60px); }
 .step-pane.is-on { display: block; animation: fadeIn .25s var(--ease); }
 
 /* ---------- B2B landing (PRD §10) ---------- */
-.b2b-use-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.b2b-use-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
 .use-card {
   display: flex; flex-direction: column; align-items: flex-start; gap: 7px;
   border: 1.5px solid var(--line); border-radius: var(--radius); padding: 22px;
@@ -1543,6 +1543,14 @@ body.is-leaving {
   opacity: 1;
   transition: transform 0.62s var(--ease-bump), opacity 0.45s var(--ease);
 }
+/* Fade-only variant [data-bump="fade"]
+   Listing sections that host the mobile filter sheet opt out of the transform
+   bump. A transformed element (and equally `will-change: transform`) becomes the
+   containing block for its position: fixed descendants — so the sheet was laid
+   out against the SECTION instead of the viewport, opened off-screen and looked
+   like a dead Filters button. Opacity alone never creates a containing block. */
+[data-bump="fade"],
+[data-bump="fade"].bump-in { transform: none; will-change: auto; }
 @media (prefers-reduced-motion: reduce) {
   [data-bump], [data-bump].bump-in { transition: none; transform: none; opacity: 1; }
 }

@@ -1562,7 +1562,9 @@
     }
     return '';
   }
-  var B2B_OTYPE_ALIAS = { bulk: 'Bulk / wholesale', corporate: 'Corporate', event: 'Corporate event' };
+  /* corporate gifting and corporate events are ONE order type in step 1, so both
+     deep-link aliases resolve to the merged option */
+  var B2B_OTYPE_ALIAS = { bulk: 'Bulk / wholesale', corporate: 'Corporate & events', event: 'Corporate & events' };
   var b2bArtName = '';
   /* Frozen, validated quote draft — set when the customer confirms details on the
      Review & confirm step (5). Request and Download both read from this so the quote
@@ -2000,6 +2002,7 @@
       submittedAt: new Date().toISOString(),
       type: type,
       deadline: val('b2bDate') || null,
+      eventDesc: val('b2bEvent') || null,
       customer: {
         name: val('b2bName'),
         email: val('b2bEmail'),
@@ -2037,7 +2040,7 @@
       '<table><tr class="meta"><td><b>Requested by</b><br>' + escT(p.customer.name) + (p.customer.company ? ', ' + escT(p.customer.company) : '') +
       '<br>' + escT(p.customer.email) + (p.customer.phone ? '<br>' + escT(p.customer.phone) : '') + '</td>' +
       '<td><b>Shipping</b><br>' + (p.shipping.mode === 'split' ? 'Split to ' + escT(p.shipping.splitLocations) + ' locations' : 'Single bulk shipment') +
-      '<br>Deadline: ' + (p.deadline || 'not set') + '</td></tr></table>' +
+      '<br>Deadline: ' + (p.deadline || 'not set') + (p.eventDesc ? '<br>Event: ' + escT(p.eventDesc) : '') + '</td></tr></table>' +
       '<table><thead><tr><th>Item</th><th class="right">Qty</th><th>Decoration</th><th class="right">Line total</th></tr></thead><tbody>' + itemRows + '</tbody>' +
       '<tr class="tot"><td colspan="2">Total units \u00b7 ' + p.totals.qty + '</td><td class="right">Subtotal</td><td class="right">S$' + p.totals.subtotal.toFixed(2) + '</td></tr>' +
       '<tr class="tot"><td colspan="2"></td><td class="right">Decoration</td><td class="right">S$' + p.totals.decoration.toFixed(2) + '</td></tr>' +
@@ -2076,7 +2079,7 @@
     return '<div class="rev-grid">' +
       '<div class="rev-card"><h3>Requested by</h3><dl class="rev-kv">' + kvRows + '</dl></div>' +
       '<div class="rev-card"><h3>Order details</h3><dl class="rev-kv">' +
-      kv('Order type', p.type) + kv('Event date / deadline', p.deadline || 'Not set') +
+      kv('Order type', p.type) + kv('Event description', p.eventDesc) + kv('Event date / deadline', p.deadline || 'Not set') +
       kv('Shipping', ship) + kv('Artwork file', p.artwork || 'None uploaded') +
       '</dl></div>' +
       '<div class="rev-card rev-card--wide"><h3>Items &amp; estimate</h3>' + lines +
@@ -2155,7 +2158,7 @@
       var an = $('#artName'); if (an) an.textContent = 'No file chosen.';
       var f = $('#artFile'); if (f) f.value = '';
       b2bArtName = '';
-      ['b2bName', 'b2bEmail', 'b2bPhone', 'b2bCompany', 'b2bUen', 'b2bPo', 'b2bNotes'].forEach(function (id) {
+      ['b2bName', 'b2bEmail', 'b2bPhone', 'b2bCompany', 'b2bUen', 'b2bPo', 'b2bNotes', 'b2bEvent'].forEach(function (id) {
         var el = $(id); if (el) el.value = '';
       });
       var first = $('.otype'); if (first) first.click();
