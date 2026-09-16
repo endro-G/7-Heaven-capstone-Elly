@@ -1178,12 +1178,18 @@ section.block--tight { padding-block: clamp(40px, 4.5vw, 60px); }
 
 /* ---------- Admin / demo panel ---------- */
 .admin { --admin-line: #e4e8ee; }
-.admin .kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 26px; }
+.admin .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 26px; }
 .admin .kpi { border: 1px solid var(--admin-line); border-left: 4px solid var(--blue); border-radius: 4px; padding: 18px; background: var(--paper); }
 .admin .kpi--coral { border-left-color: var(--coral); }
 .admin .kpi--green { border-left-color: #178a54; }
+.admin .kpi--pre { border-left-color: var(--ink); }
+.admin .kpi .lab { display: block; font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-light); }
+.admin .kpi__val { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
 .admin .kpi .val { font-family: var(--font-head); font-size: 30px; }
+.admin .kpi--pre .val { font-size: 21px; }
 .admin .kpi .delta { font-size: 12px; font-weight: 700; color: #178a54; }
+.admin .kpi .delta--risk { color: var(--coral-deep); }
+.admin .kpi p { margin-top: 8px; }
 .admin .panel { border: 1px solid var(--admin-line); border-radius: 4px; background: var(--paper); margin-bottom: 20px; overflow: hidden; }
 .admin .panel__head { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 16px 20px; border-bottom: 1px solid var(--admin-line); flex-wrap: wrap; }
 .admin .panel__head h3 { font-size: 17px; }
@@ -1199,6 +1205,197 @@ section.block--tight { padding-block: clamp(40px, 4.5vw, 60px); }
 .mini-bar i { height: 100%; background: var(--blue); }
 .mini-bar i.dem { background: var(--coral); }
 .mini-bar .moq-mark { border-left: 2px dashed var(--ink); height: 100%; width: 0; position: relative; }
+
+/* ---------- Growth & Pre-Order dashboard (PRD §13) ---------- */
+.moq-head { min-width: 230px; }
+.moq-control .js-moq-preset { font-size: 11px; border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; background: transparent; cursor: pointer; color: inherit; }
+.moq-control .js-moq-preset:hover { background: var(--cream); }
+.row-note { display: block; margin-top: 4px; }
+.demo-note--live { background: var(--blue-wash); border-style: solid; border-color: var(--blue); color: var(--blue-deep); }
+
+/* per-design decision cards */
+.design-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.dcard { border: 1px solid var(--admin-line); border-radius: 4px; background: var(--paper); padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.dcard__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.dcard__head h4 { font-size: 15px; }
+.dcard__head span { display: block; margin-top: 2px; }
+.dstatus { font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 4px 9px; border-radius: 999px; white-space: nowrap; }
+.dstatus--ahead { background: #e4f5ec; color: #10603a; }
+.dstatus--pace { background: var(--blue-wash); color: var(--blue-deep); }
+.dstatus--floor { background: #fdf1dd; color: #8a5a12; }
+.dstatus--risk { background: var(--coral-wash); color: var(--coral-deep); }
+/* the chip and the select STACK, and the chip is always present — a row that
+   wrapped from one line to two when a signal was set would resize the card and
+   shift its two neighbours (see the reason line below for the same reason) */
+.dcard__signal { display: flex; flex-direction: column; align-items: flex-start; gap: 7px; }
+.signal-chip { font-size: 11px; font-weight: 700; background: var(--cream-2); border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dcard__signalset { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; }
+.dcard__signalset select { font-size: 11.5px; padding: 4px 6px; border: 1px solid var(--line); border-radius: 4px; background: var(--paper); max-width: 150px; }
+.dstats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 0; padding: 12px 0; border-top: 1px solid var(--admin-line); border-bottom: 1px solid var(--admin-line); }
+.dstats dt, .mgrid dt { font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-light); }
+.dstats dd, .mgrid dd { font-family: var(--font-head); font-size: 19px; margin: 3px 0 0; }
+.attr__lbl { display: block; font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-light); margin-bottom: 6px; }
+.attr__bar { display: flex; height: 10px; border-radius: 999px; overflow: hidden; background: var(--line-soft); }
+.attr__seg { height: 100%; }
+.attr__seg--0, .attr__sw--0 { background: var(--blue); }
+.attr__seg--1, .attr__sw--1 { background: var(--coral); }
+.attr__seg--2, .attr__sw--2 { background: #178a54; }
+.attr__seg--3, .attr__sw--3 { background: #d9a021; }
+.attr__legend { display: flex; flex-wrap: wrap; gap: 6px 12px; margin-top: 7px; font-size: 11px; color: var(--ink-soft); }
+.attr__key { display: inline-flex; align-items: center; gap: 5px; }
+.attr__sw { width: 9px; height: 9px; border-radius: 2px; display: inline-block; flex: none; }
+.mgrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px 12px; background: var(--cream-2); border-radius: 4px; padding: 12px; margin: 0; }
+.mgrid div { min-width: 0; }
+.dcard__reason { font-size: 12.5px; line-height: 1.5; background: var(--cream-2); border-left: 3px solid var(--ink); border-radius: 0 4px 4px 0; padding: 10px 12px; margin: auto 0 0; }
+.dcard__reason b { display: block; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-light); margin-bottom: 4px; }
+.hist-sep td { background: var(--cream-2); font-size: 10.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-light); padding: 8px 12px; }
+
+/* ---------- Growth dashboard: charts & scenario controls (PRD §13) ---------- */
+.chart-toolbar { display: flex; flex-wrap: wrap; gap: 16px 24px; align-items: flex-end; }
+.ct-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ct-group--range, .ct-group--num { flex-direction: column; align-items: flex-start; gap: 6px; }
+.ct-lbl { font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-light); }
+.ct-btn { font-size: 11.5px; font-weight: 700; border: 1px solid var(--line); background: var(--paper); color: var(--ink-soft); border-radius: 999px; padding: 6px 12px; cursor: pointer; }
+.ct-btn:hover { background: var(--cream); color: var(--ink); }
+.ct-btn.is-on { background: var(--ink); border-color: var(--ink); color: #fff; }
+.ct-group input[type="range"] { width: 150px; accent-color: var(--blue); }
+.ct-group input[type="number"] { width: 92px; font-size: 12.5px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 4px; background: var(--paper); }
+
+.ct-wrap { margin-bottom: 16px; }
+.ct { display: block; width: 100%; height: auto; overflow: visible; }
+.ct-grid { stroke: var(--line-soft); stroke-width: 1; }
+.ct-axis { font-size: 10.5px; fill: var(--ink-light); }
+.ct-axis--sub { font-size: 9.5px; opacity: .8; }
+.ct-note { font-size: 10.5px; fill: var(--ink-soft); font-weight: 700; }
+.ct-moq { stroke: var(--ink); stroke-width: 1.4; stroke-dasharray: 6 4; opacity: .55; }
+.ct-moq--vert { stroke-dasharray: 4 4; }
+.ct-moq--thin { opacity: .35; }
+.ct-pace { stroke: var(--ink-light); stroke-width: 1.4; stroke-dasharray: 2 5; opacity: .85; }
+.ct-today { stroke: var(--coral); stroke-width: 1.4; stroke-dasharray: 3 3; opacity: .7; }
+.ct-actual { fill: none; stroke-width: 2.6; stroke-linejoin: round; stroke-linecap: round; }
+.ct-proj { fill: none; stroke-width: 2.2; stroke-dasharray: 6 5; opacity: .75; }
+.ct-band { opacity: .13; stroke: none; }
+.ct-dot { stroke: var(--paper); stroke-width: 1.5; }
+.ct-dot--open { fill: var(--paper); stroke-width: 2; }
+.ct-bench { fill: var(--blue); opacity: .08; stroke: var(--blue); stroke-width: 1; stroke-dasharray: 4 4; }
+.ct-bar { rx: 3; }
+.ct-axis-line { stroke: var(--ink); stroke-width: 1.2; opacity: .35; }
+.ct-ref { stroke: var(--ink-light); stroke-width: 1.2; stroke-dasharray: 5 4; opacity: .8; }
+.ct-bar--future { fill: none; stroke-width: 1.4; stroke-dasharray: 3 2; }
+.ct-bar--past { rx: 2; }
+
+/* daily order rhythm — one small multiple per design, one shared scale */
+.daily-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.daily { margin: 0; border: 1px solid var(--admin-line); border-radius: 4px; padding: 10px 12px 8px; background: var(--paper); }
+.daily figcaption { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-bottom: 8px; }
+.daily figcaption b { font-size: 13px; }
+.daily__tot { font-size: 11px; font-weight: 700; color: var(--ink-light); margin-left: auto; }
+.ct--daily { margin-top: 2px; }
+.ct-hit { cursor: help; }
+.ct-hit:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+.ct-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 10px; font-size: 11.5px; color: var(--ink-soft); }
+.ct-legend--mini { gap: 4px 10px; font-size: 10.5px; margin-top: 4px; }
+.ct-key { display: inline-flex; align-items: center; gap: 6px; }
+.ct-key > i { width: 12px; height: 3px; border-radius: 2px; display: inline-block; flex: none; background: var(--line); }
+.ct-key b { font-weight: 700; }
+.ct-key--note { color: var(--ink-light); }
+.ct-key--dash { background: none !important; border-top: 2px dashed var(--ink-light); height: 0 !important; }
+.ct-key--band { background: var(--blue) !important; opacity: .3; height: 10px !important; }
+
+.spark-wrap { margin-top: 10px; }
+.spark { display: block; width: 100%; height: 30px; }
+.attr__unit { font-style: normal; font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--ink-light); margin-left: 6px; }
+.swatch { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 6px; }
+.chart-tip { position: fixed; z-index: 300; pointer-events: none; background: var(--ink); color: #fff; font-size: 11.5px; font-weight: 700; line-height: 1.45; padding: 8px 11px; border-radius: 6px; max-width: 300px; box-shadow: var(--shadow-soft); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ct *, .spark * { transition: none !important; animation: none !important; }
+}
+
+/* ---------- Growth dashboard: sticky controls, zones, folds ----------
+   The page is seven numbered questions. A sticky bar carries the global
+   scenario plus jump links, so a control is never more than a thumb away from
+   what it moves — the fix for "I have to scroll up and down to see the views".
+   --dash-top (the site header's measured height) and --dash-h (this bar's) are
+   set from admin.js, and feed both the sticky offset and each zone's
+   scroll-margin so a jump never lands under the bars. */
+.dash-bar {
+  position: sticky; top: var(--dash-top, 64px); z-index: 40;
+  display: flex; align-items: center; gap: 8px 18px; flex-wrap: wrap;
+  background: var(--paper); border: 1px solid var(--admin-line); border-radius: 4px;
+  padding: 9px 14px; margin-bottom: 18px;
+  box-shadow: 0 10px 22px -20px rgba(20, 26, 40, .7);
+}
+.dash-nav { display: flex; align-items: center; gap: 3px; flex-wrap: wrap; }
+.dash-nav__lbl { font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-light); margin-right: 4px; }
+.dash-nav a { font-size: 11.5px; font-weight: 700; color: var(--ink-soft); padding: 5px 9px; border-radius: 999px; border: 1px solid transparent; white-space: nowrap; }
+.dash-nav a:hover { background: var(--cream); color: var(--ink); text-decoration: none; }
+.dash-nav a.is-here { border-color: var(--ink); color: var(--ink); }
+.chart-toolbar--bar { gap: 8px 18px; align-items: center; flex: 1 1 auto; justify-content: flex-end; }
+.chart-toolbar--bar .ct-group--range,
+.chart-toolbar--bar .ct-group--num { flex-direction: row; align-items: center; gap: 8px; }
+
+.zone { margin-bottom: 22px; scroll-margin-top: calc(var(--dash-top, 64px) + var(--dash-h, 60px) + 14px); }
+.zone__head { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px 18px; flex-wrap: wrap; margin-bottom: 12px; }
+.zone__head h2 { font-size: 19px; max-width: 46ch; }
+.zone__head p { font-size: 12.5px; line-height: 1.55; color: var(--ink-light); max-width: 78ch; margin-top: 4px; }
+.zone__n { display: block; font-size: 10px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--coral); margin-bottom: 3px; }
+.zone__tools { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.zone__tools .ct-lbl { margin-right: 2px; }
+.dash-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+.dash-2col > .zone { margin-bottom: 0; }
+.admin .panel--flush { margin-bottom: 0; }
+
+/* the one-line answer, recomputed from the same model as the charts */
+.dash-verdict { margin-top: 14px; font-size: 13.5px; line-height: 1.55; background: var(--cream-2); border-left: 3px solid var(--ink); border-radius: 0 4px 4px 0; padding: 11px 14px; }
+.dash-verdict__lead { display: inline-block; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; margin-right: 6px; }
+.dash-verdict--act { background: var(--coral-wash); border-left-color: var(--coral); }
+.dash-verdict--watch { background: #fdf6e8; border-left-color: #d9a021; }
+.dash-verdict--ok { background: #eef8f2; border-left-color: #178a54; }
+
+/* collapsible reference blocks — reachable from the nav, but not in the way */
+.fold { border: 1px solid var(--admin-line); border-radius: 4px; background: var(--paper); margin-bottom: 18px; scroll-margin-top: calc(var(--dash-top, 64px) + var(--dash-h, 60px) + 14px); }
+.fold > summary { cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 18px; }
+.fold > summary::-webkit-details-marker { display: none; }
+.fold > summary:hover { background: var(--cream); }
+.fold[open] > summary { border-bottom: 1px solid var(--admin-line); }
+.fold__sumtxt { display: block; min-width: 0; }
+.fold__sumtxt .small { display: block; margin-top: 4px; max-width: 92ch; font-weight: 400; }
+.fold__title { display: block; font-family: var(--font-head); font-size: 17px; }
+.fold__chev { flex: none; display: inline-flex; color: var(--ink-light); transition: transform .2s var(--ease); }
+.fold__chev svg { width: 20px; height: 20px; }
+.fold[open] .fold__chev { transform: rotate(180deg); }
+
+/* The signal tag's consequence, inside the card's reason line. It is present in
+   every card — untagged ones read "No signal tagged" — and the text is clamped to
+   two lines with a matching min-height, so the block always occupies the same
+   height. Selecting a different signal then rewrites text only: the three cards
+   keep identical heights and nothing on the page moves. */
+.reason__sig { display: block; margin-top: 7px; padding-top: 7px; border-top: 1px dashed var(--line); font-size: 12px; line-height: 1.45; color: var(--ink-soft); }
+.reason__sig b { display: block; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--coral-deep); margin-bottom: 2px; }
+.reason__sig--none b { color: var(--ink-light); }
+.reason__txt { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; min-height: 2.9em; }
+
+@media (max-width: 1080px) {
+  .dash-2col { grid-template-columns: 1fr; gap: 0; }
+  .dash-2col > .zone { margin-bottom: 22px; }
+}
+@media (max-width: 900px) {
+  /* keep the sticky bar one line tall: it scrolls sideways instead of growing */
+  .dash-bar { flex-wrap: nowrap; overflow-x: auto; gap: 14px; padding: 8px 12px; }
+  .dash-nav, .chart-toolbar--bar { flex-wrap: nowrap; }
+  .chart-toolbar--bar { flex: 0 0 auto; justify-content: flex-start; }
+  .dash-nav__lbl { display: none; }
+  /* the phone rules below make these groups full-width; inside the sideways
+     scroller that would blow the bar out, so they stay intrinsic here */
+  .dash-bar .ct-group--range, .dash-bar .ct-group--num { width: auto; }
+  .dash-bar .ct-group input[type="range"] { width: 130px; }
+}
+@media (max-width: 640px) {
+  .zone__head h2 { font-size: 17px; }
+  .fold__sumtxt .small { display: none; }
+}
 
 /* ---------- Toast ---------- */
 .toast {
@@ -1282,7 +1479,8 @@ section.block--tight { padding-block: clamp(40px, 4.5vw, 60px); }
   .acct-grid { grid-template-columns: 1fr; }
   .acct-nav { flex-direction: row; flex-wrap: wrap; border-right: 0; border-bottom: 1px solid var(--line); padding: 0 0 14px; gap: 4px; }
   .otype-grid { grid-template-columns: repeat(2, 1fr); }
-  .admin .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+  .admin .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .design-grid, .daily-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 860px) {
@@ -1342,6 +1540,10 @@ section.block--tight { padding-block: clamp(40px, 4.5vw, 60px); }
   .props { grid-template-columns: 1fr; }
   .otype-grid { grid-template-columns: 1fr; }
   .admin .kpi-grid { grid-template-columns: 1fr; }
+  .mgrid { grid-template-columns: repeat(2, 1fr); }
+  .ct-group--range, .ct-group--num { width: 100%; }
+  .ct-group input[type="range"] { width: 100%; }
+  .chart-toolbar { gap: 14px; }
   .stat-tiles { grid-template-columns: 1fr; }
   .steps { flex-wrap: wrap; gap: 4px 0; }
   .form-grid { grid-template-columns: 1fr; }
@@ -1666,6 +1868,19 @@ body.is-leaving {
 .staff-rail__step.is-on .no { background: var(--blue); border-color: var(--blue); color: #fff; }
 .staff-rail__step.is-on b { color: var(--blue-deep); }
 .staff-rail__step.is-done .no { background: var(--ink); border-color: var(--ink); color: #fff; }
+/* the way out of the staff flow and into the production decision view — kept in
+   the sticky rail so it is reachable without leaving the customer's set */
+.staff-rail__dash { display: block; margin-top: 12px; padding-top: 14px; border-top: 1px dashed var(--line); color: var(--ink); }
+.staff-rail__dash:hover { text-decoration: none; }
+.staff-rail__dash b { display: block; font-size: 12.5px; color: var(--blue-deep); }
+.staff-rail__dash:hover b { color: var(--coral); }
+.staff-rail__dash .muted { display: block; font-size: 11px; line-height: 1.35; margin-top: 2px; }
+
+/* staff page top bar: breadcrumb + demo badge on the left, dashboard CTA pushed
+   to the right of the same row */
+.staff-topbar { display: flex; align-items: center; gap: 10px 16px; flex-wrap: wrap; }
+.staff-topbar .crumbs { padding-block: 12px; }
+.staff-topbar__dash { margin-left: auto; }
 .staff-main { min-width: 0; }
 .staff-step { animation: fadeIn .3s var(--ease); }
 .staff-step__head { margin-bottom: 18px; }
@@ -1745,12 +1960,17 @@ body.is-leaving {
   .staff-rail__step { grid-template-columns: 26px minmax(0, 1fr); padding: 8px 10px; }
   .staff-rail__step .no { width: 24px; height: 24px; font-size: 10.5px; }
   .staff-rail__step .muted { display: none; }
+  /* the rail turns into a 4-up step scroller here, so the shortcut would wrap
+     onto a second row — the top-bar button carries it instead */
+  .staff-rail__dash { display: none; }
 }
 @media (max-width: 640px) {
   .staff-two-col { grid-template-columns: 1fr; }
   .staff-rail { grid-template-columns: repeat(4, minmax(120px, 1fr)); }
   .staff-actions { justify-content: stretch; }
   .staff-actions .btn { flex: 1; }
+  /* a full-width bar is the easiest thing to hit one-handed on the tablet */
+  .staff-topbar__dash { width: 100%; }
 }
 
 /* ---------- staff · catalog search results ---------- */

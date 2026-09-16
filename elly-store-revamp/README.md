@@ -132,8 +132,8 @@ in either environment.
 | `cart.html` / `checkout.html` | Bag + checkout with **all 3 tourist fulfilment options** (ship to SG/hotel · ship home · buy in-store/pop-up) |
 | `b2b.html` | B2B landing (use-case cards) → 5-step RFQ: order type/date → **item rows with a product dropdown** (sizes + **per-item decoration options** appear under the selected item — gated to what that item can take, with a shape-correct placement diagram; add/remove rows) → artwork/shipping → your details → **review & confirm** (the validated details are frozen and echoed back; Request and printable Download live on this step) → two-stage confirmation + printable quote sheet |
 | `account.html` | Unified profile: in-store + online order history merged, loyalty points (Smile placeholder rules), and **Personalisation orders & wearers** fed by the staff tablet (PRD §12) |
-| `staff.html` | **In-store staff assist tablet (PRD §12)**: a 4-stage loop — greet/occasion capture → **build the set** (search the catalog → tap a result to show the item photo for customer confirmation → add; the basket mixes personalisable and plain items, and each eligible item opens the configurator in a slide-over drawer with its own name, placement, font, colour **and wearer**, PRD §12; **the set is the matched customer's bag** — ONE store with the online site (per-account, localStorage): items added online show up on the staff tablet, staff additions land in the customer's bag, switching customers swaps sets, and walk-in/new customers start empty) → fulfilment (pickup or gift-from-counter reusing checkout ship-to; the step lists the set and staff **tick which items this fulfilment covers** — every item is ticked by default, and anything unticked stays in the customer's basket for a later order while the POS draft carries only the ticked items) → draft-order handoff to POS. Stock is two-tier: **One Holland Village first** (the shelf carries the popular edit in sufficient quantity, ~35% of sales) with **warehouse fallback** (more SKUs popular + niche, larger quantities, ~65% of sales are online; wait-time estimate, pop-up excluded, lost-sale logging). The left rail is clickable to jump between stages, and the order-status ladder tracks back in the customer's account |
-| `admin.html` | Demo dashboard: 3 KPI families + interactive **demand vs MOQ** per Pre-Order design |
+| `staff.html` | **In-store staff assist tablet (PRD §12)**: a 4-stage loop — greet/occasion capture → **build the set** (search the catalog → tap a result to show the item photo for customer confirmation → add; the basket mixes personalisable and plain items, and each eligible item opens the configurator in a slide-over drawer with its own name, placement, font, colour **and wearer**, PRD §12; **the set is the matched customer's bag** — ONE store with the online site (per-account, localStorage): items added online show up on the staff tablet, staff additions land in the customer's bag, switching customers swaps sets, and walk-in/new customers start empty) → fulfilment (pickup or gift-from-counter reusing checkout ship-to; the step lists the set and staff **tick which items this fulfilment covers** — every item is ticked by default, and anything unticked stays in the customer's basket for a later order while the POS draft carries only the ticked items) → draft-order handoff to POS. Stock is two-tier: **One Holland Village first** (the shelf carries the popular edit in sufficient quantity, ~35% of sales) with **warehouse fallback** (more SKUs popular + niche, larger quantities, ~65% of sales are online; wait-time estimate, pop-up excluded, lost-sale logging). The left rail is clickable to jump between stages, the order-status ladder tracks back in the customer's account, and **the tablet links straight to the Growth & Pre-Order dashboard** — a prominent button in the top bar, plus a shortcut under the sticky rail so it stays reachable mid-flow |
+| `admin.html` | **Growth & Pre-Order dashboard (PRD §13)**, laid out as **seven numbered questions** with a **sticky bar** that carries the jump links and the global scenario · 4 KPI families, each captioned with what native Shopify Admin/Analytics shows vs what this adds (the 4th, Pre-Order health, is live) · a **one-line verdict** at the top saying which design needs action and by how much · per-design **pace/projection to window close + status flag** · **auto-generated Reason line** naming the segment and channel driving it, plus what a manual **external-signal tag** implies for the decision · **segment & channel attribution** · **margin/contribution overlay** recalculated at the production quantity · **historical comparison** against past runs · **hand-built SVG charts** (pace-to-MOQ trajectory with projection band, per-design **daily order rhythm**, contribution-vs-volume, historical benchmark across 7 past runs, tile sparklines with a 4w/12w/26w/52w range) with hover/keyboard tooltips · **scenario controls** (±20%, Reset, Snap to MOQ, Close window, window-day slider, editable MOQ, overlay toggles, share-vs-customers attribution) — every control recomputes every chart live, all driven by the demand-vs-MOQ stepper, demand includes real demo checkouts, and the scenario rides in the URL |
 
 ## Brand system (from live theellystore.com)
 
@@ -146,7 +146,9 @@ in either environment.
 
 - **Shell**: `assets/components.js` auto-injects on every page (from `<body data-page>`):
   announcement bar, scrolling **B2B banner** ("Bulk and corporate orders, made simple" ·
-  "Start your quote" CTA, PRD §10), sticky header —
+  "Start your quote" CTA, PRD §10 — **suppressed on the internal views**: the B2B page
+  itself, the staff tablet and the admin dashboard, where an acquisition CTA is noise),
+  sticky header —
   brand left, **larger Sign In + Cart icons** and an
   **always-visible search field right of centre** (no scrolling needed) that **grows on
   focus while the brand/icons shrink** (Quince-style), Quince-style **search dropdown**
@@ -235,7 +237,8 @@ in either environment.
 - **Interactions**: `assets/app.js` (live-rotating hero with dots/arrows + animated
   progress fill on the active dot, search open/close/typing, recommender engine per segment,
   visitor demo toggle, search chips, catalog-populated grids, facets (UI only), tabs, qty
-  steppers, B2B tiers, fulfilment options, admin MOQ demo).
+  steppers, B2B tiers, fulfilment options; the Growth dashboard's own model lives in
+  `assets/admin.js`).
 - **Catalog grids**: `data-ghost-grid` containers are filled from `assets/products.js` with
   real product cards; the facet panels (age · type · character · colour · price · method ·
   placement · pet size · shoe stage/brand/size · occasion · recipient · style · budget) and
@@ -243,6 +246,59 @@ in either environment.
   pills, result counts and real empty states.
 - **Demo disclosure**: badge/ribbon pattern `Concept only — not a Disney-licensed product` marks
   FurKids; `Concept design — prototype illustration only` marks Pre-Order art (per PRD §§5.3, 8, 11).
+- **The dashboard's mock data is deliberately rich, because the demo is watching the controls
+  move the charts**: each design carries a 21-day order **rhythm** (`design.shape` — slow start,
+  weekend lift, and for Heritage the press-feature spike it is tagged with) instead of a straight
+  ramp, so the pace chart curves and the daily bars rescale when demand changes. The three daily
+  small-multiples share ONE scale, so a scenario changes the bars rather than just the axis.
+  7 past runs give the historical benchmark band real substance, and 52 weeks of tile trends
+  back the 4w/12w/26w/52w range control. It is all illustrative (PRD §9/§14) and deterministic,
+  so the smoke suite can assert on it.
+- **The dashboard is arranged so you can see the controls move the views without scrolling
+  between them**: seven numbered zones (KPIs → pace → daily rhythm → margin → history →
+  per-design → by hand), a **sticky bar** under the site header holding the global scenario and
+  jump links, and per-section tools sitting in the head of the section they drive (overlay
+  toggles on the pace chart, attribution on the cards, tile-range on the KPIs). Exactly one
+  instance of every control exists, so nothing can fall out of sync; `admin.js` measures the
+  header and bar heights into `--dash-top` / `--dash-h`, which set the bar's sticky offset and
+  each zone's `scroll-margin-top`, and an `IntersectionObserver` highlights the section you are
+  reading. Reference material (the stepper, the KPI-family table, what is still illustrative)
+  sits in `<details>` folds. The layout is compressed by pairing zones two-up (margin + history)
+  rather than stacking everything full width.
+- **Dashboard charts are hand-built SVG, not a charting library**: `assets/charts.js` is a tiny
+  toolkit (linear scales, nice axis ticks, line/area/band paths, hover hits) and `admin.js`
+  composes every chart from it — so the prototype stays dependency-free and buildless, and the
+  charts inherit the brand tokens and reflow via `viewBox` with no resize listeners. They are
+  pure functions of the same `stateFor()` model the cards and tables use, which is why the
+  smoke suite can assert their geometry. Scenario state (demand, window day, MOQ, overlays,
+  attribution view) lives in one object and is mirrored into the URL
+  (`?day=&moq=&heritage-shophouse=…`), so a specific what-if can be shared; nothing in a
+  scenario is persisted as fact. `verdictFor()` composes the same model into the page's
+  top-line answer (act / watch / on track), so the summary can never disagree with the charts
+  beneath it — and `_smoke.js` asserts that too, along with every jump link resolving to a
+  section that exists.
+- **Growth dashboard demand is real; the rest is illustrative (PRD §13)**: a pre-order add on
+  `pre-order.html` enters the shared `elly-bags` store like any item, and **Place order on
+  `checkout.html` commits those units to a global `elly-preorders` tally** — written by
+  `app.js` (`window.EL.preOrders`), read by `assets/admin.js`. A demo checkout therefore
+  visibly moves that design's orders-to-date, pace projection, status flag, reason line,
+  margin and contribution on `admin.html`. Everything else there is illustrative
+  (PRD §9/§14): the opening orders-to-date seed, the segment/channel splits, the landed
+  costs and the past-run history. No live Shopify API and no statistical model — the
+  projection is a trailing average. The external-signal tag is staff-set and remembered in
+  `elly-signals`, and it is **not decoration**: it feeds the Reason line
+  (`reasonParts()` returns the pace/base rationale plus a `note`, which the card shows on its
+  own line), so tagging a design with a press feature says out loud that the lift is one-off
+  and must not be used to size a second run. Only values matching the fixed `SIGNALS` list can
+  contribute copy — a stray stored string resolves to nothing. **The three decision cards are
+  deliberately height-stable**: the signal chip is always rendered (untagged reads “none
+  tagged”), the chip and its select stack rather than share a wrapping row, and the consequence
+  sits in a two-line clamped slot kept honest by equally-long copy. Selecting a signal therefore
+  rewrites text nodes only — no element appears or disappears — so the cards cannot resize and
+  the views beside them cannot shift under the cursor; `_smoke.js` asserts that same element
+  structure holds for every signal value. Every dashboard design name is
+  read off the catalog's own `designs[]` (products.js), so the dashboard and the Pre-Order PDP
+  can never disagree.
 - All prices/discounts/tiers/points are **illustrative placeholders** (PRD §12 open items).
 
 ## Next step

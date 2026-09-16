@@ -552,10 +552,13 @@
     if (document.getElementById('siteHead')) return; /* guard double inject */
     var b = document.body;
     var headWrap = document.createElement('div');
-    /* skip the B2B banner on the B2B page itself — visitors are already there */
-    /* skip the B2B banner on the B2B page (visitors are already there) and the
-       staff tablet (a "Start your quote" CTA is noise for shop-floor staff) */
-    var noBanner = (b.getAttribute('data-page') || '') === 'b2b' || (b.getAttribute('data-page') || '') === 'staff';
+    /* Skip the B2B banner on the internal views: the B2B page itself (visitors are
+       already there), the staff tablet (a "Start your quote" CTA is noise for
+       shop-floor staff) and the admin dashboard (an internal decision view — an
+       acquisition banner above the KPI tiles competes with the numbers it sits
+       on top of, and costs a strip of vertical space the dashboard needs). */
+    var page = b.getAttribute('data-page') || '';
+    var noBanner = page === 'b2b' || page === 'staff' || page === 'admin';
     headWrap.innerHTML = (noBanner ? '' : b2bBannerHTML()) + announcementHTML() + headerHTML(activeKey || '');
     /* move EVERY injected child (announcement + <header>) to the top of <body>
        — inserting only headWrap.firstChild used to drop the header entirely */

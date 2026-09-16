@@ -2315,35 +2315,71 @@
     b2bRecalc();
   });
 
-  /* ---------- Admin: demand vs MOQ demo (PRD §8.6) ---------- */
-  document.addEventListener('qtychange', function (e) {
-    if (e.target.closest('.js-moq-row')) {
-      var row = e.target.closest('.js-moq-row');
-      var dem = parseInt($('.qty-row output', row).value, 10) || 0;
-      var moq = parseInt(row.getAttribute('data-moq'), 10) || 1000;
-      var prod = Math.max(dem, moq);
-      var outP = $('.js-prod', row); if (outP) outP.textContent = prod;
-      var outD = $('.js-demv', row); if (outD) outD.textContent = dem;
-      var bar = $('.mini-bar', row);
-      if (bar) {
-        var scale = Math.max(prod * 1.15, 1);
-        bar.innerHTML = '<i class="dem" style="width:' + (dem / scale * 100) + '%"></i><i style="width:' + (moq / scale * 100) + '%"></i>';
-      }
-      var reason = $('.js-reason', row);
-      if (reason) {
-        reason.textContent = dem >= moq
-          ? 'Demand-driven \u2014 production set by ' + dem + ' pre-orders (above the ' + moq + ' MOQ).'
-          : 'MOQ-driven \u2014 demand of ' + dem + ' is below the ' + moq + '-unit MOQ, so production runs at MOQ.';
-      }
+  /* ---------- Pre-Order production tally (PRD §13) ----------
+     Pre-order demand is a business-wide quantity — how many units of a design the
+     storefront has actually sold — NOT a per-account bag, so this store is global
+     rather than keyed by account. checkout.html commits to it when an order is
+     placed and the Growth dashboard (admin.html) reads it as each design's
+     orders-to-date, so a demo checkout visibly moves demand, pace and margin.
+     Design names are read off the catalog's own `designs[]`, so the dashboard and
+     the Pre-Order PDP can never disagree about what a design is called. */
+  var PREORDER_KEY = 'elly-preorders';
+  function preOrderProduct() {
+    var list = window.EL_PRODUCTS || [];
+    for (var i = 0; i < list.length; i++) {
+      if (list[i] && list[i].availability === 'pre-order') return list[i];
     }
-  });
+    return null;
+  }
+  /* the Pre-Order PDP names an entry "<product> — <design>", so the design is the
+     suffix — and the picked size rides after the bag separator, never in the name */
+  function preOrderDesignFromEntry(entry) {
+    var pre = preOrderProduct();
+    if (!pre) return null;
+    var name = bagName(entry), prefix = pre.n + ' \u2014 ';
+    return name.indexOf(prefix) === 0 ? name.slice(prefix.length) : null;
+  }
+  function readPreOrders() {
+    try {
+      var raw = lsGet(PREORDER_KEY);
+      var map = raw ? JSON.parse(raw) : {};
+      if (!map || typeof map !== 'object') return {};
+      var out = {};
+      Object.keys(map).forEach(function (k) {
+        var n = parseInt(map[k], 10);
+        if (n > 0) out[k] = n;
+      });
+      return out;
+    } catch (e) { return {}; }
+  }
+  function writePreOrders(map) { lsSet(PREORDER_KEY, JSON.stringify(map || {})); }
+  /* count the pre-order units sitting in the bag and add them to the tally;
+     returns what was committed so checkout can tell the shopper what moved */
+  function commitPreOrders() {
+    var byDesign = {}, units = 0;
+    bagItems().forEach(function (entry) {
+      var d = preOrderDesignFromEntry(entry);
+      if (!d) return;
+      byDesign[d] = (byDesign[d] || 0) + 1;
+      units++;
+    });
+    if (!units) return { units: 0, byDesign: {} };
+    var map = readPreOrders();
+    Object.keys(byDesign).forEach(function (d) { map[d] = (map[d] || 0) + byDesign[d]; });
+    writePreOrders(map);
+    return { units: units, byDesign: byDesign };
+  }
+  /* Place order (demo): commit any pre-order units to the production tally, then
+     say so and link across — the only real side effect of checkout, and the thread
+     that joins the storefront to the §13 dashboard. */
   document.addEventListener('click', function (e) {
-    var b = e.target.closest('.js-moq-preset');
+    var b = e.target.closest('.js-place-order');
     if (!b) return;
-    var row = b.closest('.js-moq-row');
-    var out = $('.qty-row output', row);
-    out.value = b.getAttribute('data-v');
-    row.dispatchEvent(new Event('qtychange', { bubbles: true }));
+    var res = commitPreOrders();
+    var extra = res.units
+      ? ' <b>' + res.units + ' pre-order unit' + (res.units === 1 ? '' : 's') + '</b> added to the <a href="admin.html" style="color:#fff;text-decoration:underline">production dashboard</a>.'
+      : '';
+    toast('Order placed \u2014 <b>demo only</b>. No live order or payment was created.' + extra, true);
   });
 
   /* ---------- Newsletter (demo) ---------- */
@@ -4228,12 +4264,7 @@
     if ($('.js-b2b-line')) b2bRecalc();
     goStep(1);
     applyB2BQuery();
-    /* qtychange listeners need an initial pass for moq rows */
-    $$('.js-moq-row').forEach(function (r) {
-      var out = $('.qty-row output', r);
-      if (out) out.value = out.getAttribute('value') || '0';
-      r.dispatchEvent(new Event('qtychange', { bubbles: true }));
-    });
+    /* the Growth dashboard (admin.html) seeds and renders its own rows (admin.js) */
     /* pre-order PDP: default select size + qty */
     var sizeChips = $$('.size-row .size-chip:not(.oos)');
     if (sizeChips.length && !$('.size-chip.is-on')) sizeChips[0].classList.add('is-on');
@@ -4321,4 +4352,7 @@
   window.EL.addToBag = addToBag;
   window.EL.removeFromBag = removeFromBag;
   window.EL.setBagQty = setBagQty;
+  /* pre-order production tally (PRD §13) — written at checkout, read by the
+     Growth dashboard */
+  window.EL.preOrders = { read: readPreOrders, commit: commitPreOrders, key: PREORDER_KEY };
 })();

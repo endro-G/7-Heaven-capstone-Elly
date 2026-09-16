@@ -55,7 +55,14 @@ const registry = {};
  '#viewedRail', '#viewedGrid', '#viewedChipsWrap', '#viewedChips',
  '#pdpXsellGrid', '#pdpXsellTitle', '#pdpXsellKicker', '#pdpXsellLink', '#pdpXsell',
  '#pdpViewed', '#pdpViewedGrid', '#pdpViewedKicker', '#pdpViewedTitle',
- '#cartXsell', '#cartXsellGrid', '#persEditor']
+ '#cartXsell', '#cartXsellGrid', '#persEditor',
+ /* growth & pre-order dashboard (PRD §13) — registered so admin.js's own init
+    runs for real here, not just its pure functions */
+ '#dashBar', '#dashVerdict', '#dashRows', '#dashCards', '#histRows',
+ '#chartPace', '#chartDaily', '#chartContrib', '#chartHist', '#chartTip',
+ '#dashLiveNote', '#scenarioNote', '#poHealthVal', '#poHealthDelta', '#poHealthNote',
+ '#rangeVal', '#ctDay', '#ctDayVal', '#ctMoq',
+ '#sparkConv', '#sparkAov', '#sparkMatch', '#deltaConv', '#deltaAov', '#deltaMatch']
   .forEach((s) => { registry[s] = makeEl('div'); });
 
 const listeners = {};
@@ -138,6 +145,8 @@ try {
   load('assets/segment.js');
   load('assets/app.js');
   load('assets/staff.js'); /* staff assist registers its own DOMContentLoaded wiring */
+  load('assets/charts.js'); /* hand-built SVG chart toolkit (no charting library) */
+  load('assets/admin.js'); /* growth dashboard (PRD §13) registers its own wiring */
   check('scripts evaluate fully', typeof sandbox.EL === 'object' && typeof sandbox.EL.ghostCard === 'function');
   check('staff module exports (EL_STAFF + DAO)', typeof sandbox.EL_STAFF === 'object' && typeof sandbox.EL_STAFF_DAO === 'object' && typeof sandbox.EL_STAFF.checkStock === 'function');
   (listeners['DOMContentLoaded'] || []).forEach((fn) => fn());
@@ -150,6 +159,18 @@ try {
   check('demo bar removed from landing', !/demo-bar/.test(all) && !/Demo&nbsp;controls/.test(all));
   check('sign-in panel lives in the header (opens under the account tool)', /sign-panel/.test(all) && /js-signin/.test(all) && /tom-cook/.test(all) && /chloe-ng/.test(all));
   check('B2B banner injected (headline + sub-line + CTA)', /b2b-banner/.test(all) && /Bulk and corporate orders, made simple/.test(all) && /Start your quote/.test(all) && /b2b\.html/.test(all));
+  /* The banner is an acquisition CTA — it belongs on storefront pages, not on the
+     internal views. The gate reads each page's own `data-page` key, so the check is
+     tied to the real attributes rather than to a list of filenames. */
+  check('B2B banner is suppressed on the internal views (b2b, staff, admin)', (function () {
+    var src = fs.readFileSync('assets/components.js', 'utf8');
+    var gate = src.slice(src.indexOf('var noBanner'), src.indexOf('headWrap.innerHTML'));
+    function key(p) { var m = /<body data-page="([^"]+)"/.exec(fs.readFileSync(p, 'utf8')); return m ? m[1] : ''; }
+    return /page === 'b2b'/.test(gate) && /page === 'staff'/.test(gate) && /page === 'admin'/.test(gate) &&
+      key('b2b.html') === 'b2b' && key('staff.html') === 'staff' && key('admin.html') === 'admin' &&
+      key('index.html') === 'index' && key('pdp.html') === 'pdp' &&     /* storefront keeps it */
+      /\(noBanner \? '' : b2bBannerHTML\(\)\)/.test(src);
+  })());
   check('mobile drawer no longer carries a B2B button', !/b2b\.html">B2B &amp; bulk quotes<\/a>/.test(all));
   /* Tapping a pillar in the mobile drawer must land on that pillar's product
      listing: the label is the link, the caret only opens the sub-categories. */
@@ -1027,6 +1048,21 @@ try {
       step3.indexOf('staffFulfilItems') < step3.indexOf('aria-label="Fulfilment option"') &&
       step3.indexOf('ticked by default') >= 0;
   })());
+  check('the staff tablet links to the growth dashboard from the top bar AND the sticky rail', (function () {
+    var src = fs.readFileSync('staff.html', 'utf8');
+    var topbar = src.slice(src.indexOf('staff-topbar'), src.indexOf('staff-wrap'));
+    var rail = src.slice(src.indexOf('staff-rail" '), src.indexOf('staff-main'));
+    return /href="admin\.html"/.test(topbar) && /btn--blue/.test(topbar) &&
+      /class="staff-rail__dash" href="admin\.html"/.test(rail) &&
+      fs.existsSync('admin.html');
+  })());
+  check('the rail shortcut is dropped where the rail becomes a 4-up step scroller', (function () {
+    var css = fs.readFileSync('assets/styles.css', 'utf8');
+    var i = css.indexOf('.staff-rail__dash { display: none; }');
+    var block = css.slice(css.lastIndexOf('@media', i), i);       /* the block that contains it */
+    return i > 0 && /^@media \(max-width: 900px\)/.test(block) &&   /* the rail's own breakpoint */
+      /\.staff-topbar__dash \{ width: 100%; \}/.test(css);          /* still a full-width tap target */
+  })());
 
   /* ---------- recently viewed (per profile; bag + purchase filtered) ----------
      Storage mirrors the bag: a localStorage map keyed by account id, '__guest'
@@ -1240,6 +1276,442 @@ try {
     var html = registry['#heroSlides']._html || '';
     return s.account === null && s.guest === 'first' &&
       html.indexOf('Newborn & Baby Shower season') >= 0 && html.indexOf('account.html') < 0;
+  })());
+
+  /* ---------- Growth & Pre-Order dashboard (PRD §13) ----------
+     The storefront thread: a pre-order add enters the shared bag, Place order
+     commits those units to the production tally, and the dashboard reads the
+     tally as orders-to-date — so demand, pace, the reason line and margin all
+     move off a real checkout rather than a typed-in number. */
+  /* the real catalogue carries exactly one pre-order product; add it here, after
+     the checks that count the consumer catalogue, so nothing upstream shifts */
+  sandbox.EL_PRODUCTS.push({
+    id: 'preorder', n: 'Disney Pre-Order', p: 'S$59', price: 59, k: 'disney',
+    availability: 'pre-order', tags: ['pre-order'],
+    designs: [{ name: 'Heritage Shophouse' }, { name: 'Gardens by the Bay' }, { name: 'Marina Bay Night Skyline' }]
+  });
+  check('dashboard module exports its model', typeof sandbox.EL_DASH === 'object' && typeof sandbox.EL_DASH.projection === 'function');
+  check('every dashboard design exists in the catalogue (names cannot drift)', (function () {
+    var catCtx = vm.createContext({ window: {} });
+    vm.runInContext(fs.readFileSync('assets/products.js', 'utf8'), catCtx);
+    var pre = catCtx.window.EL_PRODUCTS.filter(function (p) { return p.availability === 'pre-order'; })[0];
+    var names = (pre.designs || []).map(function (d) { return d.name; });
+    return sandbox.EL_DASH.designs.length === 3 && sandbox.EL_DASH.designs.every(function (d) {
+      return names.indexOf(d.name) >= 0;
+    });
+  })());
+  check('projection is a trailing average to window close (PRD §9: no real model)', sandbox.EL_DASH.projection(820) === Math.round(820 * 21 / 12));
+  check('status flags separate ahead / on pace / at the MOQ floor / at risk', (function () {
+    var S = sandbox.EL_DASH.statusOf;
+    return S(1600).key === 'ahead' && S(1200).key === 'pace' && S(1000).key === 'floor' && S(900).key === 'risk';
+  })());
+  check('the three demo designs read as three DIFFERENT signals (PRD §13 brief)', (function () {
+    var D = sandbox.EL_DASH;
+    var keys = D.designs.map(function (d) { return D.stateFor(d).status.key; });
+    var reasons = D.designs.map(function (d) { return D.reasonFor(d, D.projection(D.demandFor(d))); });
+    return keys.indexOf('pace') >= 0 && keys.indexOf('ahead') >= 0 && keys.indexOf('risk') >= 0 &&
+      reasons[0] !== reasons[1] && reasons[1] !== reasons[2] && reasons[0] !== reasons[2];
+  })());
+  check('the reason line names the driving segment/channel (and admits when there is none)', (function () {
+    var D = sandbox.EL_DASH;
+    var a = D.designByName('Heritage Shophouse'), g = D.designByName('Gardens by the Bay'), s = D.designByName('Marina Bay Night Skyline');
+    return /tourist shoppers/.test(D.reasonFor(a, D.projection(D.demandFor(a)))) &&
+      /repeat customers/.test(D.reasonFor(g, D.projection(D.demandFor(g)))) &&
+      /no dominant channel/.test(D.reasonFor(s, D.projection(D.demandFor(s))));
+  })());
+  check('margin overlay prices off the catalogue and recalculates at production qty', (function () {
+    var D = sandbox.EL_DASH, a = D.designByName('Heritage Shophouse');
+    var atMoq = D.stateFor(a, 820), above = D.stateFor(a, 2000);
+    return Math.abs(atMoq.margin.price - 59) < 0.001 && atMoq.prod === 1000 && above.prod === 2000 &&
+      above.contribution > atMoq.contribution && atMoq.margin.pct > 60 && atMoq.margin.pct < 70;
+  })());
+  check('history gives the current window a reference point', sandbox.EL_DASH.history.length >= 3 && sandbox.EL_DASH.history.every(function (h) {
+    return h.qty > 0 && h.sellThrough > 0 && h.margin > 0;
+  }));
+  check('checkout commits pre-order units to the production tally (not other items)', (function () {
+    sandbox.localStorage.removeItem(sandbox.EL.preOrders.key);
+    sandbox.EL.setBag(0);
+    sandbox.EL.addToBag('Disney Pre-Order \u2014 Gardens by the Bay', 3, 'S');
+    sandbox.EL.addToBag('Kids Tee - Doodle Mickey', 1, '3Y');
+    var res = sandbox.EL.preOrders.commit();
+    var tally = sandbox.EL.preOrders.read();
+    return res.units === 3 && tally['Gardens by the Bay'] === 3 && !tally['Kids Tee - Doodle Mickey'];
+  })());
+  check('committed units raise that design\u2019s demand and leave the others alone', (function () {
+    var D = sandbox.EL_DASH;
+    var g = D.designByName('Gardens by the Bay'), h = D.designByName('Heritage Shophouse');
+    return D.demandFor(g) === g.seed + 3 && D.demandFor(h) === h.seed &&
+      D.stateFor(g).extra === 3 && D.stateFor(h).extra === 0;
+  })());
+  check('enough committed units can flip a design from at-risk to on-pace', (function () {
+    var D = sandbox.EL_DASH, s = D.designByName('Marina Bay Night Skyline');
+    var before = D.stateFor(s).status.key;
+    sandbox.EL.addToBag('Disney Pre-Order \u2014 Marina Bay Night Skyline', 400, 'S');
+    sandbox.EL.preOrders.commit();
+    return before === 'risk' && D.stateFor(s).status.key === 'pace';
+  })());
+  check('only pre-order units are tallied \u2014 a repeat checkout adds, never replaces', (function () {
+    var before = sandbox.EL.preOrders.read()['Gardens by the Bay'];
+    sandbox.EL.setBag(0);
+    sandbox.EL.addToBag('Disney Pre-Order \u2014 Gardens by the Bay', 2, 'M');
+    sandbox.EL.preOrders.commit();
+    var D = sandbox.EL_DASH, g = D.designByName('Gardens by the Bay');
+    return sandbox.EL.preOrders.read()['Gardens by the Bay'] === before + 2 && D.demandFor(g) === g.seed + before + 2;
+  })());
+  check('the cards render the signal they compute (status, pace, rationale, margin)', (function () {
+    var D = sandbox.EL_DASH, a = D.designByName('Heritage Shophouse'), g = D.designByName('Gardens by the Bay');
+    var card = D.cardHTML(a), ahead = D.cardHTML(g);
+    return /Day 12 of 21/.test(card) &&
+      /dstatus--risk|dstatus--pace|dstatus--ahead/.test(card) &&
+      /js-status/.test(card) && /Who is buying/.test(card) && /Walk-in QR/.test(card) &&
+      /Tourist/.test(card) && /js-margin/.test(card) && /js-contrib/.test(card) &&
+      /js-reason/.test(card) && /Extern/.test(card) &&
+      /Press coverage/.test(card) &&                    /* the pre-set manual tag */
+      /dstatus--ahead/.test(ahead);
+  })());
+  check('the decision row renders the stepper, presets and its orders-to-date', (function () {
+    var D = sandbox.EL_DASH, row = D.rowHTML(D.designByName('Heritage Shophouse'));
+    return /js-moq-row/.test(row) && /data-moq="1000"/.test(row) && /qty-row/.test(row) &&
+      /js-moq-preset/.test(row) && /js-prod/.test(row) && /mini-bar/.test(row) &&
+      /output value="820"/.test(row);
+  })());
+  check('the historical table separates closed runs from the open window', (function () {
+    var hist = sandbox.EL_DASH.historyHTML();
+    return /Orchard Bloom/.test(hist) && /Sentosa Sunset/.test(hist) &&
+      /hist-sep/.test(hist) && /this window/.test(hist) &&
+      /<td class="muted">open<\/td>/.test(hist);        /* no sell-through invented for an open window */
+  })());
+  /* ---------- dashboard: the page renders itself end to end ---------- */
+  check('the dashboard calls render themselves — rows, cards, verdict, charts, sparklines', (function () {
+    var rows = registry['#dashRows']._html || '';
+    var cards = registry['#dashCards']._html || '';
+    return (rows.match(/js-moq-row/g) || []).length === 3 && /output value="820"/.test(rows) &&
+      (cards.match(/class="dcard"/g) || []).length === 3 && /js-reason/.test(cards) &&
+      /js-signote/.test(cards) && /js-mgrid/.test(cards) &&
+      (registry['#histRows']._html || '').length > 200 &&
+      /<svg/.test(registry['#chartPace']._html || '') &&
+      /<svg/.test(registry['#chartDaily']._html || '') &&
+      /<svg/.test(registry['#chartContrib']._html || '') &&
+      /<svg/.test(registry['#chartHist']._html || '') &&
+      /spark/.test(registry['#sparkConv']._html || '') &&
+      /spark/.test(registry['#sparkAov']._html || '') &&
+      /spark/.test(registry['#sparkMatch']._html || '');
+  })());
+  check('the rendered verdict names the design that is behind pace', (function () {
+    var el = registry['#dashVerdict'];
+    return /dash-verdict--act/.test(el.className || '') && /Marina Bay Night Skyline/.test(el._html || '') &&
+      /units short/.test(el._html || '');
+  })());
+  check('the live and scenario notes stay hidden until there is something to say',
+    registry['#dashLiveNote'].hidden === true && registry['#scenarioNote'].hidden === true &&
+    /3 designs \u00b7 1 at risk/.test(registry['#poHealthVal'].textContent || ''));
+
+  /* ---------- dashboard: the signal tag feeds the reason, and the verdict line ---------- */
+  check('the manual signal tag feeds the reason line — untagged designs gain nothing', (function () {
+    var D = sandbox.EL_DASH, a = D.designByName('Heritage Shophouse'), g = D.designByName('Gardens by the Bay');
+    var tagged = D.reasonParts(a, D.projection(D.demandFor(a)), D.signals[1].v);
+    var plain = D.reasonParts(a, D.projection(D.demandFor(a)), '');
+    var none = D.reasonParts(g, D.projection(D.demandFor(g)), '');
+    return tagged.tagged && tagged.note.length > 0 && !plain.tagged && !none.tagged &&
+      plain.note.length > 0 &&                            /* the untagged case still explains itself */
+      tagged.base === plain.base &&                       /* the tag adds a cause, it never rewrites the pace */
+      D.reasonFor(a, D.projection(D.demandFor(a)), D.signals[1].v).indexOf(tagged.note) > 0 &&
+      /External signal/.test(D.reasonFor(a, D.projection(D.demandFor(a)), D.signals[1].v)) &&
+      !/External signal/.test(D.reasonFor(g, D.projection(D.demandFor(g)), ''));
+  })());
+  check('an unrecognised stored signal can never inject copy into the reason', (function () {
+    var D = sandbox.EL_DASH;
+    return D.signalWhy('<img src=x onerror=alert(1)>') === '' && D.signalWhy('junk') === '' &&
+      D.signalWhy('') === D.signals[0].why && D.signalWhy(D.signals[2].v).length > 0;
+  })());
+  /* The three cards sit in one grid row, so a card that grows drags the row taller
+     and shifts its neighbours. Selecting a signal must therefore rewrite TEXT ONLY:
+     every signal value has to produce the same element structure, or the page moves
+     under the user's cursor. */
+  check('choosing a signal rewrites text only — no element appears, so no card can resize', (function () {
+    var D = sandbox.EL_DASH, a = D.designByName('Heritage Shophouse');
+    var key = 'elly-signals';
+    function shape(html) {
+      return [(html.match(/<span/g) || []).length, (html.match(/<div/g) || []).length,
+        (html.match(/js-signote/g) || []).length, (html.match(/reason__txt/g) || []).length,
+        (html.match(/ hidden/g) || []).length].join('/');
+    }
+    var shapes = D.signals.concat([{ v: 'a value that is not in the list' }]).map(function (s) {
+      sandbox.localStorage.setItem(key, JSON.stringify({ 'Heritage Shophouse': s.v }));
+      return shape(D.cardHTML(a)) + '|' + shape(D.rowHTML(a));
+    });
+    sandbox.localStorage.removeItem(key);
+    var untaggedShapes = D.designs.map(function (d) { return shape(D.cardHTML(d)); });
+    return shapes.every(function (s) { return s === shapes[0]; }) &&
+      /* and the same holds across the three designs with no tags stored at all */
+      untaggedShapes.every(function (s) { return s === untaggedShapes[0]; }) &&
+      !/ hidden/.test(D.cardHTML(a));
+  })());
+  check('every card reserves the signal line, so untagged designs read as such', (function () {
+    var D = sandbox.EL_DASH;
+    var tagged = D.cardHTML(D.designByName('Heritage Shophouse'));
+    var plain = D.cardHTML(D.designByName('Gardens by the Bay'));
+    return /reason__txt/.test(tagged) && /External signal/.test(tagged) && /second run/.test(tagged) &&
+      /* every consequence is a similar length, so the fixed slot never has to clip */
+      sandbox.EL_DASH.signals.every(function (s) { return !s.why || (s.why.length >= 60 && s.why.length <= 75); }) &&
+      /reason__txt/.test(plain) && /No signal tagged/.test(plain) && /underlying demand/.test(plain) &&
+      !/js-signote" hidden/.test(plain) &&
+      tagged.indexOf('reason__sig--none') < 0 && plain.indexOf('reason__sig--none') > 0;
+  })());
+  check('the verdict names the design to act on and how far short it is', (function () {
+    var D = sandbox.EL_DASH;
+    var pd = D.scenario.demand, pday = D.scenario.day, pmoq = D.scenario.moq;
+    D.scenario.day = 12; D.scenario.moq = 1000;
+    D.scenario.demand = { 'Marina Bay Night Skyline': 300 };
+    var v = D.verdictFor(D.designs.map(function (d) { return D.stateFor(d); }));
+    D.scenario.demand = pd; D.scenario.day = pday; D.scenario.moq = pmoq;
+    var gap = D.fmt(1000 - D.projection(300, 12, 21));
+    return v.key === 'act' && v.lead === 'Act now' && /Marina Bay Night Skyline/.test(v.text) &&
+      v.text.indexOf(gap + ' units short') > 0 && /\d+ days? left/.test(v.text);
+  })());
+  check('the verdict asks for a watch when a design only just clears the MOQ', (function () {
+    var D = sandbox.EL_DASH;
+    var pd = D.scenario.demand;
+    D.scenario.demand = { 'Marina Bay Night Skyline': 600 };   /* over the floor, under 1.15x */
+    var v = D.verdictFor(D.designs.map(function (d) { return D.stateFor(d); }));
+    D.scenario.demand = pd;
+    return v.key === 'watch' && /only just cover the MOQ/.test(v.text);
+  })());
+  check('the verdict reads on track once every design covers the MOQ', (function () {
+    var D = sandbox.EL_DASH;
+    var pd = D.scenario.demand;
+    D.scenario.demand = { 'Marina Bay Night Skyline': 900 };
+    var v = D.verdictFor(D.designs.map(function (d) { return D.stateFor(d); }));
+    D.scenario.demand = pd;
+    return v.key === 'ok' && v.lead === 'On track' && /at or above the MOQ/.test(v.text);
+  })());
+  check('the layout keeps one sticky control surface plus tools beside what they move', (function () {
+    var html = fs.readFileSync('admin.html', 'utf8');
+    return /class="dash-bar" id="dashBar"/.test(html) && /id="dashVerdict"/.test(html) &&
+      (html.match(/data-scenario=/g) || []).length === 5 &&   /* exactly one instance of each… */
+      (html.match(/data-overlay=/g) || []).length === 3 &&    /* …so nothing can fall out of sync */
+      (html.match(/data-attr=/g) || []).length === 2 &&
+      (html.match(/data-range=/g) || []).length === 4;
+  })());
+  check('every dashboard jump link points at a section that exists (and none is orphaned)', (function () {
+    var html = fs.readFileSync('admin.html', 'utf8');
+    var ids = (html.match(/id="(z[A-Za-z]+)"/g) || []).map(function (s) { return s.slice(4, -1); });
+    var hrefs = (html.match(/href="#(z[A-Za-z]+)"/g) || []).map(function (s) { return s.slice(7, -1); });
+    return ids.length >= 7 && hrefs.length === ids.length &&
+      hrefs.every(function (h) { return ids.indexOf(h) >= 0; }) &&
+      ids.every(function (i) { return hrefs.indexOf(i) >= 0; });
+  })());
+  sandbox.EL.setBag(0);
+  sandbox.localStorage.removeItem(sandbox.EL.preOrders.key);
+
+  /* ---------- chart toolkit (assets/charts.js) — pure, so the geometry is testable ---------- */
+  check('chart toolkit exports pure builders (no charting library)', typeof sandbox.EL_CHARTS === 'object' &&
+    typeof sandbox.EL_CHARTS.scaleLinear === 'function' && typeof sandbox.EL_CHARTS.linePath === 'function');
+  check('linear scale maps a domain onto a range', (function () {
+    var s = sandbox.EL_CHARTS.scaleLinear(0, 10, 100, 200);
+    return s(0) === 100 && s(10) === 200 && s(5) === 150;
+  })());
+  check('axis ticks land on round numbers', (function () {
+    return sandbox.EL_CHARTS.axisTicks(0, 3000, 4).join(',') === '0,1000,2000,3000' &&
+      sandbox.EL_CHARTS.niceStep(3000, 4) === 1000;
+  })());
+  check('line / area / band paths are closed correctly', (function () {
+    var C = sandbox.EL_CHARTS;
+    return C.linePath([[0, 0], [10, 10]]) === 'M0 0L10 10' &&
+      /Z$/.test(C.areaPath([[0, 0], [10, 10]], 20)) &&
+      /^M0 0L10 10/.test(C.bandPath([[0, 0], [10, 10]], [[0, 5], [10, 6]])) &&
+      /Z$/.test(C.bandPath([[0, 0], [10, 10]], [[0, 5], [10, 6]]));
+  })());
+
+  /* ---------- interactive charts & scenario (PRD §13) ---------- */
+  check('the pace chart plots all three designs with MOQ, needed pace, today and a band', (function () {
+    var D = sandbox.EL_DASH;
+    var svg = D.trajectoryChart(D.designs.map(function (d) { return D.stateFor(d); }));
+    return /ct-moq/.test(svg) && /ct-pace/.test(svg) && /ct-band/.test(svg) && /ct-today/.test(svg) &&
+      (svg.match(/ct-hit/g) || []).length === 3 && /data-tip=/.test(svg) &&
+      /Heritage Shophouse/.test(svg) && /Marina Bay Night Skyline/.test(svg);
+  })());
+  /* the bug this guards: a series handed to a path builder in DATA space renders as
+     a near-vertical streak against the y-axis and, with overflow visible, paints over
+     the panels below. Coordinates are not optional — assert them. */
+  check('every coordinate the charts plot lands inside its own viewBox', (function () {
+    var D = sandbox.EL_DASH;
+    function outside(svg, W, H) {
+      var bad = 0, m, re;
+      re = /d="([^"]+)"/g;
+      while ((m = re.exec(svg))) {
+        var nums = m[1].match(/-?\d+(?:\.\d+)?/g) || [];
+        for (var i = 0; i + 1 < nums.length; i += 2) {
+          if (+nums[i] < 0 || +nums[i] > W || +nums[i + 1] < 0 || +nums[i + 1] > H) bad++;
+        }
+      }
+      [[/ (?:x|x1|x2|cx)="(-?\d+(?:\.\d+)?)"/g, W], [/ (?:y|y1|y2|cy)="(-?\d+(?:\.\d+)?)"/g, H]].forEach(function (p) {
+        var r = p[0];
+        while ((m = r.exec(svg))) {
+          var v = +m[1];
+          if (v < 0 || v > p[1]) bad++;
+        }
+      });
+      return bad;
+    }
+    var states = D.designs.map(function (d) { return D.stateFor(d); });
+    var charts = [
+      [D.trajectoryChart(states), 720, 320],
+      [D.dailyChart(states), 300, 132],
+      [D.contribChart(states), 720, 320],
+      [D.histChart(), 720, 320],
+      [states.map(function (s) { return D.cardTrajectory(s); }).join(''), 300, 76]
+    ];
+    var bad = 0;
+    charts.forEach(function (c) { bad += outside(c[0], c[1], c[2]); });
+    return bad === 0;
+  })());
+  check('the pace chart spreads its designs across the full plot width', (function () {
+    var D = sandbox.EL_DASH;
+    var svg = D.trajectoryChart(D.designs.map(function (d) { return D.stateFor(d); }));
+    var xs = [];
+    var re = / class="ct-actual"[^>]*|d="([^"]+)"/g, m;
+    var pathRe = /<path d="([^"]+)" class="ct-actual"/g;
+    while ((m = pathRe.exec(svg))) {
+      (m[1].match(/-?\d+(?:\.\d+)?/g) || []).forEach(function (v, i) { if (i % 2 === 0) xs.push(+v); });
+    }
+    return xs.length > 3 && Math.min.apply(null, xs) < 80 && Math.max.apply(null, xs) > 400;
+  })());
+  check('the overlay toggle actually drops the band layer from the chart', (function () {
+    var D = sandbox.EL_DASH, S = D.scenario;
+    var before = S.overlays.band;
+    S.overlays.band = false;
+    var svg = D.trajectoryChart(D.designs.map(function (d) { return D.stateFor(d); }));
+    S.overlays.band = before;
+    return !/ct-band/.test(svg);
+  })());
+  check('the contribution chart plots one bubble per design against the MOQ line', (function () {
+    var D = sandbox.EL_DASH;
+    var svg = D.contribChart(D.designs.map(function (d) { return D.stateFor(d); }));
+    return /ct-moq--vert/.test(svg) && (svg.match(/data-tip=/g) || []).length === 3 && /contribution/.test(svg);
+  })());
+  check('the historical chart benchmarks this window against the past-run range', (function () {
+    var D = sandbox.EL_DASH;
+    var svg = D.histChart();
+    var qtys = D.history.map(function (h) { return h.qty; });
+    var lo = Math.min.apply(null, qtys), hi = Math.max.apply(null, qtys);
+    return /ct-bench/.test(svg) &&
+      svg.indexOf('past runs: ' + D.fmt(lo)) >= 0 && svg.indexOf(D.fmt(hi) + ' units') >= 0 &&
+      /Orchard/.test(svg) && /this window/.test(svg) &&
+      /sell-through pending/.test(svg);   /* an OPEN window never fakes a sell-through */
+  })());
+  check('attribution switches between share % and a customer headcount', (function () {
+    var D = sandbox.EL_DASH, a = D.designByName('Heritage Shophouse');
+    var order = ['new', 'repeat', 'tourist'], labels = { 'new': 'New', repeat: 'Repeat', tourist: 'Tourist' };
+    var prev = D.scenario.attr;
+    D.scenario.attr = 'share';
+    var share = D.attribHTML('Who is buying', a.segments, order, labels, 820);
+    D.scenario.attr = 'count';
+    var count = D.attribHTML('Who is buying', a.segments, order, labels, 820);
+    D.scenario.attr = prev;
+    return /45%/.test(share) && /369/.test(count) && share.indexOf('369') < 0 && share !== count;
+  })());
+  check('a scenario moves the numbers, the flags and the shareable URL payload', (function () {
+    var D = sandbox.EL_DASH, S = D.scenario, s = D.designByName('Marina Bay Night Skyline');
+    S.demand = {}; S.day = D.WINDOW_DAY; S.moq = D.MOQ;
+    var base = D.stateFor(s);
+    S.day = D.WINDOW_DAYS;
+    var closed = D.stateFor(s);                 /* window closed: demand IS the outcome */
+    S.day = D.WINDOW_DAY; S.demand[s.name] = 300; S.moq = 400;
+    var floored = D.stateFor(s);               /* below MOQ on demand, so the MOQ sets the run */
+    S.demand = {}; S.day = D.WINDOW_DAY; S.moq = D.MOQ;
+    return base.projected === D.projection(s.seed, D.WINDOW_DAY, D.WINDOW_DAYS) &&
+      closed.projected === closed.demand && closed.status.key === 'risk' &&
+      floored.prod === 400 && floored.status.key === 'pace' &&
+      D.slug(s.name) === 'marina-bay-night-skyline';
+  })());
+  check('the day slider changes the projection day over day', (function () {
+    var D = sandbox.EL_DASH;
+    return D.projection(600, 6, 21) === 2100 && D.projection(600, 21, 21) === 600;
+  })());
+  check('tile sparklines are drawn from a real series', (function () {
+    var svg = sandbox.EL_DASH.sparkline([1, 2, 3, 2], '#000');
+    return /<svg/.test(svg) && /<path d="M/.test(svg) && /preserveAspectRatio="none"/.test(svg);
+  })());
+
+  /* ---------- enough mock data to watch the controls move the charts ---------- */
+  check('the mock data is deep enough to make a scenario legible', (function () {
+    var D = sandbox.EL_DASH;
+    return D.history.length >= 6 &&
+      D.designs.every(function (d) {
+        return d.shape.length === D.WINDOW_DAYS && d.shape.every(function (v) { return v > 0; });
+      }) &&
+      Object.keys(D.tileSeries).every(function (k) { return D.tileSeries[k].length === 52; }) &&
+      D.ranges.length === 4;
+  })());
+  check('each design has its own daily rhythm, not a straight ramp', (function () {
+    var D = sandbox.EL_DASH;
+    var shapes = D.designs.map(function (d) { return d.shape.join(','); });
+    var spread = D.designs.map(function (d) {
+      return Math.max.apply(null, d.shape) / Math.min.apply(null, d.shape);
+    });
+    return shapes[0] !== shapes[1] && shapes[1] !== shapes[2] && shapes[0] !== shapes[2] &&
+      spread.every(function (r) { return r > 1.5; });
+  })());
+  check('the cumulative curve lands exactly on orders-to-date at the current day', (function () {
+    var D = sandbox.EL_DASH;
+    return D.designs.every(function (d) {
+      var st = D.stateFor(d), pts = D.actualPoints(st);
+      return pts.length === st.day && Math.abs(pts[pts.length - 1][1] - st.demand) < 0.001;
+    });
+  })());
+  check('the projected tail runs from tomorrow to close and lands on the projection', (function () {
+    var D = sandbox.EL_DASH;
+    return D.designs.every(function (d) {
+      var st = D.stateFor(d), tail = D.projectedPoints(st);
+      return tail.length === D.WINDOW_DAYS - st.day && tail[0][0] === st.day + 1 &&
+        tail[tail.length - 1][0] === D.WINDOW_DAYS &&
+        Math.abs(tail[tail.length - 1][1] - st.projected) < 0.001;
+    });
+  })());
+  check('the forecast band hugs the realised curve then flares to the projection', (function () {
+    var D = sandbox.EL_DASH;
+    return D.designs.every(function (d) {
+      var st = D.stateFor(d), b = D.bandEdges(st), n = D.WINDOW_DAYS;
+      return b.upper.length === n && b.lower.length === n &&
+        Math.abs(b.upper[n - 1][1] - st.projected * (1 + d.vol)) < 0.001 &&
+        Math.abs(b.lower[n - 1][1] - st.projected * (1 - d.vol)) < 0.001 &&
+        Math.abs(b.upper[st.day - 1][1] - st.demand) < 0.001;
+    });
+  })());
+  check('daily bars sum to orders-to-date behind and to the projection ahead', (function () {
+    var D = sandbox.EL_DASH;
+    return D.designs.every(function (d) {
+      var st = D.stateFor(d), bars = D.dailyBars(st);
+      var past = bars.filter(function (b) { return !b.future; });
+      var fut = bars.filter(function (b) { return b.future; });
+      var s1 = past.reduce(function (a, b) { return a + b.v; }, 0);
+      var s2 = fut.reduce(function (a, b) { return a + b.v; }, 0);
+      return bars.length === D.WINDOW_DAYS && Math.abs(s1 - st.demand) < 0.01 &&
+        Math.abs(s2 - (st.projected - st.demand)) < 0.01;
+    });
+  })());
+  check('a scenario visibly changes every daily bar, not just the axis', (function () {
+    var D = sandbox.EL_DASH, S = D.scenario, d = D.designs[0];
+    S.demand = {}; S.day = D.WINDOW_DAY;
+    var before = D.dailyBars(D.stateFor(d)).map(function (b) { return Math.round(b.v * 100); }).join(',');
+    S.demand[d.name] = D.demandFor(d) * 2;
+    var after = D.dailyBars(D.stateFor(d)).map(function (b) { return Math.round(b.v * 100); }).join(',');
+    S.demand = {};
+    return before !== after;
+  })());
+  check('the daily chart draws one bar per day for all three designs', (function () {
+    var D = sandbox.EL_DASH;
+    var svg = D.dailyChart(D.designs.map(function (d) { return D.stateFor(d); }));
+    return (svg.match(/ct-bar /g) || []).length === D.WINDOW_DAYS * D.designs.length && /ct-ref/.test(svg);
+  })());
+  check('the tile trend range control slices the sparkline series', (function () {
+    var D = sandbox.EL_DASH;
+    var x = function (v, i) { return [i, v]; };
+    var C = sandbox.EL_CHARTS, series = D.tileSeries.conv;
+    var four = C.linePath(series.slice(-4).map(x));
+    var all = C.linePath(series.map(x));
+    return (four.match(/L/g) || []).length === 3 && (all.match(/L/g) || []).length === 51 && four !== all;
   })());
 
   /* ---------- visitor geo-location (assets/geo.js) ----------

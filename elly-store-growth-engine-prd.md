@@ -3,7 +3,7 @@
 
 **Document owner:** Hazlee Jaafar (The Elly Store)
 **Prepared for:** Coding AI / build team (high-fidelity prototype)
-**Status:** v1.0 — for prototype build
+**Status:** v1.1 — for prototype build (adds §13, Growth & Pre-Order Admin Dashboard)
 **Related prior work:** Builds on and supersedes the earlier PRD covering Pre-Order Model, Customization Pillar, and Intent-Driven Discovery — those three initiatives are now Phase 1–2 components of this unified growth engine.
 
 ---
@@ -226,7 +226,7 @@ Every product carries multiple tags across these facets so it can appear correct
   6. Disney Pre-Order PDP flow: design → lead-time messaging → full-payment checkout, with an admin/demo view showing per-design production quantity resolving to whichever is higher of demand or MOQ (independently per design, not split across a product line).
   7. Checkout flow showing all three tourist fulfillment options.
   8. A logged-in account view showing unified purchase history (mock in-store + online records) and loyalty points balance.
-  9. A simple admin/demo panel showing the three KPI families (conversion/AOV, repeat rate, cross-channel match rate) as illustrative dashboard tiles — not live data, but structured to show where real analytics would plug in.
+  9. A Growth & Pre-Order Admin Dashboard (§13) showing the three KPI families (conversion/AOV, repeat rate, cross-channel match rate) plus a fourth, Pre-Order health — each tile captioned with what native Shopify Admin/Analytics shows versus what this dashboard adds — populated with realistic illustrative data (not live), including a working demand-forecast/pace view, an auto-generated decision-rationale line, and a margin overlay per pre-order design.
   10. The B2B self-serve RFQ flow (§10): order-type selection → item/quantity → live tiered pricing → quote summary.
   11. The Elly FurKids pillar (§11): product listing, PDP, and cart/checkout, with the concept-only disclosure badge visible throughout.
   12. The same core journeys above, working cleanly at phone, tablet, and laptop/PC breakpoints.
@@ -244,6 +244,7 @@ Every product carries multiple tags across these facets so it can appear correct
 - Live Shopify Draft Order/Admin API integration, invoicing, or ERP/ordering-system integration for B2B quotes (§10) — the prototype demonstrates the self-serve quote *experience*, not the backend Shopify wiring, which is a production-build task.
 - Shopify Plus-exclusive B2B features (native company accounts, self-serve Net terms, multi-location profiles) — not required for the RFQ flow as scoped in §10.
 - Workflows 3 (online order fulfillment/warehouse packing), 4 (stock/restocking and CSV-based stock transfer), and 5 (marketing data consolidation across tools) from the business-process review referenced in §12 — reviewed by the stakeholder but explicitly excluded from this project.
+- Live Shopify Analytics/Admin API integration, and any real statistical or ML forecasting model, for the Growth & Pre-Order Admin Dashboard (§13) — the prototype demonstrates the decision-support *experience* on realistic illustrative data (simple trailing-average pace projection), not production-grade forecasting or a live data pipeline, which is a production-build task.
 
 ---
 
@@ -308,7 +309,23 @@ Both in-scope workflows share the same root problem: today's customer-facing sit
 
 ---
 
-## 13. Open Items / Needs From Stakeholder
+## 13. Growth & Pre-Order Admin Dashboard
+
+**Business problem.** Shopify's native Admin/Analytics is a system of record, not a system of decision: it reports what already sold, but a merchant deciding what to produce next for the Pre-Order pillar (§5.3) needs more than that. Specifically, native Shopify has no built-in demand forecasting or inventory-health metrics (no pace/trajectory, no time-to-stockout), no margin or profitability metrics (CAC, LTV, gross margin aren't tracked natively), no explanation of *why* a number moved (a sales swing is reported, never attributed to a cause), roughly 13 months of data retention with no built-in cross-period comparison, and no unified in-store/online customer view out of the box — merchants normally bolt on spreadsheets or third-party tools to close these gaps. This section defines a dashboard that demonstrates what a *built-in* version of that decision layer looks like, purpose-built around the Pre-Order production decision (§5.3's demand-vs-MOQ rule) that §2's four KPI families already exist to support.
+
+- **KPI family tiles, each captioned with the gap it closes**: Conversion rate/AOV, Repeat purchase rate/LTV, and Cross-channel match rate (§2) each carry a one-line caption contrasting what native Shopify Analytics shows against what this dashboard adds (e.g. "Shopify shows unit sales to date — this adds a demand forecast and the reason behind it"). A fourth family, **Pre-Order health**, is added alongside the original three, since production decisions are the dashboard's central use case.
+- **Demand pace & forecast, per pre-order design**: rather than a static demand count against MOQ, each design shows where it sits partway through its pre-order window (e.g. "Day 12 of 21"), a projection of where it will land by window close based on recent daily pace, and a status flag — on pace to clear MOQ, tracking to the MOQ floor, or at risk of falling short — so a decision to intervene (promote a design, extend a window) can be made *before* the window closes, not after.
+- **Decision-rationale line ("Reason"), auto-populated per design**: a plain-language explanation of *why* a design is pacing the way it is — which customer segment or channel is driving it, and whether that signal looks durable or one-off (e.g. "Ahead of pace, driven by repeat customers — consider a second production run" versus "Behind pace with no dominant channel — flag for a promo push before day 15"). This is the single feature most directly aimed at the "no causal why" gap, and the one most likely to change what a business owner actually does next.
+- **Customer segment & channel attribution, per design**: each design's demand broken down by new/repeat/tourist customer mix and by acquisition channel (walk-in QR, email, social, organic search) — the design-level expression of the Cross-channel match rate KPI (§2, §5.2) rather than a store-wide aggregate. A design driven by first-time tourist interest calls for a different next step than one driven by loyal local repeat buyers.
+- **Margin/contribution overlay, per design**: landed unit cost, pre-order price, margin %, and total contribution recalculated live at the current production quantity — so a design that only just clears MOQ but carries a stronger margin can be weighed fairly against a design with a higher unit count but thinner margin. Cost and pricing figures are illustrative placeholders for the prototype, consistent with the existing pricing-placeholder note in §5.4/§10 (see also §14 Open Items).
+- **Historical design comparison**: the current pre-order window's designs shown against a small set of past pre-order designs (production quantity, sell-through %, margin %), so a number like "1,275 units" has a reference point — strong, average, or weak relative to what the business has actually run before — rather than being judged in isolation.
+- **External demand-signal tagging**: a lightweight, manually-set tag surfaced next to a design when a known external driver applies (e.g. press coverage, a relevant event or campaign) — addressing the gap where Shopify's own checkout data can't see outside signals like search-trend or social spikes. Illustrative/staff-entered for the prototype, not an automated trend-scraping feature (see §9 Out of Scope).
+- **Interactivity**: the existing demand-vs-MOQ stepper (§8, item 6) must drive every tile above live — pace projection, decision-rationale text, and margin — not just the production-quantity number, so the dashboard demonstrates "what happens if demand moves," not just a static snapshot.
+- **Prototype demonstration**: the three existing Pre-Order concepts (§5.3 — Heritage Shophouse, Gardens by the Bay, Marina Bay Night Skyline) populated with realistic, differentiated illustrative data — one tracking on pace and tourist-led, one clearly ahead of pace and repeat/local-driven, one behind pace with a thin channel spread — so each tile reads as a plausible business signal rather than placeholder decoration, alongside a short set of historical past-design comparisons.
+
+---
+
+## 14. Open Items / Needs From Stakeholder
 
 - [ ] Typical MOQ figures from approved factories, to reflect realistically in the pre-order demand-vs-MOQ demo logic. *(Resolved for prototype purposes — see §5.3, assumption of 1,000 units.)*
 - [x] Smile loyalty program's current point-earning/redemption rules. *(Resolved — see §5.4; confirmed against the real, published Elly Rewards program rather than a placeholder. The additional bonuses/restriction listed separately in §5.4 are recommendations, not confirmed program rules.)*
@@ -318,6 +335,9 @@ Both in-scope workflows share the same root problem: today's customer-facing sit
 - [ ] Elly FurKids product range and pricing, if different from placeholder assumptions in §11.
 - [ ] Realistic warehouse-to-store transfer times, to reflect accurately in the wait-time estimate shown in §12 — prototype uses a placeholder estimate.
 - [ ] Full list of scripts/languages the approved-character library (§12) should cover beyond Korean, Chinese, and English, if any.
+- [ ] Real landed unit cost and pre-order pricing per design, for the margin/contribution overlay (§13) — prototype uses illustrative placeholder figures.
+- [ ] Actual sell-through and margin figures from past pre-order runs, for the historical comparison tile (§13) — prototype uses illustrative placeholder history.
+- [ ] Whether external demand-signal tagging (§13) should eventually pull from a real source (social listening, Google Trends) versus remaining a manually-set staff tag — not a prototype requirement either way, but worth a decision before production.
 
 ---
 

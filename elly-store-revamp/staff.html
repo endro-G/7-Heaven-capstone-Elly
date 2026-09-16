@@ -18,8 +18,16 @@
 <body data-page="staff">
 <main id="content">
 
-  <div class="wrap" style="padding-block:10px 0"><nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">Home</a><span class="sep">/</span><span aria-current="page">Staff assist</span></nav>
-    <span class="badge badge--demo" style="margin-top:8px">Demo — order handoff is illustrative</span>
+  <div class="wrap staff-topbar" style="padding-block:10px 0">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">Home</a><span class="sep">/</span><span aria-current="page">Staff assist</span></nav>
+    <span class="badge badge--demo">Demo — order handoff is illustrative</span>
+    <!-- The dashboard is the production decision behind what staff sell: how each
+         pre-order design is pacing against the factory MOQ, why it is pacing that
+         way, and what it earns. Reachable from the top of the tablet, not buried. -->
+    <a class="btn btn--blue staff-topbar__dash" href="admin.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M4 4v16h16"/><path d="M8 16.5V11M12.5 16.5V7.5M17 16.5v-3.5"/></svg>
+      Growth &amp; Pre-Order dashboard
+    </a>
   </div>
 
   <section class="block block--tight" data-bump>
@@ -31,6 +39,14 @@
         <button type="button" class="staff-rail__step" data-step="2"><span class="no">02</span><b>Build the set</b><span class="muted">search · confirm · personalise</span></button>
         <button type="button" class="staff-rail__step" data-step="3"><span class="no">03</span><b>Fulfilment</b><span class="muted">pickup or gift from counter</span></button>
         <button type="button" class="staff-rail__step" data-step="4"><span class="no">04</span><b>Hand to POS</b><span class="muted">draft order · status tracks</span></button>
+
+        <!-- the same destination, reachable mid-flow: the rail stays on screen while
+             the steps scroll, so a staff member can check a design's pace without
+             abandoning the customer's set -->
+        <a class="staff-rail__dash" href="admin.html">
+          <b>Growth &amp; Pre-Order dashboard</b>
+          <span class="muted">pace vs MOQ · the reason · margin</span>
+        </a>
       </aside>
 
       <div class="staff-main">

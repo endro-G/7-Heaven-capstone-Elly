@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Demo Admin — Growth KPIs &amp; Pre-Order Production | The Elly Store</title>
-<meta name="description" content="Admin demo panel — structure preview.">
+<meta name="description" content="Admin demo panel — the decision layer Shopify's native analytics does not give you.">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -21,126 +21,250 @@
       <div class="occ-head">
         <div>
           <span class="kicker">Prototype · admin &amp; demo view</span>
-          <h1 class="sec" style="font-size:clamp(28px,3.4vw,40px)">Growth dashboard (illustrative)</h1>
-          <p class="small muted" style="margin-top:8px">Not live data — tiles are structured to show where real analytics plug in, and the Pre-Order table demonstrates the demand-vs-MOQ rule.</p>
+          <h1 class="sec" style="font-size:clamp(26px,3vw,36px)">Growth &amp; Pre-Order dashboard</h1>
+          <p class="small muted" style="margin-top:6px">Shopify's Admin is a system of record — it tells you what sold. This is the decision layer on top of it: are we on pace to clear the factory MOQ, <i>why</i> is each design pacing that way, and which run actually earns the most. Everything below is arranged as seven questions in the order an owner would ask them. Tiles and figures are illustrative (PRD §9); demand moves with real demo checkouts.</p>
         </div>
         <a class="btn btn--ghost btn--sm" href="pre-order.html">← Back to Pre-Order PDP</a>
       </div>
 
-      <div class="demo-note">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>
-        <span><b>Three KPI families, weighted equally</b>: funnel efficiency · retention · cross-channel recognition. These tiles accept live analytics later — the layout and labels are placeholders for now.</span>
+      <!-- ONE sticky control surface: jump links + the global scenario. It follows
+           you down the page, so a control is never more than a thumb away from
+           the thing it moves. -->
+      <div class="dash-bar" id="dashBar">
+        <nav class="dash-nav" id="dashNav" aria-label="Jump to a dashboard section">
+          <span class="dash-nav__lbl">Jump to</span>
+          <a href="#zTiles">KPIs</a>
+          <a href="#zPace">Pace</a>
+          <a href="#zRhythm">Daily</a>
+          <a href="#zMargin">Margin</a>
+          <a href="#zHistory">History</a>
+          <a href="#zDesigns">Designs</a>
+          <a href="#zStepper">Stepper</a>
+          <a href="#zNotes">Notes</a>
+        </nav>
+        <div class="chart-toolbar chart-toolbar--bar" id="dashToolbar">
+          <div class="ct-group">
+            <span class="ct-lbl">Scenario</span>
+            <button type="button" class="ct-btn" data-scenario="down">&minus;20%</button>
+            <button type="button" class="ct-btn" data-scenario="reset">Reset</button>
+            <button type="button" class="ct-btn" data-scenario="up">+20%</button>
+            <button type="button" class="ct-btn" data-scenario="moq">Snap to MOQ</button>
+            <button type="button" class="ct-btn" data-scenario="close">Close now</button>
+          </div>
+          <div class="ct-group ct-group--range">
+            <label class="ct-lbl" for="ctDay">Window day <b id="ctDayVal">12</b> / 21</label>
+            <input type="range" id="ctDay" min="1" max="21" step="1" value="12">
+          </div>
+          <div class="ct-group ct-group--num">
+            <label class="ct-lbl" for="ctMoq">Factory MOQ</label>
+            <input type="number" id="ctMoq" min="0" step="100" value="1000">
+          </div>
+        </div>
       </div>
 
-      <!-- KPI tiles -->
-      <div class="kpi-grid">
-        <div class="kpi">
-          <span class="lab" style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-light)">Conversion rate</span>
-          <div style="display:flex;align-items:baseline;gap:10px"><span class="val">0.0%</span><span class="delta">—</span></div>
-          <p class="small muted" style="margin-top:6px">Funnel efficiency family · plugs into Google Analytics / Shopify analytics</p>
-        </div>
-        <div class="kpi kpi--coral">
-          <span class="lab" style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-light)">Average order value</span>
-          <div style="display:flex;align-items:baseline;gap:10px"><span class="val">S$0.00</span><span class="delta">—</span></div>
-          <p class="small muted" style="margin-top:6px">Funnel efficiency · cross-sell (Gifting &amp; Customization) should lift this</p>
-        </div>
-        <div class="kpi kpi--green">
-          <span class="lab" style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-light)">Cross-channel match rate</span>
-          <div style="display:flex;align-items:baseline;gap:10px"><span class="val">—%</span><span class="delta">demo</span></div>
-          <p class="small muted" style="margin-top:6px">Recognition family · % of profiles with online + in-store records</p>
-        </div>
-      </div>
+      <div class="demo-note demo-note--live" id="dashLiveNote" hidden></div>
+      <div class="demo-note demo-note--live" id="scenarioNote" hidden></div>
 
-      <!-- demand vs MOQ -->
-      <div class="panel">
-        <div class="panel__head">
+      <!-- ---------- 1 · store-wide KPIs ---------- -->
+      <section class="zone" id="zTiles">
+        <div class="zone__head">
           <div>
-            <h3>Pre-Order production — demand vs MOQ</h3>
-            <p class="small muted">Each design is independent: production = whichever is higher of pre-order demand or factory MOQ (assumed <b>1,000 units</b>). MOQ is never shown to customers.</p>
+            <span class="zone__n">Question 1</span>
+            <h2>Is the store healthy?</h2>
+            <p>Each tile names the gap it closes against native Shopify — a number Shopify reports, plus the thing it cannot say about it.</p>
           </div>
-          <div class="demo-chip-line">
-            <span class="badge badge--demo">MOQ = 1,000 (assumption)</span>
-            <span class="badge badge--demo">Not split across designs</span>
+          <div class="zone__tools">
+            <span class="ct-lbl">Tile trend <b id="rangeVal">12w</b></span>
+            <button type="button" class="ct-btn" data-range="4w">4w</button>
+            <button type="button" class="ct-btn is-on" data-range="12w">12w</button>
+            <button type="button" class="ct-btn" data-range="26w">26w</button>
+            <button type="button" class="ct-btn" data-range="52w">52w</button>
           </div>
         </div>
+        <div class="kpi-grid">
+          <div class="kpi">
+            <span class="lab">Conversion rate</span>
+            <div class="kpi__val"><span class="val">3.4%</span><span class="delta" id="deltaConv">+0.6 pts</span></div>
+            <div class="spark-wrap" id="sparkConv"></div>
+            <p class="small muted">Shopify reports one store-wide rate. This adds the <b>segment and channel it came from</b> — a tourist spike reads differently from a loyal-customer lift.</p>
+          </div>
+          <div class="kpi kpi--coral">
+            <span class="lab">Average order value</span>
+            <div class="kpi__val"><span class="val">S$86.40</span><span class="delta" id="deltaAov">+S$7.10</span></div>
+            <div class="spark-wrap" id="sparkAov"></div>
+            <p class="small muted">Shopify shows the basket total. This splits it by <b>what produced it</b> — Gifting, Customization and matching-set cross-sell — not just the sum.</p>
+          </div>
+          <div class="kpi kpi--green">
+            <span class="lab">Cross-channel match rate</span>
+            <div class="kpi__val"><span class="val">61%</span><span class="delta" id="deltaMatch">demo</span></div>
+            <div class="spark-wrap" id="sparkMatch"></div>
+            <p class="small muted">Shopify counts online orders and in-store POS sales <b>separately</b>. This reports how many customers are recognisable across both (PRD §2).</p>
+          </div>
+          <div class="kpi kpi--pre">
+            <span class="lab">Pre-Order health</span>
+            <div class="kpi__val"><span class="val" id="poHealthVal">3 designs · 1 at risk</span><span class="delta" id="poHealthDelta">→ 1 to act on</span></div>
+            <p class="small muted" id="poHealthNote">Shopify shows units ordered. This adds <b>pace against the MOQ</b>, a projection to window close, and the reason behind it.</p>
+          </div>
+        </div>
+        <!-- the answer to "so what?" — recomputed from the same model as the charts -->
+        <p class="dash-verdict" id="dashVerdict" aria-live="polite"></p>
+      </section>
+
+      <!-- ---------- 2 · pace to MOQ ---------- -->
+      <section class="zone" id="zPace">
+        <div class="zone__head">
+          <div>
+            <span class="zone__n">Question 2</span>
+            <h2>Will each design clear the factory MOQ before the window closes?</h2>
+            <p>Cumulative orders (solid) against the trailing-average projection to close (dashed), with the MOQ threshold and the straight-line pace that would be needed to clear it. This is the question native Shopify Analytics cannot answer.</p>
+          </div>
+          <div class="zone__tools">
+            <span class="ct-lbl">Overlays</span>
+            <button type="button" class="ct-btn is-on" data-overlay="moq">MOQ line</button>
+            <button type="button" class="ct-btn is-on" data-overlay="pace">Needed pace</button>
+            <button type="button" class="ct-btn is-on" data-overlay="band">Projection band</button>
+            <span class="badge badge--demo">Trailing average, not a model</span>
+          </div>
+        </div>
+        <div class="panel panel--flush">
+          <div class="panel__body"><div class="ct-wrap" id="chartPace"></div></div>
+        </div>
+      </section>
+
+      <!-- ---------- 3 · daily order rhythm ---------- -->
+      <section class="zone" id="zRhythm">
+        <div class="zone__head">
+          <div>
+            <span class="zone__n">Question 3</span>
+            <h2>Where does the pace actually come from?</h2>
+            <p>One bar per day of the window per design, on a single shared scale: solid = orders to date, outlined = what the projection implies for the days left. This is the clearest place to watch a scenario button lengthen every bar at once.</p>
+          </div>
+          <div class="zone__tools"><span class="badge badge--demo">Illustrative rhythm</span></div>
+        </div>
+        <div class="panel panel--flush">
+          <div class="panel__body"><div class="ct-wrap" id="chartDaily"></div></div>
+        </div>
+      </section>
+
+      <!-- ---------- 4 + 5 · what it earns & how it compares ---------- -->
+      <div class="dash-2col">
+        <section class="zone" id="zMargin">
+          <div class="zone__head">
+            <div>
+              <span class="zone__n">Question 4</span>
+              <h2>Which run is worth committing?</h2>
+              <p>Total contribution at the quantity each design would actually run, bubble size = margin %, with the MOQ line marking where production stops being driven by the factory minimum.</p>
+            </div>
+          </div>
+          <div class="panel panel--flush">
+            <div class="panel__body"><div class="ct-wrap" id="chartContrib"></div></div>
+          </div>
+        </section>
+
+        <section class="zone" id="zHistory">
+          <div class="zone__head">
+            <div>
+              <span class="zone__n">Question 5</span>
+              <h2>Is this number any good?</h2>
+              <p>Past runs give the current window a reference point: strong, average or weak against what the business has actually shipped (placeholders, §14).</p>
+            </div>
+          </div>
+          <div class="panel panel--flush">
+            <div class="panel__body">
+              <div class="ct-wrap" id="chartHist"></div>
+              <table class="tbl">
+                <thead>
+                  <tr><th>Design</th><th>Window</th><th>Production qty</th><th>Sell-through</th><th>Margin</th></tr>
+                </thead>
+                <tbody id="histRows"></tbody>
+              </table>
+              <p class="small muted" style="margin-top:12px">Sell-through is only known after a run closes — an open window shows “open” rather than an invented figure.</p>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- ---------- 6 · per-design decisions ---------- -->
+      <section class="zone" id="zDesigns">
+        <div class="zone__head">
+          <div>
+            <span class="zone__n">Question 6</span>
+            <h2>What do I do about each design?</h2>
+            <p>Per design, not store-wide: status, the segment and channel carrying it, the margin at the quantity it would run, and a generated reason with the next action. Move the scenario above and all three cards move together.</p>
+          </div>
+          <div class="zone__tools">
+            <span class="ct-lbl">Attribution</span>
+            <button type="button" class="ct-btn is-on" data-attr="share">Share %</button>
+            <button type="button" class="ct-btn" data-attr="count">Customers</button>
+          </div>
+        </div>
+        <div class="design-grid" id="dashCards"></div>
+      </section>
+
+      <!-- ---------- 7 · by hand ---------- -->
+      <details class="fold" id="zStepper" open>
+        <summary class="fold__sum">
+          <span class="fold__sumtxt">
+            <span class="zone__n">Question 7</span>
+            <b class="fold__title">Set demand design by design</b>
+            <span class="small muted">Production = the higher of pre-order demand or factory MOQ (assumed <b>1,000 units</b>, never shown to customers). Try it: raise demand above 1,000 on a row and production follows demand; below it, production stays at MOQ. <b>Orders to date is real</b> — the tally the storefront writes when a pre-order is checked out, plus the illustrative opening figure.</span>
+          </span>
+          <span class="fold__chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span>
+        </summary>
         <div class="panel__body">
           <table class="tbl">
             <thead>
-              <tr><th>Design (concept)</th><th>Pre-order demand</th><th>MOQ</th><th>Production qty</th><th class="bar-cell">Demand vs MOQ</th><th>Reason</th></tr>
+              <tr><th>Design (concept)</th><th class="moq-head">Orders to date</th><th>MOQ</th><th>Production qty</th><th class="bar-cell">Orders vs MOQ</th></tr>
             </thead>
-            <tbody>
-              <tr class="js-moq-row" data-moq="1000">
-                <td>Heritage Shophouse <span class="muted">(concept)</span></td>
-                <td><span class="moq-control"><span class="qty-row" data-min="0" data-max="5000"><button type="button" data-step="-100">−</button><output value="820">820</output><button type="button" data-step="100">+</button></span>
-                  <button type="button" class="js-moq-preset" data-v="600" style="font-size:11px;border:1px solid var(--line);border-radius:999px;padding:4px 10px">600</button>
-                  <button type="button" class="js-moq-preset" data-v="1000" style="font-size:11px;border:1px solid var(--line);border-radius:999px;padding:4px 10px">1,000</button>
-                  <button type="button" class="js-moq-preset" data-v="1400" style="font-size:11px;border:1px solid var(--line);border-radius:999px;padding:4px 10px">1,400</button></span></td>
-                <td><span class="js-moq">1,000</span></td>
-                <td><b class="js-prod">1,000</b></td>
-                <td class="bar-cell"><div class="mini-bar" style="min-width:180px"></div></td>
-                <td class="js-reason small">—</td>
-              </tr>
-              <tr class="js-moq-row" data-moq="1000">
-                <td>Gardens by the Bay <span class="muted">(concept)</span></td>
-                <td><span class="moq-control"><span class="qty-row" data-min="0" data-max="5000"><button type="button" data-step="-100">−</button><output value="1275">1,275</output><button type="button" data-step="100">+</button></span>
-                  <button type="button" class="js-moq-preset" data-v="600" style="font-size:11px;border:1px solid var(--line);border-radius:999px;padding:4px 10px">600</button>
-                  <button type="button" class="js-moq-preset" data-v="1000" style="font-size:11px;border:1px solid var(--line);border-radius:999px;padding:4px 10px">1,000</button>
-                  <button type="button" class="js-moq-preset" data-v="1400" style="font-size:11px;border:1px solid var(--line);border-radius:999px;padding:4px 10px">1,400</button></span></td>
-                <td>1,000</td>
-                <td><b class="js-prod">1,275</b></td>
-                <td class="bar-cell"><div class="mini-bar" style="min-width:180px"></div></td>
-                <td class="js-reason small">—</td>
-              </tr>
-              <tr class="js-moq-row" data-moq="1000">
-                <td>Marina Bay Night Skyline <span class="muted">(concept)</span></td>
-                <td><span class="moq-control"><span class="qty-row" data-min="0" data-max="5000"><button type="button" data-step="-100">−</button><output value="430">430</output><button type="button" data-step="100">+</button></span>
-                  <button type="button" class="js-moq-preset" data-v="600" style="font-size:11px;border:1px solid var(--line);border-radius:999px;padding:4px 10px">600</button>
-                  <button type="button" class="js-moq-preset" data-v="1000" style="font-size:11px;border:1px solid var(--line);border-radius:999px;padding:4px 10px">1,000</button>
-                  <button type="button" class="js-moq-preset" data-v="1400" style="font-size:11px;border:1px solid var(--line);border-radius:999px;padding:4px 10px">1,400</button></span></td>
-                <td>1,000</td>
-                <td><b class="js-prod">1,000</b></td>
-                <td class="bar-cell"><div class="mini-bar" style="min-width:180px"></div></td>
-                <td class="js-reason small">—</td>
-              </tr>
-            </tbody>
+            <tbody id="dashRows"></tbody>
           </table>
-          <p class="small muted" style="margin-top:12px">Try it: raise demand above 1,000 on any row and production follows demand; below it, production stays at MOQ. Each design resolves independently — no demand sharing across the line.</p>
         </div>
-      </div>
+      </details>
 
-      <!-- KPI families detail -->
-      <div class="panel">
-        <div class="panel__head">
-          <div>
-            <h3>KPI families — where each metric plugs in</h3>
-            <p class="small muted">Weighted equally per stakeholder direction · demo placeholders.</p>
-          </div>
-        </div>
+      <!-- ---------- reference ---------- -->
+      <details class="fold" id="zNotes">
+        <summary class="fold__sum">
+          <span class="fold__sumtxt">
+            <span class="zone__n">Reference</span>
+            <b class="fold__title">KPI families, data sources &amp; what is still illustrative</b>
+            <span class="small muted">Where each metric plugs in, what is demo data, and what the funnel view will render once analytics connect.</span>
+          </span>
+          <span class="fold__chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span>
+        </summary>
         <div class="panel__body">
+          <div class="demo-note">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/><circle cx="12" cy="12" r="4"/></svg>
+            <span><b>Four KPI families</b>: funnel efficiency · retention · cross-channel recognition · Pre-Order health. The first three are store-wide; <b>Pre-Order health is the one the scenario controls drive</b>, because committing a production run is the decision this dashboard exists to support.</span>
+          </div>
           <table class="tbl">
             <thead><tr><th>Family</th><th>Primary KPI</th><th>Supporting KPIs</th><th>Source (planned)</th></tr></thead>
             <tbody>
               <tr><td><b>Funnel efficiency</b></td><td>Conversion rate</td><td>Time-to-purchase · cart abandonment · search→purchase</td><td>Shopify + GA4</td></tr>
               <tr><td><b>Retention</b></td><td>Repeat purchase rate / 12-mo LTV</td><td>Loyalty enrollment · win-back open/click · post-purchase flow</td><td>Klaviyo + Smile</td></tr>
               <tr><td><b>Recognition</b></td><td>Cross-channel match rate</td><td>% unified history · time-to-recognition</td><td>Smile POS sync + store</td></tr>
-              <tr><td><b>Pre-Order health</b></td><td>Orders per design</td><td>Demand vs MOQ · lead time on-time %</td><td>Pre-order backend (future)</td></tr>
+              <tr><td><b>Pre-Order health</b></td><td>Orders per design</td><td>Demand vs MOQ · pace to window close · lead time on-time %</td><td>Pre-order backend (future)</td></tr>
             </tbody>
           </table>
+          <div class="demo-note" style="margin:18px 0 0">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16l-6.5 8v6l-3 2v-8z"/></svg>
+            <span><b>Funnel view:</b> Acquire → Recognise → Convert → Retain with per-stage counts will render here once analytics connect.</span>
+          </div>
+          <div class="demo-note" style="margin:14px 0 0">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 8v5M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
+            <span><b>What is not real:</b> tile values, historical sell-through and margin figures are illustrative placeholders (PRD §14). There is no live Shopify API call and no forecasting model — pace is a trailing average, and the projection band is an illustrative spread, not a confidence interval (PRD §9). Demand <i>is</i> real: it is the pre-order tally your own demo checkouts write.</span>
+          </div>
         </div>
-      </div>
-
-      <!-- funnel tiles row -->
-      <div class="demo-note" style="margin-top:4px">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16l-6.5 8v6l-3 2v-8z"/></svg>
-        <span><b>Funnel view:</b> Acquire → Recognise → Convert → Retain with per-stage counts will render here once analytics connect.</span>
-      </div>
+      </details>
 
     </div>
   </section>
 
 </main>
+<div class="chart-tip" id="chartTip" hidden></div>
 <script src="assets/components.js"></script>
 <script src="assets/products.js"></script>
 <script src="assets/app.js"></script>
+<script src="assets/charts.js"></script>
+<script src="assets/admin.js"></script>
 </body>
 </html>
