@@ -38,23 +38,23 @@
   var MOQ = 1000;             /* §5.3 assumption — factory minimum order quantity */
   var WINDOW_DAYS = 21;       /* the pre-order window is 21 days long */
   var WINDOW_DAY = 12;        /* illustrative default: partway through the window */
-  var CLOSES = '18 Sep 2026'; /* matches the Pre-Order PDP's stated close */
+  var CLOSES = '25 Sep 2026'; /* matches the Pre-Order PDP's stated close */
   /* Decision-economics constants. The TIMELINE facts come straight from the
-     Pre-Order PDP (pre-order.html): the window closes 18 Sep 2026, production
+     Pre-Order PDP (pre-order.html): the window closes 25 Sep 2026, production
      takes up to 8 weeks after close, full payment is taken upfront, and the PDP
      promises shoppers their design is never cancelled for lack of numbers — so
      the admin decisions below are how much to commit above the floor, never
      whether to run, and cancellation exposure exists only INSIDE the window.
      The push cost/lift, the cancellation cap and the slip length are illustrative (§14). */
-  var CLOSE_DATE = new Date(2026, 8, 18);  /* 18 Sep 2026 — PDP step 02 */
-  var OPEN_DATE = new Date(2026, 7, 29);   /* 29 Aug 2026 — day 1 of the window */
+  var CLOSE_DATE = new Date(2026, 8, 25);  /* 25 Sep 2026 — PDP step 02 */
+  var OPEN_DATE = new Date(2026, 8, 5);    /* 5 Sep 2026 — day 1 of the window */
   var LEAD_WEEKS = 8;      /* PDP step 04: production up to 8 weeks after close */
   var PUSH_HORIZON = 7;    /* days before close a push can still change the tail */
   var PUSH_COST = 800;     /* illustrative cost of a promo push (§14) */
   var PUSH_LIFT = 0.10;    /* illustrative lift on the projected tail (§14) */
   var CANCEL_CAP = 20;     /* cancellation stress slider cap, % (§14) */
   var DELAY_WEEKS = 2;     /* production-slip stress: +2 weeks on the promise */
-  var WINDOW_OPENS_DOW = 6;   /* 0=Sun — the window opens on a Saturday (29 Aug 2026) */
+  var WINDOW_OPENS_DOW = 6;   /* 0=Sun — the window opens on a Saturday (5 Sep 2026) */
   var THIN_SPREAD = 35;       /* below this, no channel is really "driving" demand */
 
   var DESIGN_COLORS = ['#4D6EB5', '#FF6070', '#178a54'];
@@ -106,7 +106,7 @@
       seed: 820,
       cost: 21,
       vol: 0.14,
-      signal: 'Press coverage \u2014 5 Sep',
+      signal: 'Press coverage \u2014 12 Sep',
       segments: { 'new': 30, repeat: 25, tourist: 45 },
       channels: { qr: 45, email: 18, social: 22, organic: 15 },
       shape: buildShape({ start: 0.6, trend: 0.055, weekend: 1.35, spikes: [[7, 2.4]] })
@@ -168,7 +168,7 @@
       why: 'read this pace as underlying demand, not a one-off lift from a tag' },
     /* the consequences are kept to a similar length on purpose: the card renders
        them in a fixed two-line slot, and equal lengths keep that slot honest */
-    { v: 'Press coverage \u2014 5 Sep', l: 'Press coverage',
+    { v: 'Press coverage \u2014 12 Sep', l: 'Press coverage',
       why: 'a press feature lifts demand once \u2014 do not bank a second run on it' },
     { v: 'Event or season \u2014 F1 weekend', l: 'Event or season',
       why: 'an event spike leaves with the event \u2014 treat the lift as temporary' },
@@ -435,7 +435,7 @@
   }
 
   /* ---------- the decision clock (dates from the Pre-Order PDP) ----------
-     The PDP pins the timeline: the window closes 18 Sep 2026, production takes
+     The PDP pins the timeline: the window closes 25 Sep 2026, production takes
      up to 8 weeks after close, full payment is final at close (cancels only
      before close). Three chips follow the window-day slider. The PDP promises
      "never cancelled for lack of numbers", so there is no run/cancel chip — the

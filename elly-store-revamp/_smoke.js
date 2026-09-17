@@ -1551,10 +1551,10 @@ try {
     return pushRow.con.hi === Math.round(Math.max(1000, o.pushedProj) * unit) - 800 &&
       /cannot close a/.test(pushRow.note);
   })());
-  check('the decision clock is pinned to the PDP dates: close 18 Sep, ships 13 Nov', (function () {
+  check('the decision clock is pinned to the PDP dates: close 25 Sep, ships 20 Nov', (function () {
     var D = sandbox.EL_DASH;
     var c = D.decisionClock();
-    return D.fmtDate(c.close.date) === '18 Sep 2026' && D.fmtDate(c.ship.date) === '13 Nov 2026' &&
+    return D.fmtDate(c.close.date) === '25 Sep 2026' && D.fmtDate(c.ship.date) === '20 Nov 2026' &&
       c.push.day === 14 && !c.close.late && !c.ship.late;
   })());
   check('the slip stress moves the ship-by chip, not refunds (PDP: exchanges only)', (function () {
@@ -1562,7 +1562,7 @@ try {
     D.scenario.delay = true;
     var ship = D.fmtDate(D.decisionClock().ship.date);
     D.scenario.delay = pd;
-    return ship === '27 Nov 2026';
+    return ship === '4 Dec 2026';
   })());
   check('the decision table renders for at-risk designs and offers a modelled push', (function () {
     var D = sandbox.EL_DASH, pd = D.scenario.demand;
