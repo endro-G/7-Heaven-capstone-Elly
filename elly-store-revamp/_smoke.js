@@ -61,7 +61,7 @@ const registry = {};
  '#dashBar', '#dashVerdict', '#dashRows', '#dashCards', '#histRows',
  '#chartPace', '#chartDaily', '#chartContrib', '#chartHist', '#chartTip',
  '#dashLiveNote', '#scenarioNote', '#poHealthVal', '#poHealthDelta', '#poHealthNote',
- '#rangeVal', '#ctDay', '#ctDayVal', '#ctMoq',
+ '#rangeVal', '#ctDay', '#ctDayVal', '#ctMoq', '#demHead',
  '#sparkConv', '#sparkAov', '#sparkMatch', '#deltaConv', '#deltaAov', '#deltaMatch']
   .forEach((s) => { registry[s] = makeEl('div'); });
 
@@ -1405,6 +1405,19 @@ try {
   check('the live and scenario notes stay hidden until there is something to say',
     registry['#dashLiveNote'].hidden === true && registry['#scenarioNote'].hidden === true &&
     /3 designs \u00b7 1 at risk/.test(registry['#poHealthVal'].textContent || ''));
+  /* "today" is the window-day slider, so the Q7 tally has to say which day it is
+     as of, and the charts have to say which line is actual and which is projection. */
+  check('the Q7 tally is anchored to the window day and the charts name actual vs projected', (function () {
+    var D = sandbox.EL_DASH;
+    var pace = D.trajectoryChart(D.designs.map(function (d) { return D.stateFor(d); }));
+    var card = D.cardHTML(D.designs[1]);
+    return /^Orders to date .*day 12$/.test(registry['#demHead'].textContent || '') &&
+      /solid = orders to date \(actual\)/.test(pace) &&
+      /dashed = trailing-average projection to close/.test(pace) &&
+      /solid = orders to date \(actual\)/.test(card) &&
+      /dashed = projected to close/.test(card) &&
+      /flat dashed = MOQ/.test(card);
+  })());
 
   /* ---------- dashboard: the signal tag feeds the reason, and the verdict line ---------- */
   check('the manual signal tag feeds the reason line — untagged designs gain nothing', (function () {

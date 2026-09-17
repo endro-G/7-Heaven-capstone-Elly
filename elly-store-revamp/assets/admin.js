@@ -915,7 +915,8 @@
       return '<span class="ct-key"><i style="background:' + colorFor(s.design.name) + '"></i>' +
         esc(s.design.name) + ' <b>' + fmt(s.demand) + '</b> \u2192 ' + fmt(s.projected) + '</span>';
     }).join('') +
-      '<span class="ct-key ct-key--note"><i class="ct-key--dash"></i>dashed = trailing-average projection</span>' +
+      '<span class="ct-key ct-key--note"><i class="ct-key--solid"></i>solid = orders to date (actual)</span>' +
+      '<span class="ct-key ct-key--note"><i class="ct-key--dash"></i>dashed = trailing-average projection to close</span>' +
       (SCENARIO.overlays.band
         ? '<span class="ct-key ct-key--note"><i class="ct-key--band"></i>shaded = illustrative spread, not a confidence interval</span>'
         : '') +
@@ -1080,7 +1081,10 @@
 
   function cardTrajectory(st) {
     return trajectorySVG(st, MINI, true) +
-      '<div class="ct-legend ct-legend--mini"><span class="ct-key ct-key--note">orders to date \u2192 projected close \u00b7 dashed line = MOQ</span></div>';
+      '<div class="ct-legend ct-legend--mini">' +
+        '<span class="ct-key ct-key--note"><i class="ct-key--solid"></i>solid = orders to date (actual)</span>' +
+        '<span class="ct-key ct-key--note"><i class="ct-key--dash"></i>dashed = projected to close</span>' +
+        '<span class="ct-key ct-key--note">flat dashed = MOQ</span></div>';
   }
 
   /* ---------- paint ---------- */
@@ -1096,6 +1100,7 @@
     if (note) {
       var bits = [];
       bits.push(st.extra > 0 ? '+' + fmt(st.extra) + ' from your demo checkouts' : 'illustrative orders to date');
+      bits.push('as of day ' + SCENARIO.day);
       if (SCENARIO.demand[st.design.name] !== undefined) bits.push('scenario');
       if (SCENARIO.cancel > 0) bits.push('net of ' + SCENARIO.cancel + '% cancellations');
       if (st.pushed) bits.push('includes modelled push');
@@ -1228,6 +1233,9 @@
     if (day) day.value = String(SCENARIO.day);
     var dayVal = $('ctDayVal');
     if (dayVal) dayVal.textContent = String(SCENARIO.day);
+    /* the Q7 tally is cumulative AS OF this day, so the column says which one */
+    var demHead = $('demHead');
+    if (demHead) demHead.textContent = 'Orders to date \u00b7 day ' + SCENARIO.day;
     var moq = $('ctMoq');
     if (moq && document.activeElement !== moq) moq.value = String(SCENARIO.moq);
     var cancel = $('ctCancel');

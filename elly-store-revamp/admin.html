@@ -232,14 +232,14 @@
           <span class="fold__sumtxt">
             <span class="zone__n">Question 7</span>
             <b class="fold__title">Set demand design by design</b>
-            <span class="small muted">Production = the higher of pre-order demand or factory MOQ (assumed <b>1,000 units</b>, never shown to customers). Try it: raise demand above 1,000 on a row and production follows demand; below it, production stays at MOQ. <b>Orders to date is real</b> — the tally the storefront writes when a pre-order is checked out, plus the illustrative opening figure.</span>
+            <span class="small muted">Production = the higher of pre-order demand or factory MOQ (assumed <b>1,000 units</b>, never shown to customers). Try it: raise demand above 1,000 on a row and production follows demand; below it, production stays at MOQ. <b>Orders to date is real</b> — the tally the storefront writes when a pre-order is checked out, plus the illustrative opening figure. It is cumulative <b>as of the window day</b> chosen in the bar above, which is why the same tally projects to different totals as that slider moves.</span>
           </span>
           <span class="fold__chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span>
         </summary>
         <div class="panel__body">
           <table class="tbl">
             <thead>
-              <tr><th>Design (concept)</th><th class="moq-head">Orders to date</th><th>MOQ</th><th>Production qty</th><th class="bar-cell">Orders vs MOQ</th></tr>
+              <tr><th>Design (concept)</th><th class="moq-head" id="demHead">Orders to date · day 12</th><th>MOQ</th><th>Production qty</th><th class="bar-cell">Orders vs MOQ</th></tr>
             </thead>
             <tbody id="dashRows"></tbody>
           </table>

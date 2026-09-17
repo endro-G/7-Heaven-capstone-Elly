@@ -1300,6 +1300,7 @@ section.block--tight { padding-block: clamp(40px, 4.5vw, 60px); }
 .ct-key > i { width: 12px; height: 3px; border-radius: 2px; display: inline-block; flex: none; background: var(--line); }
 .ct-key b { font-weight: 700; }
 .ct-key--note { color: var(--ink-light); }
+.ct-key--solid { background: none !important; border-top: 2.5px solid var(--ink-light); height: 0 !important; }
 .ct-key--dash { background: none !important; border-top: 2px dashed var(--ink-light); height: 0 !important; }
 .ct-key--band { background: var(--blue) !important; opacity: .3; height: 10px !important; }
 
