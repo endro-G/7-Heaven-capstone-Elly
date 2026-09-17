@@ -59,11 +59,20 @@
             <label class="ct-lbl" for="ctMoq">Factory MOQ</label>
             <input type="number" id="ctMoq" min="0" step="100" value="1000">
           </div>
+          <div class="ct-group ct-group--range">
+            <label class="ct-lbl" for="ctCancel">Cancellations <b id="ctCancelVal">0%</b></label>
+            <input type="range" id="ctCancel" min="0" max="20" step="1" value="0">
+          </div>
+          <div class="ct-group">
+            <span class="ct-lbl">Stress</span>
+            <label class="ct-btn ct-btn--toggle"><input type="checkbox" id="ctDelay" style="position:absolute;opacity:0;pointer-events:none">Production slip +2w</label>
+          </div>
         </div>
       </div>
 
       <div class="demo-note demo-note--live" id="dashLiveNote" hidden></div>
       <div class="demo-note demo-note--live" id="scenarioNote" hidden></div>
+      <div class="demo-note demo-note--live" id="stressNote" hidden aria-live="polite"></div>
 
       <!-- ---------- 1 · store-wide KPIs ---------- -->
       <section class="zone" id="zTiles">
@@ -108,6 +117,10 @@
         </div>
         <!-- the answer to "so what?" — recomputed from the same model as the charts -->
         <p class="dash-verdict" id="dashVerdict" aria-live="polite"></p>
+        <!-- the decision clock: dates pinned by the Pre-Order PDP (close 18 Sep,
+             production up to 8 weeks, full payment final at close). Every chip
+             follows the window-day slider. -->
+        <p class="dash-clock" id="dashClock" hidden aria-live="polite"></p>
       </section>
 
       <!-- ---------- 2 · pace to MOQ ---------- -->
@@ -199,6 +212,18 @@
           </div>
         </div>
         <div class="design-grid" id="dashCards"></div>
+        <!-- the costed commit decision. The PDP guarantees production ("never
+             cancelled for lack of numbers"), so the options are how much to
+             commit above the floor — floor, push, or full projected — never
+             run vs cancel. Hidden when nothing is at risk. -->
+        <div class="panel" id="decisionsWrap" hidden>
+          <div class="panel__body">
+            <span class="zone__n">Commit decision</span>
+            <h3 style="margin:2px 0 8px;font-size:17px">How much should each design commit above the MOQ floor?</h3>
+            <p class="small muted" style="margin:0 0 6px">Every pre-order is guaranteed production, so this is never run-vs-cancel. Contribution bands show the floor (excess may not sell) to the ceiling (the tail sells out). Dates follow the Pre-Order PDP timeline.</p>
+            <div id="dashDecisions"></div>
+          </div>
+        </div>
       </section>
 
       <!-- ---------- 7 · by hand ---------- -->
@@ -252,6 +277,10 @@
           <div class="demo-note" style="margin:14px 0 0">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 8v5M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
             <span><b>What is not real:</b> tile values, historical sell-through and margin figures are illustrative placeholders (PRD §14). There is no live Shopify API call and no forecasting model — pace is a trailing average, and the projection band is an illustrative spread, not a confidence interval (PRD §9). Demand <i>is</i> real: it is the pre-order tally your own demo checkouts write.</span>
+          </div>
+          <div class="demo-note" style="margin:14px 0 0">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 8v5M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
+            <span><b>Decision clock &amp; stress (timeline from the Pre-Order PDP):</b> the window closes <b>18 Sep 2026</b>, production takes <b>up to 8 weeks</b> after close, and payment is taken in full upfront. Full payment makes every pre-order final at close — the PDP promises changes only <i>before</i> the window closes and exchanges after — so the cancellation stress exists only inside the window and zeroes out on close day, and the production-slip stress moves the ship-by date instead of refunding anyone. The push cost (S$800) and lift (+10% of the projected tail) are illustrative. Every pre-order is guaranteed production, so the commit decision is how much to produce above the floor — never whether to run.</span>
           </div>
         </div>
       </details>

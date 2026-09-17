@@ -280,7 +280,10 @@ in either environment.
 - **Growth dashboard demand is real; the rest is illustrative (PRD §13)**: a pre-order add on
   `pre-order.html` enters the shared `elly-bags` store like any item, and **Place order on
   `checkout.html` commits those units to a global `elly-preorders` tally** — written by
-  `app.js` (`window.EL.preOrders`), read by `assets/admin.js`. A demo checkout therefore
+  `app.js` (`window.EL.preOrders`), read by `assets/admin.js` — and **empties that shopper's
+  bag** (the current `elly-bags` bucket: the signed-in account's or the guest's), dropping its
+  personalisation specs too, so the basket clears for both account states to simulate the order
+  having been placed. A demo checkout therefore
   visibly moves that design's orders-to-date, pace projection, status flag, reason line,
   margin and contribution on `admin.html`. Everything else there is illustrative
   (PRD §9/§14): the opening orders-to-date seed, the segment/channel splits, the landed

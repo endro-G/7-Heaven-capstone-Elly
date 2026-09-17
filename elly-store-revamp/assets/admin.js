@@ -39,6 +39,21 @@
   var WINDOW_DAYS = 21;       /* the pre-order window is 21 days long */
   var WINDOW_DAY = 12;        /* illustrative default: partway through the window */
   var CLOSES = '18 Sep 2026'; /* matches the Pre-Order PDP's stated close */
+  /* Decision-economics constants. The TIMELINE facts come straight from the
+     Pre-Order PDP (pre-order.html): the window closes 18 Sep 2026, production
+     takes up to 8 weeks after close, full payment is taken upfront, and the PDP
+     promises shoppers their design is never cancelled for lack of numbers — so
+     the admin decisions below are how much to commit above the floor, never
+     whether to run, and cancellation exposure exists only INSIDE the window.
+     The push cost/lift, the cancellation cap and the slip length are illustrative (§14). */
+  var CLOSE_DATE = new Date(2026, 8, 18);  /* 18 Sep 2026 — PDP step 02 */
+  var OPEN_DATE = new Date(2026, 7, 29);   /* 29 Aug 2026 — day 1 of the window */
+  var LEAD_WEEKS = 8;      /* PDP step 04: production up to 8 weeks after close */
+  var PUSH_HORIZON = 7;    /* days before close a push can still change the tail */
+  var PUSH_COST = 800;     /* illustrative cost of a promo push (§14) */
+  var PUSH_LIFT = 0.10;    /* illustrative lift on the projected tail (§14) */
+  var CANCEL_CAP = 20;     /* cancellation stress slider cap, % (§14) */
+  var DELAY_WEEKS = 2;     /* production-slip stress: +2 weeks on the promise */
   var WINDOW_OPENS_DOW = 6;   /* 0=Sun — the window opens on a Saturday (29 Aug 2026) */
   var THIN_SPREAD = 35;       /* below this, no channel is really "driving" demand */
 
@@ -171,6 +186,9 @@
     day: WINDOW_DAY,
     moq: MOQ,
     demand: {},
+    cancel: 0,                  /* cancellation stress, % of orders — pre-close only */
+    delay: false,               /* production overrun stress: +2w on the ship promise */
+    push: {},                   /* design name -> true: model the promo push on the tail */
     overlays: { moq: true, pace: true, band: true },
     attr: 'share',
     range: '12w'
@@ -227,6 +245,32 @@
     var d = day || SCENARIO.day, t = days || WINDOW_DAYS;
     return Math.round(demand * t / Math.max(1, d));
   }
+
+  /* ---------- decision economics (stress + push + commit options) ---------- */
+
+  /* Full payment is final the day the window closes (PDP: "changes are welcome
+     before the order window closes"), so cancellation exposure exists only
+     INSIDE the window — on close day it zeroes out. At the default 0% the
+     factor is 1 and every existing number on the page is unchanged. */
+  function netFactor() {
+    if (SCENARIO.day >= WINDOW_DAYS) return 1;
+    var c = Math.max(0, Math.min(CANCEL_CAP, SCENARIO.cancel || 0));
+    return 1 - c / 100;
+  }
+  function netDemandOf(design) { return Math.round(demandOf(design) * netFactor()); }
+  function refundCash(rawDemand) {
+    /* everything is paid in full, so cancelled units are cash owed back */
+    return Math.round(Math.max(0, rawDemand - Math.round(rawDemand * netFactor())) * price());
+  }
+  function pushByDay() { return WINDOW_DAYS - PUSH_HORIZON; }
+  function canPush() { return SCENARIO.day <= pushByDay(); }
+  function isPushed(name) { return canPush() && !!SCENARIO.push[name]; }
+  function pushedProjection(st) {
+    /* the push lifts the projected TAIL only — orders already placed cannot be
+       lifted — and only while the window is still open long enough to matter */
+    return st.projected + Math.round(Math.max(0, st.projected - st.demand) * PUSH_LIFT);
+  }
+  function sgd(n) { return 'S$' + fmt(Math.round(n)); }
 
   /* The 21-day cumulative curve for one design: orders to date distributed over
      the days so far by that design's rhythm, so the line has the shape of real
@@ -390,6 +434,135 @@
     };
   }
 
+  /* ---------- the decision clock (dates from the Pre-Order PDP) ----------
+     The PDP pins the timeline: the window closes 18 Sep 2026, production takes
+     up to 8 weeks after close, full payment is final at close (cancels only
+     before close). Three chips follow the window-day slider. The PDP promises
+     "never cancelled for lack of numbers", so there is no run/cancel chip — the
+     factory commitment happens at close, all together. */
+  function fmtDate(d) {
+    var M = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return d.getDate() + ' ' + M[d.getMonth()] + ' ' + d.getFullYear();
+  }
+  function dayToDate(day) {
+    var d = new Date(OPEN_DATE.getTime());
+    d.setDate(d.getDate() + Math.max(0, Math.min(WINDOW_DAYS, day) - 1));
+    return d;
+  }
+  function addDays(d, n) {
+    var c = new Date(d.getTime());
+    c.setDate(c.getDate() + n);
+    return c;
+  }
+  function decisionClock() {
+    var shipBy = addDays(CLOSE_DATE, LEAD_WEEKS * 7 + (SCENARIO.delay ? DELAY_WEEKS * 7 : 0));
+    var pushBy = addDays(CLOSE_DATE, -PUSH_HORIZON);
+    return {
+      push: { label: 'Last useful push', date: pushBy, day: pushByDay(), late: SCENARIO.day > pushByDay() },
+      close: { label: 'Cancels end · production begins', date: CLOSE_DATE, day: WINDOW_DAYS, late: SCENARIO.day >= WINDOW_DAYS },
+      ship: { label: SCENARIO.delay ? 'Ships by (with +2w slip)' : 'Ships by', date: shipBy, day: null, late: false }
+    };
+  }
+  function clockHTML() {
+    var clock = decisionClock();
+    var chip = function (c) {
+      return '<span class="clock-chip' + (c.late ? ' is-late' : '') + '">' +
+        '<b>' + esc(c.label) + '</b> <span>' + fmtDate(c.date) + '</span>' +
+        (c.late ? ' <i>passed</i>' : '') + '</span>';
+    };
+    return '<span class="clock-chip clock-chip--today"><b>Today</b> <span>' +
+      fmtDate(dayToDate(SCENARIO.day)) + '</span></span>' +
+      chip(clock.push) + chip(clock.close) + chip(clock.ship);
+  }
+
+  /* ---------- the costed decision table (Question 6) ----------
+     The PDP guarantees production ("demand or minimum, whichever is higher —
+     never cancelled"), so the choice is never run vs cancel: it is how much to
+     COMMIT above the floor, and whether to push demand before close. Every row
+     is priced off the same model as the charts. */
+  function commitOptions(st) {
+    var unit = st.margin.unit, cost = st.margin.cost;
+    var canPushHere = canPush();
+    var tail = Math.max(0, st.projected - st.rawDemand);
+    var pushTail = Math.round(tail * PUSH_LIFT);
+    var pushedProj = canPushHere ? st.projected + pushTail : st.projected;
+    /* Production never runs below the MOQ (factory minimum), so every commit is
+       >= moq. Bands: floor of the band = the tail does NOT materialise (sell
+       only what was ordered), ceiling = the tail sells out. Push rows deduct
+       the push cost from both ends. */
+    var sellCon = function (q) {
+      var sold = Math.min(q, st.demand + Math.max(0, q - st.moq));
+      return Math.max(0, sold * unit);
+    };
+    var floorCon = (function () {
+      var lo = sellCon(st.moq), hi = sellCon(st.moq);
+      return { lo: lo, hi: hi };
+    })();
+    var upCon = (function () {
+      var q = Math.max(st.moq, st.netProjected);
+      return { lo: sellCon(q), hi: q * unit };
+    })();
+    var pushCon = (canPushHere && pushTail > 0)
+      ? (function () {
+          var q = Math.max(st.moq, pushedProj);
+          return { lo: Math.max(0, sellCon(q) - PUSH_COST), hi: Math.max(0, q * unit - PUSH_COST) };
+        })()
+      : null;
+    var gap = Math.max(0, st.moq - st.netProjected);
+    var options = [
+      { key: 'floor', label: 'Commit the floor (' + fmt(st.moq) + ')',
+        note: st.demand < st.moq
+          ? 'covers every paid order; the ' + fmt(st.moq - st.demand) + '-unit excess may not sell — ' + sgd((st.moq - st.demand) * cost) + ' at risk'
+          : 'demand already covers the floor',
+        con: floorCon, cash: 'none — already collected' },
+      { key: 'push', label: 'Push & commit projected',
+        note: !canPushHere ? 'too close to close for a push to change the tail'
+          : (gap > 0 && pushTail < gap
+            ? 'lifts the tail only ~' + fmt(pushTail) + ' units — it cannot close a ' + fmt(gap) + '-unit gap'
+            : 'lifts the tail ~' + fmt(pushTail) + ' units for ' + sgd(PUSH_COST)),
+        con: pushCon, cash: sgd(PUSH_COST) + ' spend, funded from collected cash',
+        pushed: canPushHere && !!st.pushed, disabled: !canPushHere || !pushCon },
+      { key: 'upside', label: 'Commit projected (' + fmt(Math.max(st.moq, st.netProjected)) + ')',
+        note: 'captures the ' + fmt(Math.max(0, st.netProjected - st.demand)) + '-unit tail if it materialises',
+        con: upCon, cash: 'none — already collected' }
+    ];
+    var best = null;
+    options.forEach(function (o) {
+      if (o.disabled || !o.con) return;
+      if (!best || o.con.lo > best.con.lo) best = o;
+    });
+    options.forEach(function (o) { o.recommended = !!(best && o === best); });
+    return { options: options, gap: gap, pushedProj: pushedProj, pushTail: pushTail };
+  }
+  function decisionsHTML(states) {
+    var rows = states.filter(function (s) { return s.status.key === 'risk' || s.status.key === 'floor'; });
+    if (!rows.length) {
+      return '<p class="small muted" style="margin:10px 0 0">No design is at the MOQ floor or behind pace — nothing to decide here. Raise the MOQ or stress the window above to see the commit options.</p>';
+    }
+    var html = '';
+    rows.forEach(function (s) {
+      var d = commitOptions(s);
+      html += '<div class="deci" data-design="' + esc(s.design.name) + '">' +
+        '<h4>' + esc(s.design.name) + ' <span class="muted small">· ' + esc(s.status.label) +
+          ' · gap to MOQ ' + (d.gap ? fmt(d.gap) + ' units' : 'closed') + '</span></h4>' +
+        '<table class="tbl tbl--deci"><thead><tr><th>Option</th><th>Contribution</th><th>Cash</th><th>Notes</th><th></th></tr></thead><tbody>';
+      d.options.forEach(function (o) {
+        var conTxt = o.con ? (o.con.lo === o.con.hi ? money(o.con.lo) : money(o.con.lo) + ' – ' + money(o.con.hi)) : '—';
+        html += '<tr' + (o.disabled ? ' class="is-off"' : '') + '>' +
+          '<td><b>' + esc(o.label) + '</b>' + (o.recommended ? ' <span class="badge badge--demo">Recommended</span>' : '') + '</td>' +
+          '<td>' + conTxt + '</td>' +
+          '<td>' + esc(o.cash) + '</td>' +
+          '<td class="small muted">' + esc(o.note) + '</td>' +
+          '<td>' + (o.key === 'push' && !o.disabled
+            ? '<button type="button" class="ct-btn js-deci-push" data-design="' + esc(s.design.name) + '"' + (o.pushed ? ' data-off="1"' : '') + '>' + (o.pushed ? 'Remove push' : 'Model this push') + '</button>'
+            : '') + '</td>' +
+          '</tr>';
+      });
+      html += '</tbody></table></div>';
+    });
+    return html;
+  }
+
   function stateFor(design, demandOverride) {
     var extra = preOrders()[design.name] || 0;
     var demand = (typeof demandOverride === 'number' && !isNaN(demandOverride))
@@ -398,11 +571,35 @@
     var projected = projection(demand, SCENARIO.day, WINDOW_DAYS);
     var prod = Math.max(demand, moq);
     var mg = marginOf(design.cost);
-    return {
+    var st = {
       design: design, demand: demand, extra: extra, moq: moq, prod: prod,
       projected: projected, day: SCENARIO.day, status: statusOf(projected, moq),
       margin: mg, contribution: mg.unit * prod
     };
+    return addDecisionFields(st);
+  }
+  /* Stress + push are a layer over the base state (the way SCENARIO.demand is a
+     layer over real orders). Every downstream number reads `net`/`netProjected`
+     instead of `demand`/`projected`; at the defaults (0% cancels, no push) the
+     layer is the identity, so every existing figure on the page is unchanged. */
+  function addDecisionFields(st) {
+    var f = netFactor();
+    st.net = Math.round(st.demand * f);
+    st.rawDemand = st.demand;
+    st.demand = st.net;
+    st.refunds = refundCash(st.rawDemand);
+    var pushed = isPushed(st.design.name);
+    st.pushed = pushed;
+    st.pushTail = 0;
+    if (pushed) {
+      st.pushTail = Math.round(Math.max(0, st.projected - st.demand) * PUSH_LIFT);
+    }
+    st.projected = st.projected + st.pushTail;
+    st.netProjected = Math.round(st.projected * f);
+    st.status = statusOf(st.netProjected, st.moq);
+    st.prod = Math.max(st.demand, st.moq);
+    st.contribution = st.margin.unit * st.prod;
+    return st;
   }
 
   function designByName(name) {
@@ -451,12 +648,16 @@
       var day = parseInt(q.get('day'), 10);
       var moq = parseInt(q.get('moq'), 10);
       var rng = q.get('range');
+      var cancel = parseInt(q.get('cancel'), 10);
       if (day >= 1 && day <= WINDOW_DAYS) SCENARIO.day = day;
       if (moq >= 0) SCENARIO.moq = moq;
       if (rng && RANGES.some(function (r) { return r.k === rng; })) SCENARIO.range = rng;
+      if (cancel > 0) SCENARIO.cancel = Math.min(CANCEL_CAP, cancel);
+      if (q.get('delay') === '1') SCENARIO.delay = true;
       DESIGNS.forEach(function (d) {
         var v = parseInt(q.get(slug(d.name)), 10);
         if (v >= 0) SCENARIO.demand[d.name] = v;
+        if (q.get('push-' + slug(d.name)) === '1') SCENARIO.push[d.name] = true;
       });
     } catch (e) {}
   }
@@ -467,8 +668,11 @@
       if (SCENARIO.day !== WINDOW_DAY) q.set('day', String(SCENARIO.day));
       if (SCENARIO.moq !== MOQ) q.set('moq', String(SCENARIO.moq));
       if (SCENARIO.range !== '12w') q.set('range', SCENARIO.range);
+      if (SCENARIO.cancel > 0) q.set('cancel', String(SCENARIO.cancel));
+      if (SCENARIO.delay) q.set('delay', '1');
       DESIGNS.forEach(function (d) {
         if (SCENARIO.demand[d.name] !== undefined) q.set(slug(d.name), String(SCENARIO.demand[d.name]));
+        if (SCENARIO.push[d.name]) q.set('push-' + slug(d.name), '1');
       });
       var s = q.toString();
       window.history.replaceState(null, '', window.location.pathname + (s ? '?' + s : ''));
@@ -889,6 +1093,8 @@
       var bits = [];
       bits.push(st.extra > 0 ? '+' + fmt(st.extra) + ' from your demo checkouts' : 'illustrative orders to date');
       if (SCENARIO.demand[st.design.name] !== undefined) bits.push('scenario');
+      if (SCENARIO.cancel > 0) bits.push('net of ' + SCENARIO.cancel + '% cancellations');
+      if (st.pushed) bits.push('includes modelled push');
       note.textContent = bits.join(' \u00b7 ');
     }
     var bar = row.querySelector('.mini-bar');
@@ -935,7 +1141,29 @@
     var v = verdictFor(states);
     el.className = 'dash-verdict dash-verdict--' + v.key;
     el.innerHTML = '<b class="dash-verdict__lead">' + esc(v.lead) + '</b> ' + v.text;
+    var clock = $('dashClock');
+    if (clock) {
+      clock.innerHTML = clockHTML();
+      clock.hidden = false;
+    }
+    var sn = $('stressNote');
+    if (sn) {
+      var stressBits = [];
+      if (SCENARIO.cancel > 0) stressBits.push(SCENARIO.cancel + '% cancellations · ' + money(totalRefunds(states)) + ' owed back');
+      if (SCENARIO.delay) stressBits.push('production slips +2w → ships ' + fmtDate(decisionClock().ship.date));
+      sn.hidden = !stressBits.length;
+      if (stressBits.length) sn.innerHTML = '<b>Stress:</b> ' + stressBits.join(' · ') + '.';
+    }
+    var dec = $('decisionsWrap');
+    if (dec) dec.hidden = !rowsExist(states);
   }
+  function totalRefunds(states) {
+    return states.reduce(function (s, st) { return s + (st.refunds || 0); }, 0);
+  }
+  function rowsExist(states) {
+    return states.some(function (s) { return s.status.key === 'risk' || s.status.key === 'floor'; });
+  }
+  function paintClock() {}
 
   function paintHealth(states) {
     var atRisk = states.filter(function (s) { return s.status.key === 'risk'; }).length;
@@ -981,6 +1209,9 @@
     if (Object.keys(SCENARIO.demand).length) bits.push('a demand scenario');
     if (SCENARIO.day !== WINDOW_DAY) bits.push('day ' + SCENARIO.day + ' of ' + WINDOW_DAYS);
     if (SCENARIO.moq !== MOQ) bits.push('an MOQ of ' + fmt(SCENARIO.moq));
+    if (SCENARIO.cancel > 0) bits.push(SCENARIO.cancel + '% cancellations');
+    if (SCENARIO.delay) bits.push('a +2w production slip');
+    Object.keys(SCENARIO.push).forEach(function (k) { if (SCENARIO.push[k]) bits.push('a modelled push on ' + k); });
     el.hidden = !bits.length;
     if (bits.length) {
       el.innerHTML = 'Modelling ' + bits.join(' \u00b7 ') +
@@ -995,6 +1226,15 @@
     if (dayVal) dayVal.textContent = String(SCENARIO.day);
     var moq = $('ctMoq');
     if (moq && document.activeElement !== moq) moq.value = String(SCENARIO.moq);
+    var cancel = $('ctCancel');
+    if (cancel) {
+      cancel.value = String(SCENARIO.cancel);
+      cancel.disabled = SCENARIO.day >= WINDOW_DAYS;
+    }
+    var cancelVal = $('ctCancelVal');
+    if (cancelVal) cancelVal.textContent = String(SCENARIO.cancel) + '%';
+    var delay = $('ctDelay');
+    if (delay) delay.checked = !!SCENARIO.delay;
     $$('[data-overlay]').forEach(function (b) {
       b.classList.toggle('is-on', !!SCENARIO.overlays[b.getAttribute('data-overlay')]);
     });
@@ -1006,6 +1246,7 @@
     });
   }
 
+  /* stress + push layer: every downstream number reads the NET projection */
   function refresh() {
     var states = DESIGNS.map(function (d) { return stateFor(d); });
     function stateOf(name) {
@@ -1025,6 +1266,8 @@
     setHTML('chartDaily', dailyChart(states));
     setHTML('chartContrib', contribChart(states));
     setHTML('chartHist', histChart());
+    setHTML('dashDecisions', decisionsHTML(states));
+    paintClock();
     paintHealth(states);
     paintVerdict(states);
     paintTiles();
@@ -1053,6 +1296,9 @@
   function applyScenario(kind) {
     if (kind === 'reset') {
       SCENARIO.demand = {};
+      SCENARIO.cancel = 0;
+      SCENARIO.delay = false;
+      SCENARIO.push = {};
     } else if (kind === 'close') {
       SCENARIO.day = WINDOW_DAYS;
     } else if (kind === 'moq') {
@@ -1124,6 +1370,16 @@
     if (e.target.id === 'ctMoq') {
       var v = parseInt(e.target.value, 10);
       if (v >= 0 && isFinite(v)) { SCENARIO.moq = v; refresh(); }
+      return;
+    }
+    if (e.target.id === 'ctCancel') {
+      var c = parseInt(e.target.value, 10) || 0;
+      if (c >= 0 && c <= CANCEL_CAP) { SCENARIO.cancel = c; refresh(); }
+      return;
+    }
+    if (e.target.id === 'ctDelay') {
+      SCENARIO.delay = !!e.target.checked;
+      refresh();
     }
   });
 
@@ -1139,6 +1395,16 @@
     /* the tag is not decoration: it changes the reason line, so the card the
        owner is looking at immediately explains itself. Only text nodes are
        rewritten — no element appears or disappears, so the row cannot resize. */
+    refresh();
+  });
+
+  /* decision table: model the push for one design straight from the table */
+  document.addEventListener('click', function (e) {
+    var b = e.target && e.target.closest ? e.target.closest('.js-deci-push') : null;
+    if (!b) return;
+    var name = b.getAttribute('data-design');
+    if (SCENARIO.push[name]) delete SCENARIO.push[name];
+    else SCENARIO.push[name] = true;
     refresh();
   });
 
@@ -1263,6 +1529,9 @@
     designByName: designByName, preOrders: preOrders, demandFor: demandFor,
     demandOf: demandOf, signalFor: signalFor, slug: slug, fmt: fmt,
     actualPoints: actualPoints, projectedPoints: projectedPoints, bandEdges: bandEdges, dailyBars: dailyBars,
+    decisionClock: decisionClock, clockHTML: clockHTML, commitOptions: commitOptions,
+    decisionsHTML: decisionsHTML, netFactor: netFactor, netDemandOf: netDemandOf,
+    refundCash: refundCash, pushedProjection: pushedProjection, dayToDate: dayToDate, fmtDate: fmtDate,
     rowHTML: rowHTML, cardHTML: cardHTML, historyHTML: historyHTML,
     attribHTML: attribHTML, marginHTML: marginHTML, signalHTML: signalHTML,
     signalNoteHTML: signalNoteHTML, signoteClass: signoteClass,

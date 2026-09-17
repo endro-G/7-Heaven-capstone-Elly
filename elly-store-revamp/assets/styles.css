@@ -1377,6 +1377,28 @@ section.block--tight { padding-block: clamp(40px, 4.5vw, 60px); }
 .reason__sig--none b { color: var(--ink-light); }
 .reason__txt { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; min-height: 2.9em; }
 
+/* ---------- decision clock + costed commit options (timeline from the
+   Pre-Order PDP: close 18 Sep 2026 · production up to 8 weeks · full payment
+   final at close) ---------- */
+.dash-clock { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 12px 0 0; }
+.clock-chip { display: inline-flex; align-items: baseline; gap: 6px; font-size: 11.5px; background: var(--cream-2); border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; white-space: nowrap; }
+.clock-chip b { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); }
+.clock-chip span { font-weight: 700; color: var(--ink); }
+.clock-chip i { font-style: normal; font-size: 10px; font-weight: 700; color: var(--coral-deep); }
+.clock-chip--today { background: var(--paper); border-color: var(--blue-deep); }
+.clock-chip--today b { color: var(--blue-deep); }
+.clock-chip.is-late { opacity: .75; }
+.clock-chip.is-late span { text-decoration: line-through; }
+.ct-btn--toggle { cursor: pointer; user-select: none; }
+.ct-btn--toggle input:checked ~ *,
+.ct-btn--toggle:has(input:checked) { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.tbl--deci { margin: 0; }
+.tbl--deci td, .tbl--deci th { vertical-align: top; }
+.tbl--deci tr.is-off td { opacity: .5; }
+.deci { margin: 14px 0 4px; }
+.deci h4 { margin: 0 0 8px; font-size: 14px; }
+.deci .badge { margin-left: 4px; }
+
 @media (max-width: 1080px) {
   .dash-2col { grid-template-columns: 1fr; gap: 0; }
   .dash-2col > .zone { margin-bottom: 22px; }

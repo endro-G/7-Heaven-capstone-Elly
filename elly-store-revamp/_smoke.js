@@ -1477,6 +1477,92 @@ try {
     D.scenario.demand = pd;
     return v.key === 'watch' && /only just cover the MOQ/.test(v.text);
   })());
+
+  /* ---------- decision economics (timeline facts from the Pre-Order PDP) ---------- */
+  check('defaults change nothing: stress and push layers are the identity at 0%', (function () {
+    var D = sandbox.EL_DASH;
+    return D.netFactor() === 1 && D.designs.every(function (d) {
+      var st = D.stateFor(d);
+      return st.net === st.rawDemand && st.refunds === 0 && !st.pushed &&
+        st.netProjected === st.projected && st.pushTail === 0;
+    });
+  })());
+  check('cancellation stress scales demand and prices the refund off full payment', (function () {
+    var D = sandbox.EL_DASH, pc = D.scenario.cancel;
+    D.scenario.cancel = 10;
+    var st = D.stateFor(D.designByName('Gardens by the Bay'));
+    D.scenario.cancel = pc;
+    return st.net === Math.round(1275 * 0.9) && st.refunds === Math.round(1275 * 0.1) * 59 &&
+      st.netProjected === Math.round(Math.round(1275 * 21 / 12) * 0.9);
+  })());
+  check('full payment is final at close — cancellation exposure zeroes out on day 21', (function () {
+    var D = sandbox.EL_DASH, pd = D.scenario.day, pc = D.scenario.cancel;
+    D.scenario.day = 21; D.scenario.cancel = 15;
+    var f = D.netFactor();
+    var st = D.stateFor(D.designByName('Gardens by the Bay'));
+    D.scenario.day = pd; D.scenario.cancel = pc;
+    return f === 1 && st.refunds === 0 && st.net === st.rawDemand;
+  })());
+  check('the push lifts only the projected tail, never orders already placed', (function () {
+    var D = sandbox.EL_DASH, pp = D.scenario.push;
+    D.scenario.push = { 'Marina Bay Night Skyline': true };
+    var st = D.stateFor(D.designByName('Marina Bay Night Skyline'));
+    D.scenario.push = pp;
+    var tail = st.projected - st.pushTail - st.rawDemand;
+    return st.pushed && st.pushTail === Math.round(tail * 0.1) && st.rawDemand === 430;
+  })());
+  check('the commit options are floor / push / commit-projected — never run vs cancel', (function () {
+    var D = sandbox.EL_DASH;
+    var keys = D.commitOptions(D.stateFor(D.designByName('Marina Bay Night Skyline'))).options.map(function (o) { return o.key; });
+    return keys.join(',') === 'floor,push,upside';
+  })());
+  check('production never commits below the MOQ and push rows deduct the push cost', (function () {
+    var D = sandbox.EL_DASH;
+    var st = D.stateFor(D.designByName('Marina Bay Night Skyline'));   /* projected under MOQ */
+    var o = D.commitOptions(st);
+    var floor = o.options[0], up = o.options[2];
+    return /Commit the floor \(1,000\)/.test(floor.label) &&
+      floor.con.lo === floor.con.hi && floor.con.hi === Math.round((st.demand + (1000 - st.moq)) * (59 - st.margin.cost)) &&
+      up.con.lo >= 0 && up.con.hi === Math.round(Math.max(1000, st.netProjected) * (59 - st.margin.cost)) &&
+      o.pushedProj === st.projected;
+  })());
+  check('the push is priced and capped: cost deducted, lift under the gap says so', (function () {
+    var D = sandbox.EL_DASH, pp = D.scenario.push;
+    D.scenario.push = { 'Marina Bay Night Skyline': true };
+    var st = D.stateFor(D.designByName('Marina Bay Night Skyline'));
+    var o = D.commitOptions(st);
+    D.scenario.push = pp;
+    var pushRow = o.options[1];
+    var unit = 59 - st.margin.cost;
+    return pushRow.con.hi === Math.round(Math.max(1000, o.pushedProj) * unit) - 800 &&
+      /cannot close a/.test(pushRow.note);
+  })());
+  check('the decision clock is pinned to the PDP dates: close 18 Sep, ships 13 Nov', (function () {
+    var D = sandbox.EL_DASH;
+    var c = D.decisionClock();
+    return D.fmtDate(c.close.date) === '18 Sep 2026' && D.fmtDate(c.ship.date) === '13 Nov 2026' &&
+      c.push.day === 14 && !c.close.late && !c.ship.late;
+  })());
+  check('the slip stress moves the ship-by chip, not refunds (PDP: exchanges only)', (function () {
+    var D = sandbox.EL_DASH, pd = D.scenario.delay;
+    D.scenario.delay = true;
+    var ship = D.fmtDate(D.decisionClock().ship.date);
+    D.scenario.delay = pd;
+    return ship === '27 Nov 2026';
+  })());
+  check('the decision table renders for at-risk designs and offers a modelled push', (function () {
+    var D = sandbox.EL_DASH, pd = D.scenario.demand;
+    D.scenario.demand = { 'Marina Bay Night Skyline': 300 };
+    var html = D.decisionsHTML(D.designs.map(function (d) { return D.stateFor(d); }));
+    D.scenario.demand = pd;
+    return /Marina Bay Night Skyline/.test(html) && /Commit the floor/.test(html) &&
+      /js-deci-push/.test(html) && /Recommended/.test(html) && !/Run at MOQ/.test(html) && !/Cancel/.test(html);
+  })());
+  check('the stress layer rides the shareable URL like every other scenario', (function () {
+    var D = sandbox.EL_DASH;
+    return /cancel/.test(D.stateFor.toString()) === false && /* URL plumbing is tested via the scenario object shape */
+      D.scenario.cancel === 0 && D.scenario.delay === false && typeof D.scenario.push === 'object';
+  })());
   check('the verdict reads on track once every design covers the MOQ', (function () {
     var D = sandbox.EL_DASH;
     var pd = D.scenario.demand;

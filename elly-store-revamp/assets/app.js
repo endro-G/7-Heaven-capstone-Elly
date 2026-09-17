@@ -2369,17 +2369,30 @@
     writePreOrders(map);
     return { units: units, byDesign: byDesign };
   }
-  /* Place order (demo): commit any pre-order units to the production tally, then
-     say so and link across — the only real side effect of checkout, and the thread
-     that joins the storefront to the §13 dashboard. */
+  /* Place order (demo): commit any pre-order units to the production tally, clear
+     the shopper's bag — signed-in or guest, the bag is one per-account bucket in
+     elly-bags, so saveBagItems([]) empties exactly the account that placed the
+     order and the header badge follows — then say so and link across. Clearing
+     the bag simulates the order having been placed: the items now "belong" to an
+     order, not to the basket. */
   document.addEventListener('click', function (e) {
     var b = e.target.closest('.js-place-order');
     if (!b) return;
     var res = commitPreOrders();
+    /* drop every line (and its personalisation spec — the same rule the cart's
+       Remove button applies when no size of the item is left) for the CURRENT
+       account bucket only; other profiles' bags are untouched */
+    var had = bagItems().length;
+    bagItems().forEach(function (entry) {
+      if (persFor(bagName(entry))) savePers(bagName(entry), null);
+    });
+    saveBagItems([]);
+    populateCartLines();          /* summary lines, totals and cross-sell reset */
     var extra = res.units
       ? ' <b>' + res.units + ' pre-order unit' + (res.units === 1 ? '' : 's') + '</b> added to the <a href="admin.html" style="color:#fff;text-decoration:underline">production dashboard</a>.'
       : '';
-    toast('Order placed \u2014 <b>demo only</b>. No live order or payment was created.' + extra, true);
+    var cleared = had ? ' Your bag has been emptied.' : '';
+    toast('Order placed \u2014 <b>demo only</b>. No live order or payment was created.' + cleared + extra, true);
   });
 
   /* ---------- Newsletter (demo) ---------- */
