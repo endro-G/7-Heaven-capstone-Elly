@@ -1478,7 +1478,12 @@ try {
     return v.key === 'watch' && /only just cover the MOQ/.test(v.text);
   })());
 
-  /* ---------- decision economics (timeline facts from the Pre-Order PDP) ---------- */
+  /* ---------- decision economics (timeline facts from the Pre-Order PDP) ----------
+     These read the same model as the storefront thread above, so the pre-order tally
+     has to be cleared first: the checks below are pinned to the seed figures
+     (1,275 / 430), and the thread deliberately leaves committed units behind. */
+  sandbox.EL.setBag(0);
+  sandbox.localStorage.removeItem(sandbox.EL.preOrders.key);
   check('defaults change nothing: stress and push layers are the identity at 0%', (function () {
     var D = sandbox.EL_DASH;
     return D.netFactor() === 1 && D.designs.every(function (d) {
@@ -1492,7 +1497,8 @@ try {
     D.scenario.cancel = 10;
     var st = D.stateFor(D.designByName('Gardens by the Bay'));
     D.scenario.cancel = pc;
-    return st.net === Math.round(1275 * 0.9) && st.refunds === Math.round(1275 * 0.1) * 59 &&
+    return st.net === Math.round(1275 * 0.9) &&
+      st.refunds === (st.rawDemand - st.net) * 59 &&   /* priced off the units actually lost */
       st.netProjected === Math.round(Math.round(1275 * 21 / 12) * 0.9);
   })());
   check('full payment is final at close — cancellation exposure zeroes out on day 21', (function () {
@@ -1516,15 +1522,23 @@ try {
     var keys = D.commitOptions(D.stateFor(D.designByName('Marina Bay Night Skyline'))).options.map(function (o) { return o.key; });
     return keys.join(',') === 'floor,push,upside';
   })());
-  check('production never commits below the MOQ and push rows deduct the push cost', (function () {
+  check('production never commits below the MOQ and the push preview is never compounded', (function () {
     var D = sandbox.EL_DASH;
     var st = D.stateFor(D.designByName('Marina Bay Night Skyline'));   /* projected under MOQ */
     var o = D.commitOptions(st);
     var floor = o.options[0], up = o.options[2];
-    return /Commit the floor \(1,000\)/.test(floor.label) &&
+    /* with no push modelled, the preview is the unpushed base plus one lift … */
+    var preview = o.pushedProj === st.projected + o.pushTail && o.pushedProj > st.projected;
+    /* … and with the push already on it lands on the state's own projection: the
+       modelled lift lives in st.projected, so it must not be added a second time */
+    D.scenario.push = { 'Marina Bay Night Skyline': true };
+    var pushedState = D.stateFor(D.designByName('Marina Bay Night Skyline'));
+    var on = D.commitOptions(pushedState);
+    D.scenario.push = {};
+    return preview && on.pushedProj === pushedState.projected &&
+      /Commit the floor \(1,000\)/.test(floor.label) &&
       floor.con.lo === floor.con.hi && floor.con.hi === Math.round((st.demand + (1000 - st.moq)) * (59 - st.margin.cost)) &&
-      up.con.lo >= 0 && up.con.hi === Math.round(Math.max(1000, st.netProjected) * (59 - st.margin.cost)) &&
-      o.pushedProj === st.projected;
+      up.con.lo >= 0 && up.con.hi === Math.round(Math.max(1000, st.netProjected) * (59 - st.margin.cost));
   })());
   check('the push is priced and capped: cost deducted, lift under the gap says so', (function () {
     var D = sandbox.EL_DASH, pp = D.scenario.push;

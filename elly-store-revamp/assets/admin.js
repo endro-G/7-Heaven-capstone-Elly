@@ -483,9 +483,13 @@
   function commitOptions(st) {
     var unit = st.margin.unit, cost = st.margin.cost;
     var canPushHere = canPush();
-    var tail = Math.max(0, st.projected - st.rawDemand);
+    /* The push preview is built on the UNPUSHED base: st.projected already carries
+       the modelled lift (st.pushTail) once a push is on, so adding a fresh lift to
+       it would compound the same push and overstate this row's quantity. */
+    var baseProjected = st.projected - (st.pushTail || 0);
+    var tail = Math.max(0, baseProjected - st.rawDemand);
     var pushTail = Math.round(tail * PUSH_LIFT);
-    var pushedProj = canPushHere ? st.projected + pushTail : st.projected;
+    var pushedProj = canPushHere ? baseProjected + pushTail : st.projected;
     /* Production never runs below the MOQ (factory minimum), so every commit is
        >= moq. Bands: floor of the band = the tail does NOT materialise (sell
        only what was ordered), ceiling = the tail sells out. Push rows deduct
